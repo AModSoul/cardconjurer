@@ -12,26 +12,29 @@ if (!loadedVersions.includes('/js/frames/versionSaga.js')) {
 		<h5 class='padding margin-bottom input-description'>First Ability:</h5>
 		<div class='padding input-grid margin-bottom'>
 			<input id='saga-height-0' type='number' class='input' oninput='sagaEdited();' min='0'>
-			<input id='saga-chapters-0' type='number' class='input' oninput='sagaEdited();' min='0' max='3' step='1'>
+			<input id='saga-chapters-0' type='number' class='input' oninput='sagaEdited();' min='0' max='6' step='1'>
 		</div>
 		<h5 class='padding margin-bottom input-description'>Second Ability:</h5>
 		<div class='padding input-grid margin-bottom'>
 			<input id='saga-height-1' type='number' class='input' oninput='sagaEdited();' min='0'>
-			<input id='saga-chapters-1' type='number' class='input' oninput='sagaEdited();' min='0' max='3' step='1'>
+			<input id='saga-chapters-1' type='number' class='input' oninput='sagaEdited();' min='0' max='6' step='1'>
 		</div>
 		<h5 class='padding margin-bottom input-description'>Third Ability:</h5>
 		<div class='padding input-grid margin-bottom'>
 			<input id='saga-height-2' type='number' class='input' oninput='sagaEdited();' min='0'>
-			<input id='saga-chapters-2' type='number' class='input' oninput='sagaEdited();' min='0' max='3' step='1'>
+			<input id='saga-chapters-2' type='number' class='input' oninput='sagaEdited();' min='0' max='6' step='1'>
 		</div>
 		<h5 class='padding margin-bottom input-description'>Fourth Ability:</h5>
 		<div class='padding input-grid margin-bottom'>
 			<input id='saga-height-3' type='number' class='input' oninput='sagaEdited();' min='0'>
-			<input id='saga-chapters-3' type='number' class='input' oninput='sagaEdited();' min='0' max='3' step='1'>
+			<input id='saga-chapters-3' type='number' class='input' oninput='sagaEdited();' min='0' max='6' step='1'>
 		</div>
 	</div>`;
 	if (!card.saga) {
 		card.saga = {abilities:[1, 1, 1, 0], count:3, x:(card.version === "oldSaga" ? 0.1114 : 0.1), width:(card.version === "oldSaga" ? 0.3727 : 0.3947)};
+	} else {
+		card.saga.x = (card.version === "oldSaga" ? 0.1114 : 0.1);
+		card.saga.width = (card.version === "oldSaga" ? 0.3727 : 0.3947);
 	}
 	document.querySelector('#creator-menu-sections').appendChild(newHTML);
 	var sagaChapter = new Image();
@@ -39,6 +42,14 @@ if (!loadedVersions.includes('/js/frames/versionSaga.js')) {
 	var sagaDivider = new Image();
 	setImageUrl(sagaDivider, '/img/frames/saga/sagaDivider.png');
 	sagaChapter.onload = sagaDivider.onload = sagaEdited;
+	fixSagaInputs(sagaEdited);
+} else {
+	if (!card.saga) {
+		card.saga = {abilities:[1, 1, 1, 0], count:3, x:(card.version === "oldSaga" ? 0.1114 : 0.1), width:(card.version === "oldSaga" ? 0.3727 : 0.3947)};
+	} else {
+		card.saga.x = (card.version === "oldSaga" ? 0.1114 : 0.1);
+		card.saga.width = (card.version === "oldSaga" ? 0.3727 : 0.3947);
+	}
 	fixSagaInputs(sagaEdited);
 }
 
@@ -80,29 +91,17 @@ function sagaEdited() {
 			var numeralY = y + (height - numeralHeight) / 2;
 			var numeralTextX = numeralX + scaleWidth(0.0394);
 			var numeralTextY = numeralY + scaleHeight(0.0429);
-			if (card.saga.abilities[i] == 1) {
-				sagaContext.drawImage(sagaChapter, numeralX, numeralY, numeralWidth, numeralHeight);
-				sagaContext.fillText(romanNumeral(sagaCount), numeralTextX, numeralTextY);
-				sagaCount ++;
-			} else if (card.saga.abilities[i] == 2) {
-				var numeralSpread = scaleHeight(0.0358);
-				var numeralTextSpread = scaleHeight(0.0358);
-				sagaContext.drawImage(sagaChapter, numeralX, numeralY - numeralSpread, numeralWidth, numeralHeight);
-				sagaContext.drawImage(sagaChapter, numeralX, numeralY + numeralSpread, numeralWidth, numeralHeight);
-				sagaContext.fillText(romanNumeral(sagaCount), numeralTextX, numeralTextY - numeralTextSpread);
-				sagaContext.fillText(romanNumeral(sagaCount + 1), numeralTextX, numeralTextY + numeralTextSpread);
-				sagaCount += 2;
-			} else if (card.saga.abilities[i] > 2) {
-				var numeralSpread = 2 * scaleHeight(0.0358);
-				var numeralTextSpread = 2 * scaleHeight(0.0358);
-				sagaContext.drawImage(sagaChapter, numeralX, numeralY - numeralSpread, numeralWidth, numeralHeight);
-				sagaContext.drawImage(sagaChapter, numeralX, numeralY, numeralWidth, numeralHeight);
-				sagaContext.drawImage(sagaChapter, numeralX, numeralY + numeralSpread, numeralWidth, numeralHeight);
-				sagaContext.fillText(romanNumeral(sagaCount), numeralTextX, numeralTextY - numeralTextSpread);
-				sagaContext.fillText(romanNumeral(sagaCount + 1), numeralTextX, numeralTextY);
-				sagaContext.fillText(romanNumeral(sagaCount + 2), numeralTextX, numeralTextY + numeralTextSpread);
-				sagaCount += 3;
+			var count = parseInt(card.saga.abilities[i]);
+			var offset = scaleHeight(0.0358);
+			var centerOffset = (count - 1) / 2;
+
+			for (let j = 0; j < count; j++) {
+					let positionOffset = (j - centerOffset) * offset * 2;
+
+					sagaContext.drawImage(sagaChapter, numeralX, numeralY + positionOffset, numeralWidth, numeralHeight);
+					sagaContext.fillText(romanNumeral(sagaCount + j), numeralTextX, numeralTextY + positionOffset);
 			}
+			sagaCount += count;
 		}
 	}
 	drawTextBuffer();
