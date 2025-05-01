@@ -126,6 +126,8 @@ function abilitiesMaxHeight() {
 	switch (card.version) {
 		case 'saga':
 			return 0.5385
+		case 'sagaNyxFlavor':
+			return 0.3385
 		default:
 			return 0.5385;
 	}
