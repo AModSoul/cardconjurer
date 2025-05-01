@@ -4980,7 +4980,7 @@ function changeCardIndex() {
 		}
 		planeswalkerEdited();
 	} else if (card.version.includes('saga')) {
-		if (cardToImport.flavor_text) {
+		if (card.text.flavor && cardToImport.flavor_text) {
 			// future support sagas with flavor text
 			card.text.flavor.text = cardToImport.flavor_text;
 		}
@@ -4998,7 +4998,6 @@ function changeCardIndex() {
 		card.text.reminder.text = `{i}${extractSagaReminderText(cardToImport.oracle_text)}{/i}`;
 		card.saga = {...card.saga, abilities: abilities.map(a => a.steps), count: abilities.length};
 		fixSagaInputs(sagaEdited)
-		// card.text.ability0.text = cardToImport.oracle_text.replace('(', '{i}(').replace(')', '){/i}') || '';
 	} else if (card.version.includes('battle')) {
 		card.text.defense.text = cardToImport.defense || '';
 	}
