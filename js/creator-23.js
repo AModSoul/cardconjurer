@@ -4980,13 +4980,17 @@ function changeCardIndex() {
 		}
 		planeswalkerEdited();
 	} else if (card.version.includes('saga')) {
+		if (cardToImport.flavor_text) {
+			// future support sagas with flavor text
+			card.text.flavor.text = cardToImport.flavor_text;
+		}
 		const maxHeight = abilitiesMaxHeight();
 		const abilities = parseSagaAbilities(cardToImport.oracle_text);
 		const height = maxHeight / abilities.length;
-		card.text[`ability0`].height = 0
-		card.text[`ability1`].height = 0
-		card.text[`ability2`].height = 0
-		card.text[`ability3`].height = 0
+		card.text.ability0.height = 0
+		card.text.ability1.height = 0
+		card.text.ability2.height = 0
+		card.text.ability2.height = 0
 		for (let i = 0; i < abilities.length; i++) {
 			card.text[`ability${i}`].text = abilities[i].ability.replace('(', '{i}(').replace(')', '){/i}');
 			card.text[`ability${i}`].height = height;
