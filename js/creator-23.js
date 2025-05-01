@@ -4980,7 +4980,7 @@ function changeCardIndex() {
 		}
 		planeswalkerEdited();
 	} else if (card.version.includes('saga')) {
-		const maxHeight = 0.5385;
+		const maxHeight = abilitiesMaxHeight();
 		const abilities = parseSagaAbilities(cardToImport.oracle_text);
 		const height = maxHeight / abilities.length;
 		card.text[`ability0`].height = 0

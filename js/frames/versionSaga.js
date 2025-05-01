@@ -122,6 +122,15 @@ function fixSagaInputs(callback) {
 	}
 }
 
+function abilitiesMaxHeight() {
+	switch (card.version) {
+		case 'saga':
+			return 0.5385
+		default:
+			return 0.5385;
+	}
+}
+
 function romanNumeral(input) {
 	if (input <= 0) return input;
 
