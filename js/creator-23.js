@@ -4804,8 +4804,8 @@ function parseSagaAbilities(text) {
     }
   }
 
-  // Lore step order (up to VI)
-  const loreOrder = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+  // Lore step order
+  const loreOrder = Array.from({ length: 24 }, (_, i) => romanNumeral(i + 1));
 
   // Track deduplicated abilities in order with count of steps
   const abilityMap = new Map();

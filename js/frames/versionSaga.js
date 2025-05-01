@@ -123,13 +123,30 @@ function fixSagaInputs(callback) {
 }
 
 function romanNumeral(input) {
-	switch(input) {
-		case 1: return 'I';
-		case 2: return 'II';
-		case 3: return 'III';
-		case 4: return 'IV';
-		case 5: return 'V';
-		case 6: return 'VI';
-		default: return input;
+	if (input <= 0) return input;
+
+	const romanMap = [
+		{ value: 1000, numeral: 'M' },
+		{ value: 900, numeral: 'CM' },
+		{ value: 500, numeral: 'D' },
+		{ value: 400, numeral: 'CD' },
+		{ value: 100, numeral: 'C' },
+		{ value: 90, numeral: 'XC' },
+		{ value: 50, numeral: 'L' },
+		{ value: 40, numeral: 'XL' },
+		{ value: 10, numeral: 'X' },
+		{ value: 9, numeral: 'IX' },
+		{ value: 5, numeral: 'V' },
+		{ value: 4, numeral: 'IV' },
+		{ value: 1, numeral: 'I' }
+	];
+
+	let result = '';
+	for (const { value, numeral } of romanMap) {
+		while (input >= value) {
+			result += numeral;
+			input -= value;
+		}
 	}
+	return result;
 }
