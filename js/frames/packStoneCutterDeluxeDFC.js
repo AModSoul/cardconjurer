@@ -32,7 +32,7 @@ availableFrames = [
 	{name:'Retro Arrow Up', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroUp.png', bounds:bounds4},
 	{name:'Retro Arrow Down', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroDown.png', bounds:bounds4},
 	{name:'Up Arrow', src:'/img/frames/m15/transform/icons/default.png', bounds:bounds5},
-	{name:'Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds5},
+	{name:'Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds5}
 	
 ];
 //disables/enables the "Load Frame Version" button
@@ -42,7 +42,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	//resets things so that every frame doesn't have to
 	await resetCardIrregularities();
 	//sets card version
-	card.version = 'stoneCutterDeluxeDFC';
+	card.version = 'StoneCutterDeluxeDFC';
 	//art bounds
 	card.artBounds = {x:0.08, y:0.0954, width:0.84, height:0.4653};
 	autoFitArt();
