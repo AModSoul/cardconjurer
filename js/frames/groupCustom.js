@@ -49,7 +49,22 @@ loadFramePacks([
 	{name:'Classicshifted MDFC Addons', value:'ClassicshiftedDFC'},
 	{name:'Classicshifted Transform Addons', value:'ClassicshiftedTransform'},
 	{name:'Color Identity Pips', value:'ClassicshiftedCIPips'},
-
+	
+	{name:'StoneCutter Series by Smaug', value:'disabled'},
+	{name:'StoneCutter', value:'StoneCutter'},
+	{name:'StoneCutter Nickname Addons', value:'StoneCutterNicknameAddons'},
+	{name:'StoneCutter Deluxe', value:'StoneCutterDeluxe'},
+	{name:'StoneCutter Deluxe Nickname Addons', value:'StoneCutterDeluxeNicknameAddons'},
+	{name:'StoneCutter Deluxe Extended Art', value:'StoneCutterDeluxeExtended'},
+	{name:'StoneCutter Deluxe Planeswalker', value:'StoneCutterDeluxePlaneswalker'},
+	{name:'StoneCutter Deluxe Planeswalker Extended Art', value:'StoneCutterDeluxePlaneswalkerExtended'},
+	{name:'StoneCutter Deluxe Planeswalker Transform Addons', value:'StoneCutterDeluxePlaneswalkerTransformAddons'},
+	{name:'StoneCutter Deluxe Saga', value:'StoneCutterDeluxeSaga'},
+	{name:'StoneCutter Deluxe Class(y)', value:'StoneCutterDeluxeClass'},
+	{name:'StoneCutter Deluxe Case', value:'StoneCutterDeluxeCase'},
+	{name:'StoneCutter Deluxe MDFC Addons', value:'StonecutterDeluxeDFC'},
+	{name:'StoneCutter Deluxe Transform Addons', value:'StoneCutterDeluxeTransformAddons'},
+	
 	{name:'Showcase Frame Varients', value:'disabled'},
 	{name:'Short Neon (NEO)', value:'NEONeonShort'},
 	{name:'Colored Golden Age (SNC)', value:'SNCGildedColored'},
