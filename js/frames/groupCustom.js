@@ -62,7 +62,7 @@ loadFramePacks([
 	{name:'StoneCutter Deluxe Saga', value:'StoneCutterDeluxeSaga'},
 	{name:'StoneCutter Deluxe Class(y)', value:'StoneCutterDeluxeClass'},
 	{name:'StoneCutter Deluxe Case', value:'StoneCutterDeluxeCase'},
-	{name:'StoneCutter Deluxe MDFC Addons', value:'StonecutterDeluxeDFC'},
+	{name:'StoneCutter Deluxe MDFC Addons', value:'StoneCutterDeluxeDFC'},
 	{name:'StoneCutter Deluxe Transform Addons', value:'StoneCutterDeluxeTransformAddons'},
 	
 	{name:'Showcase Frame Varients', value:'disabled'},
