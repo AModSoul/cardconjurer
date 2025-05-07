@@ -9,7 +9,9 @@ availableFrames = [
 	{name:'Green Frame', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/g.png', masks:masks},
 	{name:'Multicolored Frame', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/m.png', masks:masks},
 	{name:'Colorless Frame', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/c.png', masks:masks},
-	{name:'Land Frame', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/L.png', masks:masks}
+	{name:'Land Frame', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/L.png', masks:masks},
+	{name:'Gold Inlay', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/gold.png'},
+	{name:'Nyx Inlay', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/class/nyx.png'}
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
