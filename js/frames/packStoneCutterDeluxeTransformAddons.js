@@ -1,17 +1,12 @@
 //Create objects for common properties across available frames
 var bounds = {x:0, y:0, width:1, height:1};
-var bounds2 = {x:0.072, y:0.0424, width:0.052, height:0.0372};
+var bounds2 = {x:145/2010, y:121/2814, width:104/2010, height:104/2814};
+var bounds3 = {x:145/2010, y:137/2814, width:104/2010, height:104/2814};
+var bounds4 = {x:130/2010, y:150/2814, width:0.0349, height:0.0185};
 //defines available frames
 availableFrames = [
-	{name:'Transform Icon', src:'/img/frames/custom/classicshifted/transform/transformIcon.png', bounds:{x:0.064, y:0.0367, width:0.068, height:0.0486}},
-	{name:'White MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/w.png', bounds:bounds},
-	{name:'Blue MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/u.png', bounds:bounds},
-	{name:'Black MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/b.png', bounds:bounds},
-	{name:'Red MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/r.png', bounds:bounds},
-	{name:'Green MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/g.png', bounds:bounds},
-	{name:'Multicolored MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/m.png', bounds:bounds},
-	{name:'Colorless MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/c.png', bounds:bounds},
-	{name:'Land MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/L.png', bounds:bounds},
+
+	{name:'Transform Icon', src:'/img/frames/custom/classicshifted/transform/transformIcon.png', bounds:{x:129/2010, y:104/2814, width:137/2010, height:137/2814}},
 	{name:'Sun', src:'/img/frames/m15/transform/icons/sun.svg', bounds:bounds2},
 	{name:'Crescent Moon', src:'/img/frames/m15/transform/icons/moon.svg', bounds:bounds2},
 	{name:'Full Moon', src:'/img/frames/m15/transform/icons/fullmoon.svg', bounds:bounds2},
@@ -22,8 +17,36 @@ availableFrames = [
 	{name:'Planeswalker Spark', src:'/img/frames/m15/transform/icons/planeswalker.svg', bounds:bounds2},
 	{name:'Lesson', src:'/img/frames/m15/transform/icons/lesson.svg', bounds:bounds2},
 	{name:'Closed Fan', src:'/img/frames/m15/transform/icons/fanClosed.svg', bounds:bounds2},
-	{name:'Open Fan', src:'/img/frames/m15/transform/icons/fanOpen.svg', bounds:bounds2}
-	
+	{name:'Open Fan', src:'/img/frames/m15/transform/icons/fanOpen.svg', bounds:bounds2},
+	{name:'Up Arrow', src:'/img/frames/m15/transform/icons/default.png', bounds:bounds2},
+	{name:'Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds2},
+	{name:'Retro Arrow Up', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroUp.png', bounds:bounds4},
+	{name:'Retro Arrow Down', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroDown.png', bounds:bounds4},
+
+	{name:'White MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/w.png', bounds:bounds},
+	{name:'Blue MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/u.png', bounds:bounds},
+	{name:'Black MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/b.png', bounds:bounds},
+	{name:'Red MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/r.png', bounds:bounds},
+	{name:'Green MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/g.png', bounds:bounds},
+	{name:'Multicolored MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/m.png', bounds:bounds},
+	{name:'Colorless MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/c.png', bounds:bounds},
+	{name:'Land MDFC Arrow', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/transform/L.png', bounds:bounds},
+
+	{name:'Legend Crown Transform Icon', src:'/img/frames/custom/classicshifted/transform/transformIcon.png', bounds:{x:129/2010, y:120/2814, width:137/2010, height:137/2814}},
+	{name:'Legend Crown Sun', src:'/img/frames/m15/transform/icons/sun.svg', bounds:bounds3},
+	{name:'Legend Crown Crescent Moon', src:'/img/frames/m15/transform/icons/moon.svg', bounds:bounds3},
+	{name:'Legend Crown Full Moon', src:'/img/frames/m15/transform/icons/fullmoon.svg', bounds:bounds3},
+	{name:'Legend Crown Emrakul', src:'/img/frames/m15/transform/icons/emrakul.svg', bounds:bounds3},
+	{name:'Legend Crown Compass', src:'/img/frames/m15/transform/icons/compass.svg', bounds:bounds3},
+	{name:'Legend Crown Land', src:'/img/frames/m15/transform/icons/land.svg', bounds:bounds3},
+	{name:'Legend Crown Planeswalker Ember', src:'/img/frames/m15/transform/icons/spark.svg', bounds:bounds3},
+	{name:'Legend Crown Planeswalker Spark', src:'/img/frames/m15/transform/icons/planeswalker.svg', bounds:bounds3},
+	{name:'Legend Crown Lesson', src:'/img/frames/m15/transform/icons/lesson.svg', bounds:bounds3},
+	{name:'Legend Crown Closed Fan', src:'/img/frames/m15/transform/icons/fanClosed.svg', bounds:bounds3},
+	{name:'Legend Crown Open Fan', src:'/img/frames/m15/transform/icons/fanOpen.svg', bounds:bounds3},
+	{name:'Legend Crown Up Arrow', src:'/img/frames/m15/transform/icons/default.png', bounds:bounds3},
+	{name:'Legend Crown Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds3}
+
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;

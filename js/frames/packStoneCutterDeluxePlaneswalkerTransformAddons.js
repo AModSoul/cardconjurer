@@ -1,6 +1,8 @@
 //Create objects for common properties across available frames
 var bounds = {x:0, y:0, width:1, height:1};
 var bounds2 = {x:0.0654, y:0.0467, width:0.052, height:0.0372};
+var bounds3 = {x:0.0655, y:0.0470, width:0.05195, height:0.0368};
+var bounds4 = {x:0.0649, y:0.0532, width:0.0349, height:0.0185};
 //defines available frames
 availableFrames = [
 	{name:'Transform Icon', src:'/img/frames/custom/classicshifted/planeswalker/transform/transformIcon.png', bounds:{x:0.0574, y:0.041, width:0.068, height:0.0486}},
@@ -24,6 +26,10 @@ availableFrames = [
 	{name:'Lesson', src:'/img/frames/m15/transform/icons/lesson.svg', bounds:bounds2},
 	{name:'Closed Fan', src:'/img/frames/m15/transform/icons/fanClosed.svg', bounds:bounds2},
 	{name:'Open Fan', src:'/img/frames/m15/transform/icons/fanOpen.svg', bounds:bounds2},
+	{name:'Up Arrow', src:'/img/frames/m15/transform/icons/default.png', bounds:bounds3},
+	{name:'Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds3},
+	{name:'Retro Arrow Up', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroUp.png', bounds:bounds4},
+	{name:'Retro Arrow Down', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroDown.png', bounds:bounds4}
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;

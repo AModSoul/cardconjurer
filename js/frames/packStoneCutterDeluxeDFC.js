@@ -1,9 +1,10 @@
 //Create objects for common properties across available frames
 var bounds = {x:0, y:0, width:1, height:1};
 var bounds2 = {x:0.048, y:0.0367, width:0.0834, height:0.8805};
-var bounds3 = {x:0.048, y:0.0432, width:0.0834, height:0.8805};
-var bounds4 = {x:0.0649, y:0.0532, width:0.0349, height:0.0185};
-var bounds5 = {x:0.0655, y:0.0470, width:0.05195, height:0.0368};
+var bounds3 = {x:0.0649, y:0.0532, width:0.0349, height:0.0185};
+var bounds4 = {x:0.048, y:0.0432, width:0.0834, height:0.8805};
+var bounds5 = {x:145/2010, y:121/2814, width:104/2010, height:104/2814};
+var bounds6 = {x:145/2010, y:137/2814, width:104/2010, height:104/2814};
 //defines available frames
 availableFrames = [
 
@@ -28,12 +29,16 @@ availableFrames = [
 	
 	{name:'Front Face', src:'/img/frames/custom/classicshifted/mdfc/mdfcFront.png', bounds:bounds2},
 	{name:'Back Face', src:'/img/frames/custom/classicshifted/mdfc/mdfcBack.png', bounds:bounds2},
-	{name:'Legend Crown Front Face', src:'/img/frames/custom/classicshifted/mdfc/mdfcFront.png', bounds:bounds3},
-	{name:'Legend Crown Back Face', src:'/img/frames/custom/classicshifted/mdfc/mdfcBack.png', bounds:bounds3},
-	{name:'Retro Arrow Up', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroUp.png', bounds:bounds4},
-	{name:'Retro Arrow Down', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroDown.png', bounds:bounds4},
+	{name:'Retro Arrow Up', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroUp.png', bounds:bounds3},
+	{name:'Retro Arrow Down', src:'/img/frames/custom/stoneCutter/stoneCutterDeluxe/mdfc/retroDown.png', bounds:bounds3},
+	{name:'Transform Icon', src:'/img/frames/custom/classicshifted/transform/transformIcon.png', bounds:{x:129/2010, y:104/2814, width:137/2010, height:137/2814}},
 	{name:'Up Arrow', src:'/img/frames/m15/transform/icons/default.png', bounds:bounds5},
-	{name:'Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds5}
+	{name:'Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds5},
+	{name:'Legend Crown Front Face', src:'/img/frames/custom/classicshifted/mdfc/mdfcFront.png', bounds:bounds4},
+	{name:'Legend Crown Back Face', src:'/img/frames/custom/classicshifted/mdfc/mdfcBack.png', bounds:bounds4},
+	{name:'Legend Crown Transform Icon', src:'/img/frames/custom/classicshifted/transform/transformIcon.png', bounds:{x:129/2010, y:120/2814, width:137/2010, height:137/2814}},
+	{name:'Legend Crown Up Arrow', src:'/img/frames/m15/transform/icons/default.png', bounds:bounds6},
+	{name:'Legend Crown Down Arrow', src:'/img/frames/m15/transform/icons/downArrow.png', bounds:bounds6}
 	
 ];
 //disables/enables the "Load Frame Version" button
