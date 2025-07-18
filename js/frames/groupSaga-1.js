@@ -6,6 +6,7 @@ loadFramePacks([
 	{name:'Saga Creatures (Summons)', value: 'disabled'},
 	{name:'Saga Creature Frames', value: 'SagaCreature'},
 	{name:'Universes Beyond Saga Creature Frames', value: 'SagaCreatureUB'},
+	{name:'Borderless Saga Creature Frames', value: 'SagaCreatureBorderless'},
 
 	{name:'Showcase Frames', value:'disabled'},
 	{name:'Scrolls of Middle-earth (LTR)', value:'SagaLTR'},
