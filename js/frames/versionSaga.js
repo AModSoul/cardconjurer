@@ -39,13 +39,13 @@ if (!loadedVersions.includes('/js/frames/versionSaga.js')) {
         card.saga = {
             abilities: [1, 1, 1, 0],
             count: 3,
-            x: (card.version === "oldSaga" ? [0.1114] : card.version === "sagaBorderless" ? [0.25, 0.25] : [0.1]), // Unique x positions
-            width: (card.version === "oldSaga" ? 0.3727 : 0.3947)
+            x: 0.1, // Default x position
+            width: 0.3947 // Default width
         };
-    } else {
-        card.saga.x = (card.version === "oldSaga" ? [0.1114] : card.version === "sagaBorderless" ? [0.12, 0.15] : [0.1]); // Ensure x is an array
-        card.saga.width = (card.version === "oldSaga" ? 0.3727 : 0.3947);
     }
+
+    // Update position based on version
+    updateSagaPosition();
 
     // Append new HTML
     document.querySelector('#creator-menu-sections').appendChild(newHTML);
@@ -68,13 +68,13 @@ if (!loadedVersions.includes('/js/frames/versionSaga.js')) {
         card.saga = {
             abilities: [1, 1, 1, 0],
             count: 3,
-            x: (card.version === "oldSaga" ? [0.1114] : card.version === "sagaBorderless" ? [0.12, 0.15] : [0.1]), // Unique x positions
-            width: (card.version === "oldSaga" ? 0.3727 : 0.3947)
+            x: 0.1, // Default x position
+            width: 0.3947 // Default width
         };
-    } else {
-        card.saga.x = (card.version === "oldSaga" ? [0.1114] : card.version === "sagaBorderless" ? [0.12, 0.15] : [0.1]); // Ensure x is an array
-        card.saga.width = (card.version === "oldSaga" ? 0.3727 : 0.3947);
     }
+
+    // Update position based on version
+    updateSagaPosition();
 
     // Reload sagaChapter and sagaDivider images
     var sagaChapter = new Image();
@@ -85,6 +85,18 @@ if (!loadedVersions.includes('/js/frames/versionSaga.js')) {
 
     // Update ability heights
     updateAbilityHeights();
+}
+
+function updateSagaPosition() {
+    // Update x position based on card version
+    if (card.version === "oldSaga") {
+        card.saga.x = 0.1114;
+    } else if (card.version === "sagaBorderless") {
+        card.saga.x = 0.095;
+    } else {
+        card.saga.x = 0.1;
+    }
+    card.saga.width = (card.version === "oldSaga" ? 0.3727 : 0.3947);
 }
 
 function sagaEdited() {
@@ -123,12 +135,13 @@ function sagaEdited() {
         var sagaCount = 1;
 
         for (var i = 0; i < card.saga.count; i++) {
-            var x = scaleX(card.saga.x[0]); // Use the first x position for simplicity
+            // Get x position from updated card.saga.x
+            var x = scaleX(card.saga.x);
             var y = scaleY(card.text['ability' + i].y);
             var width = scaleWidth(card.saga.width);
             var height = scaleHeight(card.text['ability' + i].height);
 
-            // Draw sagaDivider
+            // Draw sagaDivider at the appropriate x position
             if (sagaDivider.complete) {
                 sagaContext.drawImage(sagaDivider, x, y - scaleHeight(0.0029) / 2, width, scaleHeight(0.0029));
             }
