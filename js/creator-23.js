@@ -787,11 +787,11 @@ function autoFrame() {
 			}
 			if (addIndex != -1) {
 				var upToAdd = line.substring(addIndex+length).toLowerCase();
-              	['W', 'U', 'B', 'R', 'G'].forEach(function (color) {
+		['W', 'U', 'B', 'R', 'G'].forEach(function (color) {
 					if (upToAdd.includes('{' + color.toLowerCase() + '}')) {
-                  		colors.push(color);
-                	}
-                });
+						colors.push(color);
+					}
+			});
 			}
 		});
 
@@ -3381,48 +3381,48 @@ function croppedCanvas(oldCanvas, sensitivity = 0) {
 shoutout to https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion for providing the hsl-rgb conversion algorithms
 */
 function rgbToHSL(r, g, b){
-    r /= 255, g /= 255, b /= 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h, s, l = (max + min) / 2;
+	r /= 255, g /= 255, b /= 255;
+	var max = Math.max(r, g, b), min = Math.min(r, g, b);
+	var h, s, l = (max + min) / 2;
 
-    if(max == min){
-        h = s = 0; // achromatic
-    }else{
-        var d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch(max){
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-    }
+	if(max == min){
+		h = s = 0; // achromatic
+	}else{
+		var d = max - min;
+		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+		switch(max){
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+			case g: h = (b - r) / d + 2; break;
+			case b: h = (r - g) / d + 4; break;
+		}
+		h /= 6;
+	}
 
-    return [h, s, l];
+return [h, s, l];
 }
 function hslToRGB(h, s, l){
-    var r, g, b;
+	var r, g, b;
 
-    if(s == 0){
-        r = g = b = l; // achromatic
-    }else{
-        var hue2rgb = function hue2rgb(p, q, t){
-            if(t < 0) t += 1;
-            if(t > 1) t -= 1;
-            if(t < 1/6) return p + (q - p) * 6 * t;
-            if(t < 1/2) return q;
-            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-            return p;
-        }
+	if(s == 0){
+		r = g = b = l; // achromatic
+	}else{
+		var hue2rgb = function hue2rgb(p, q, t){
+			if(t < 0) t += 1;
+			if(t > 1) t -= 1;
+			if(t < 1/6) return p + (q - p) * 6 * t;
+			if(t < 1/2) return q;
+			if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+			return p;
+		}
 
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-    }
+		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+		var p = 2 * l - q;
+		r = hue2rgb(p, q, h + 1/3);
+		g = hue2rgb(p, q, h);
+		b = hue2rgb(p, q, h - 1/3);
+	}
 
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+	return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 //TEXT TAB
 var writingText;
@@ -4271,26 +4271,26 @@ function uploadArt(imageSource, otherParams) {
 }
 async function pasteArt() {
   try {
-    const clipboardItems = await navigator.clipboard.read();
-    
-    for (const item of clipboardItems) {
-      for (const type of item.types) {
-        if (type.startsWith('image/')) {
-          const blob = await item.getType(type);
-          
-          const url = URL.createObjectURL(blob);
+	const clipboardItems = await navigator.clipboard.read();
+	
+	for (const item of clipboardItems) {
+	  for (const type of item.types) {
+		if (type.startsWith('image/')) {
+		  const blob = await item.getType(type);
+		  
+		  const url = URL.createObjectURL(blob);
 
-          uploadArt(url, document.querySelector("#art-update-autofit").checked ? "autoFit" : "");
-          // document.getElementById('preview').src = url;
-          return;
-        }
-      }
-    }
+		  uploadArt(url, document.querySelector("#art-update-autofit").checked ? "autoFit" : "");
+		  // document.getElementById('preview').src = url;
+		  return;
+		}
+	  }
+	}
 
-    notify('No image found in clipboard!');
+	notify('No image found in clipboard!');
   } catch (err) {
-    console.error('Failed to read clipboard: ', err);
-    notify('Clipboard access not allowed or no image available.');
+	console.error('Failed to read clipboard: ', err);
+	notify('Clipboard access not allowed or no image available.');
   }
 }
 function artEdited() {
@@ -4564,12 +4564,16 @@ function watermarkEdited() {
 	if (card.watermarkLeft == "none" && document.querySelector('#watermark-left').value != "none") {
 		card.watermarkLeft = document.querySelector('#watermark-left').value;
 	}
-	// card.watermarkLeft = document.querySelector('#watermark-left').value;
-	// card.watermarkRight =  document.querySelector('#watermark-right').value;
-	card.watermarkOpacity = document.querySelector('#watermark-opacity').value / 100;
+	// Store original opacity
+	const originalOpacity = document.querySelector('#watermark-opacity').value / 100;
+	// Set opacity based on cutout checkbox
+	card.watermarkOpacity = document.querySelector('#watermark-cutout').checked ? 1 : originalOpacity;
 	watermarkContext.globalCompositeOperation = 'source-over';
 	watermarkContext.globalAlpha = 1;
 	watermarkContext.clearRect(0, 0, watermarkCanvas.width, watermarkCanvas.height);
+	// Store original colors
+	const originalLeft = card.watermarkLeft;
+	const originalRight = card.watermarkRight;
 	if (card.watermarkLeft != 'none' && !card.watermarkSource.includes('/blank.png') && card.watermarkZoom > 0) {
 		if (card.watermarkRight != 'none') {
 			watermarkContext.drawImage(right, scaleX(0), scaleY(0), scaleWidth(1), scaleHeight(1));
@@ -4592,6 +4596,15 @@ function watermarkEdited() {
 		watermarkContext.drawImage(watermark, scaleX(card.watermarkX), scaleY(card.watermarkY), watermark.width * card.watermarkZoom, watermark.height * card.watermarkZoom);
 		watermarkContext.globalAlpha = card.watermarkOpacity;
 		watermarkContext.fillRect(0, 0, watermarkCanvas.width, watermarkCanvas.height);
+	}
+	// Restore original colors
+	card.watermarkLeft = originalLeft;
+	card.watermarkRight = originalRight;
+
+	if (document.querySelector('#watermark-cutout').checked) {
+		watermarkContext.globalCompositeOperation = 'destination-out';
+	} else {
+		watermarkContext.globalCompositeOperation = 'source-over'; 
 	}
 	drawCard();
 }
@@ -4617,8 +4630,8 @@ function getSetSymbolWatermark(url, targetImage = watermark) {
 	xhttp.overrideMimeType('image/svg+xml');
 	xhttp.onload = function(event) {
 		if (this.readyState == 4 && this.status == 200) {
-		    var svg = document.body.appendChild(xhttp.responseXML.documentElement);
-		    var box = svg.getBBox(svg);
+			var svg = document.body.appendChild(xhttp.responseXML.documentElement);
+			var box = svg.getBBox(svg);
 			svg.setAttribute('viewBox', [box.x, box.y, box.width, box.height].join(' '));
 			svg.setAttribute('width', box.width);
 			svg.setAttribute('height', box.height);
@@ -4762,31 +4775,28 @@ function drawCard() {
 		cardContext.drawImage(planeswalkerPreFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
 	}
 	cardContext.drawImage(frameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+	// Apply watermark
+	if (document.querySelector('#watermark-cutout').checked) {
+		// Use destination-out to create transparency
+		cardContext.globalCompositeOperation = 'destination-out';
+		cardContext.drawImage(watermarkCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+		cardContext.globalCompositeOperation = 'source-over';
+	} else {
+		// Draw normal watermark if cutout is not enabled
+		cardContext.drawImage(watermarkCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+	}
 	if (card.version.toLowerCase().includes('planeswalker') && typeof planeswalkerPostFrameCanvas !== "undefined") {
 		cardContext.drawImage(planeswalkerPostFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	} else if (card.version.toLowerCase().includes('planeswalker') && typeof planeswalkerCanvas !== "undefined") {
-		cardContext.drawImage(planeswalkerCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	} else if (card.version.toLowerCase().includes('qrcode') && typeof qrCodeCanvas !== "undefined") {
-		cardContext.drawImage(qrCodeCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	} // REMOVE/DELETE PLANESWALKERCANVAS AFTER A FEW WEEKS
+	}
 	// guidelines
 	if (document.querySelector('#show-guidelines').checked) {
 		cardContext.drawImage(guidelinesCanvas, scaleX(card.marginX) / 2, scaleY(card.marginY) / 2, cardCanvas.width, cardCanvas.height);
 	}
-	// watermark
-	cardContext.drawImage(watermarkCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	// custom elements for sagas, classes, and dungeons
-	if (card.version.toLowerCase().includes('saga') && typeof sagaCanvas !== "undefined") {
-		cardContext.drawImage(sagaCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	} else if (card.version.includes('class') && !card.version.includes('classic') && typeof classCanvas !== "undefined") {
-		cardContext.drawImage(classCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	} else if (card.version.toLowerCase().includes('dungeon') && typeof dungeonCanvas !== "undefined") {
-		cardContext.drawImage(dungeonCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	}
+
 	// text
 	cardContext.drawImage(textCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
 	// set symbol
-	cardContext.drawImage(setSymbol, scaleX(card.setSymbolX), scaleY(card.setSymbolY), setSymbol.width * card.setSymbolZoom, setSymbol.height * card.setSymbolZoom)
+	cardContext.drawImage(setSymbol, scaleX(card.setSymbolX), scaleY(card.setSymbolY), setSymbol.width * card.setSymbolZoom, setSymbol.height * card.setSymbolZoom);
 	// serial
 	if (card.serialNumber || card.serialTotal) {
 		var x = parseInt(card.serialX) || 172;
@@ -4917,13 +4927,13 @@ function importCard(cardObject) {
 
 async function pasteCardText() {
 	try {
-    const text = await navigator.clipboard.readText();
-    console.log(text);
-    const card = scryfallCardFromText(text);
-    importCard([card]);
+	const text = await navigator.clipboard.readText();
+	console.log(text);
+	const card = scryfallCardFromText(text);
+	importCard([card]);
   } catch (err) {
-    console.error('Failed to read clipboard text: ', err);
-    notify('Clipboard access failed. Did you click the button?');
+	console.error('Failed to read clipboard text: ', err);
+	notify('Clipboard access failed. Did you click the button?');
   }
 }
 
@@ -4960,20 +4970,20 @@ function scryfallCardFromText(text) {
  	 cardObject.type_line = lines.shift().trim();
 
   if (lines.count == 0) {
-    return cardObject;
+	return cardObject;
   }
 
   var regex = /[0-9+\-*]+\/[0-9+*]+/
   var match = lines[lines.length-1].match(regex);
   if (match) {
-    var pt = match[0].split("/");
-    cardObject.power = pt[0];
-    cardObject.toughness = pt[1];
-    lines.pop();
+	var pt = match[0].split("/");
+	cardObject.power = pt[0];
+	cardObject.toughness = pt[1];
+	lines.pop();
   }
 
   if (lines.count == 0) {
-    return cardObject;
+	return cardObject;
   }
 
   cardObject.oracle_text = lines.join("\n");
@@ -4992,12 +5002,12 @@ function parseSagaAbilities(text) {
 
   let match;
   while ((match = regex.exec(abilityText)) !== null) {
-    const stepsRaw = match[1].split(',').map(s => s.trim());
-    const ability = match[2].trim();
+	const stepsRaw = match[1].split(',').map(s => s.trim());
+	const ability = match[2].trim();
 
-    for (const step of stepsRaw) {
-      stepsMap[step] = ability;
-    }
+	for (const step of stepsRaw) {
+	  stepsMap[step] = ability;
+	}
   }
 
   // Lore step order
@@ -5007,14 +5017,14 @@ function parseSagaAbilities(text) {
   const abilityMap = new Map();
 
   for (const step of loreOrder) {
-    const ability = stepsMap[step];
-    if (!ability) continue;
+	const ability = stepsMap[step];
+	if (!ability) continue;
 
-    if (abilityMap.has(ability)) {
-      abilityMap.get(ability).steps += 1;
-    } else {
-      abilityMap.set(ability, { ability, steps: 1 });
-    }
+	if (abilityMap.has(ability)) {
+	  abilityMap.get(ability).steps += 1;
+	} else {
+	  abilityMap.set(ability, { ability, steps: 1 });
+	}
   }
 
   return Array.from(abilityMap.values());
@@ -5056,8 +5066,8 @@ function changeCardIndex() {
 
 	var italicExemptions = ['Boast', 'Cycling', 'Visit', 'Prize', 'I', 'II', 'III', 'IV', 'I, II', 'II, III', 'III, IV', 'I, II, III', 'II, III, IV', 'I, II, III, IV', '• Khans', '• Dragons', '• Mirran', '• Phyrexian', 'Prototype', 'Companion', 'To solve', 'Solved'];
 	var rulesText = (cardToImport.oracle_text || '').replace(/(?:\((?:.*?)\)|[^"\n]+(?= — ))/g, function(a){
-	    if (italicExemptions.includes(a) || (cardToImport.keywords && cardToImport.keywords.indexOf('Spree') != -1 && a.startsWith('+'))) {return a;}
-	    return '{i}' + a + '{/i}';
+		if (italicExemptions.includes(a) || (cardToImport.keywords && cardToImport.keywords.indexOf('Spree') != -1 && a.startsWith('+'))) {return a;}
+		return '{i}' + a + '{/i}';
 	});
 	rulesText = curlyQuotes(rulesText).replace(/{Q}/g, '{untap}').replace(/{\u221E}/g, "{inf}").replace(/• /g, '• {indent}');
 	rulesText = rulesText.replace('(If this card is your chosen companion, you may put it into your hand from outside the game for {3} any time you could cast a sorcery.)', '(If this card is your chosen companion, you may put it into your hand from outside the game for {3} as a sorcery.)')
