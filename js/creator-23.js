@@ -4982,69 +4982,44 @@ function scryfallCardFromText(text) {
 }
 
 function parseSagaAbilities(text) {
-	const stepsMap = {};
-  
-	// Remove reminder text
-	const abilityText = text.replace(/^\(.*?\)\s*/, '');
-  
-	// Match "I — ability" or "I, II — ability"
-	const regex = /([IVX, ]+)\s+—\s+([^]+?)(?=(?:\n[IVX, ]+\s+—|$))/g;
-  
-	let match;
-	while ((match = regex.exec(abilityText)) !== null) {
-	  const stepsRaw = match[1].split(',').map(s => s.trim());
-	  const ability = match[2].trim();
-	  // Count words in ability text (excluding parentheses content)
-	  const wordCount = ability
-		.replace(/\([^)]*\)/g, '') // Remove reminder text
-		.trim()
-		.split(/\s+/)
-		.length;
-  
-	  for (const step of stepsRaw) {
-		stepsMap[step] = {
-		  text: ability,
-		  wordCount: wordCount
-		};
-	  }
-	}
+  const stepsMap = {};
+
+  // Remove reminder text
+  const abilityText = text.replace(/^\(.*?\)\s*/, '');
+
+  // Match "I — ability" or "I, II — ability"
+  const regex = /([IVX, ]+)\s+—\s+([^]+?)(?=(?:\n[IVX, ]+\s+—|$))/g;
+
+  let match;
+  while ((match = regex.exec(abilityText)) !== null) {
+    const stepsRaw = match[1].split(',').map(s => s.trim());
+    const ability = match[2].trim();
+
+    for (const step of stepsRaw) {
+      stepsMap[step] = ability;
+    }
+  }
 
   // Lore step order
   const loreOrder = Array.from({ length: 24 }, (_, i) => romanNumeral(i + 1));
 
-  // Track deduplicated abilities in order with count of steps and word count
+  // Track deduplicated abilities in order with count of steps
   const abilityMap = new Map();
 
   for (const step of loreOrder) {
     const ability = stepsMap[step];
     if (!ability) continue;
 
-    if (abilityMap.has(ability.text)) {
-      abilityMap.get(ability.text).steps += 1;
+    if (abilityMap.has(ability)) {
+      abilityMap.get(ability).steps += 1;
     } else {
-      abilityMap.set(ability.text, { 
-        ability: ability.text, 
-        steps: 1,
-        wordCount: ability.wordCount 
-      });
+      abilityMap.set(ability, { ability, steps: 1 });
     }
   }
 
   return Array.from(abilityMap.values());
 }
 
-// Add this helper function for relative height calculation
-function calculateRelativeHeights(abilities) {
-	const totalWords = abilities.reduce((sum, a) => sum + a.wordCount, 0);
-	const baseHeight = scaleHeight(0.3572); // Original base height value
-	
-	return abilities.map(ability => ({
-	  ...ability,
-	  height: Math.round((ability.wordCount / totalWords) * baseHeight)
-	}));
-  }
-
-  
 function extractSagaReminderText(text) {
   const match = text.match(/^\([^)]*\)/);
   return match ? match[0] : null;
@@ -5200,29 +5175,19 @@ function changeCardIndex() {
 			}
 		}
 		planeswalkerEdited();
-// Then modify the import section that handles sagas:
-} else if (card.version.includes('saga')) {
-	if (card.text.flavor) {
-	  // future support sagas with flavor text
-	  card.text.flavor.text = cardToImport.flavor_text || '';
-	}
-	const abilities = parseSagaAbilities(cardToImport.oracle_text);
-	const abilitiesWithHeight = calculateRelativeHeights(abilities);
-	
-	for (let i = 0; i < abilities.length; i++) {
-	  card.text[`ability${i}`].text = abilities[i].ability.replace('(', '{i}(').replace(')', '){/i}');
-	  // Set the calculated height for each ability
-	  document.querySelector('#saga-height-' + i).value = abilitiesWithHeight[i].height;
-	}
-	
-	card.text.reminder.text = `{i}${extractSagaReminderText(cardToImport.oracle_text)}{/i}`;
-	card.saga = {
-	  ...card.saga, 
-	  abilities: abilities.map(a => a.steps).concat(Array.from({ length: 4 - abilities.length}, () => 0)), 
-	  count: abilities.length
-	};
-	updateAbilityHeights();
-  } else if (card.version.includes('battle')) {
+	} else if (card.version.includes('saga')) {
+		if (card.text.flavor) {
+			// future support sagas with flavor text
+			card.text.flavor.text = cardToImport.flavor_text || '';
+		}
+		const abilities = parseSagaAbilities(cardToImport.oracle_text);
+		for (let i = 0; i < abilities.length; i++) {
+			card.text[`ability${i}`].text = abilities[i].ability.replace('(', '{i}(').replace(')', '){/i}');
+		}
+		card.text.reminder.text = `{i}${extractSagaReminderText(cardToImport.oracle_text)}{/i}`;
+		card.saga = {...card.saga, abilities: abilities.map(a => a.steps).concat(Array.from({ length: 4 - abilities.length}, () => 0)), count: abilities.length};
+		updateAbilityHeights()
+	} else if (card.version.includes('battle')) {
 		card.text.defense.text = cardToImport.defense || '';
 	}
 	document.querySelector('#text-editor').value = card.text[Object.keys(card.text)[selectedTextIndex]].text;
