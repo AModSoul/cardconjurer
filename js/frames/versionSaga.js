@@ -131,9 +131,13 @@ function updateAbilityHeights() {
 	// Calculate proportional heights
 	const totalWords = abilities.reduce((sum, a) => sum + a.wordCount, 0);
 	
-	// Assign heights proportionally based on word count
+	// Add height constraint (and minimum height)
+	const minHeight = maxHeight * 0.15; // 15% of max height
 	abilities.forEach(ability => {
-	  const height = (ability.wordCount / totalWords) * maxHeight;
+	  const height = Math.max(
+	    minHeight,
+	    (ability.wordCount / totalWords) * maxHeight
+	  );
 	  card.text[`ability${ability.index}`].height = height;
 	});
   
