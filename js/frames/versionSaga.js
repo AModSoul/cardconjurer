@@ -110,17 +110,40 @@ function sagaEdited() {
 
 function updateAbilityHeights() {
 	const maxHeight = card.text.type.y - card.text.ability0.y;
-	const height = maxHeight / card.saga.count;
-	card.text.ability0.height = 0
-	card.text.ability1.height = 0
-	card.text.ability2.height = 0
-	card.text.ability2.height = 0
+	
+	// Get all saga abilities that have content
+	const abilities = [];
 	for (let i = 0; i < card.saga.count; i++) {
-		card.text[`ability${i}`].height = height;
+	  const abilityText = card.text[`ability${i}`].text;
+	  // Count words excluding reminder text in parentheses
+	  const wordCount = abilityText
+		.replace(/\([^)]*\)/g, '') // Remove reminder text
+		.trim()
+		.split(/\s+/)
+		.length;
+		
+	  abilities.push({
+		index: i,
+		wordCount: wordCount
+	  });
 	}
-
+  
+	// Calculate proportional heights
+	const totalWords = abilities.reduce((sum, a) => sum + a.wordCount, 0);
+	
+	// Assign heights proportionally based on word count
+	abilities.forEach(ability => {
+	  const height = (ability.wordCount / totalWords) * maxHeight;
+	  card.text[`ability${ability.index}`].height = height;
+	});
+  
+	// Set remaining abilities to 0 height
+	for (let i = card.saga.count; i < 4; i++) {
+	  card.text[`ability${i}`].height = 0;
+	}
+  
 	fixSagaInputs(sagaEdited);
-}
+  }
 
 function fixSagaInputs(callback) {
 	document.querySelector('#saga-height-0').value = scaleHeight(card.text.ability0.height);
