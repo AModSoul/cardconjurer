@@ -3965,8 +3965,32 @@ function writeText(textObject, targetContext) {
 					var fakeShadowContext = fakeShadow.getContext('2d');
 					fakeShadowContext.clearRect(0, 0, fakeShadow.width, fakeShadow.height);
 					var backImage = null;
-					if (manaSymbol.backs) {
-						backImage = getManaSymbol('back' + Math.floor(Math.random() * manaSymbol.backs) + manaSymbol.back).image;
+					if (textOutlineWidth > 0) {
+						fakeShadowContext.fillStyle = 'black';
+						fakeShadowContext.beginPath();
+						var scaleFactor = 1.25; // Make the circle 1.25x larger
+						var centerX = manaSymbolX + manaSymbolWidth/2;
+						var centerY = manaSymbolY + manaSymbolHeight/2;
+						var radius = (Math.max(manaSymbolWidth, manaSymbolHeight) * scaleFactor) / 2;
+						
+						if (textArcRadius > 0) {
+							fakeShadowContext.arc(
+								centerX,
+								centerY + textArcRadius, 
+								radius,
+								0,
+								2 * Math.PI
+							);
+						} else {
+							fakeShadowContext.arc(
+								centerX,
+								centerY,
+								radius,
+								0,
+								2 * Math.PI
+							);
+						}
+						fakeShadowContext.fill(); // This call was missing
 					}
 					if (textArcRadius > 0) {
 						if (manaSymbol.backs) {
@@ -3981,112 +4005,7 @@ function writeText(textObject, targetContext) {
 						}
 						fakeShadowContext.drawImage(manaSymbol.image, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight);
 					}
-					function drawManaSymbolOutline(context, image, x, y, width, height, outlineWidth, arcRadius = 0, arcStart = 0, currentX = 0) {
-						// Create path from image alpha channel
-						context.save();
-						
-						// Draw image to get alpha channel
-						const tempCanvas = document.createElement('canvas');
-						tempCanvas.width = width + outlineWidth * 2;
-						tempCanvas.height = height + outlineWidth * 2;
-						const tempCtx = tempCanvas.getContext('2d');
-					
-						// Draw the image
-						if (arcRadius > 0) {
-							tempCtx.drawImageArc(image, outlineWidth, outlineWidth, width, height, arcRadius, arcStart, currentX);
-						} else {
-							tempCtx.drawImage(image, outlineWidth, outlineWidth, width, height);
-						}
-					
-						// Get alpha channel data
-						const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-						const pixels = imageData.data;
-					
-						// Create outline path
-						tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-						tempCtx.beginPath();
-					
-						for (let i = 0; i < pixels.length; i += 4) {
-							if (pixels[i + 3] > 0) {
-								const pixelX = (i / 4) % tempCanvas.width;
-								const pixelY = Math.floor((i / 4) / tempCanvas.width);
-								tempCtx.rect(pixelX, pixelY, 1, 1);
-							}
-						}
-					
-						// Draw black outline
-						tempCtx.strokeStyle = 'black';
-						tempCtx.lineWidth = outlineWidth;
-						tempCtx.lineCap = 'round';
-						tempCtx.lineJoin = 'round';
-						tempCtx.stroke();
-					
-						// Draw to target context
-						context.drawImage(tempCanvas, x - outlineWidth, y - outlineWidth);
-						
-						context.restore();
-					}
-// Create two canvases - one for outlines and one for symbols
-var outlineCanvas = lineCanvas.cloneNode();
-var outlineContext = outlineCanvas.getContext('2d');
-var symbolCanvas = lineCanvas.cloneNode();
-var symbolContext = symbolCanvas.getContext('2d');
-
-// Clear both canvases
-outlineContext.clearRect(0, 0, outlineCanvas.width, outlineCanvas.height);
-symbolContext.clearRect(0, 0, symbolCanvas.width, symbolCanvas.height);
-
-// First pass: Draw all outlines
-if (textOutlineWidth >= 1) {
-  // Draw back outline if it exists
-  if (backImage) {
-    drawManaSymbolOutline(
-      outlineContext,
-      backImage, 
-      manaSymbolX,
-      manaSymbolY,
-      manaSymbolWidth,
-      manaSymbolHeight,
-      textOutlineWidth,
-      textArcRadius,
-      textArcStart,
-      currentX
-    );
-  }
-  
-  // Draw main symbol outline
-  drawManaSymbolOutline(
-    outlineContext,
-    manaSymbol.image,
-    manaSymbolX,
-    manaSymbolY,
-    manaSymbolWidth,
-    manaSymbolHeight, 
-    textOutlineWidth,
-    textArcRadius,
-    textArcStart,
-    currentX
-  );
-}
-
-// Second pass: Draw actual symbols
-if (textArcRadius > 0) {
-  if (backImage) {
-    symbolContext.drawImageArc(backImage, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight, textArcRadius, textArcStart, currentX);
-  }
-  symbolContext.drawImageArc(manaSymbol.image, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight, textArcRadius, textArcStart, currentX);
-} else if (manaSymbolColor) {
-  symbolContext.fillImage(manaSymbol.image, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight, manaSymbolColor);
-} else {
-  if (backImage) {
-    symbolContext.drawImage(backImage, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight);
-  }
-  symbolContext.drawImage(manaSymbol.image, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight);
-}
-
-// Draw both layers to line canvas in correct order
-lineContext.drawImage(outlineCanvas, 0, 0); // Draw outline first
-lineContext.drawImage(symbolCanvas, 0, 0);  // Draw symbols on top
+					lineContext.drawImage(fakeShadow, 0, 0);
 					//fake shadow ends (thanks, safari)
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
 
