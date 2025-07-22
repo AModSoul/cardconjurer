@@ -3968,29 +3968,19 @@ function writeText(textObject, targetContext) {
 					if (textOutlineWidth > 0) {
 						fakeShadowContext.fillStyle = 'black';
 						fakeShadowContext.beginPath();
-						var scaleFactor = 1.25; // Make the circle 1.25x larger
+						var scaleFactor = 2; // Make the circle 1.4x larger
 						var centerX = manaSymbolX + manaSymbolWidth/2;
 						var centerY = manaSymbolY + manaSymbolHeight/2;
 						var radius = (Math.max(manaSymbolWidth, manaSymbolHeight) * scaleFactor) / 2;
 						
-						if (textArcRadius > 0) {
-							fakeShadowContext.arc(
-								centerX,
-								centerY + textArcRadius, 
-								radius,
-								0,
-								2 * Math.PI
-							);
-						} else {
-							fakeShadowContext.arc(
-								centerX,
-								centerY,
-								radius,
-								0,
-								2 * Math.PI
-							);
-						}
-						fakeShadowContext.fill(); // This call was missing
+						fakeShadowContext.arc(
+							centerX,
+							centerY + (textArcRadius ?? 0), 
+							radius,
+							0,
+							2 * Math.PI
+						);
+						fakeShadowContext.fill();
 					}
 					if (textArcRadius > 0) {
 						if (manaSymbol.backs) {
