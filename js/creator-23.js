@@ -3924,8 +3924,7 @@ function writeText(textObject, targetContext) {
 						manaSymbol = getManaSymbol(textObject.manaPrefix + possibleCode) || 
 									getManaSymbol(textObject.manaPrefix + possibleCode.split('').reverse().join(''));
 					} else {
-						manaSymbol = getManaSymbol(possibleCode) || 
-									getManaSymbol(possibleCode.split('').reverse().join(''));
+						manaSymbol = getManaSymbol(possibleCode) || getManaSymbol(possibleCode.split('').reverse().join(''));
 					}
 
 					var origManaSymbolColor = manaSymbolColor;
