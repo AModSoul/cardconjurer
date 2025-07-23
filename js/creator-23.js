@@ -3966,6 +3966,9 @@ function writeText(textObject, targetContext) {
 					var fakeShadowContext = fakeShadow.getContext('2d');
 					fakeShadowContext.clearRect(0, 0, fakeShadow.width, fakeShadow.height);
 					var backImage = null;
+					if (manaSymbol.backs) {
+						backImage = getManaSymbol('back' + Math.floor(Math.random() * manaSymbol.backs) + manaSymbol.back).image;
+					}
 					if (textArcRadius > 0) {
 						if (manaSymbol.backs) {
 							fakeShadowContext.drawImageArc(backImage, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight, textArcRadius, textArcStart, currentX);
