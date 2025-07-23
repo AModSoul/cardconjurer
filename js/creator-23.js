@@ -3919,10 +3919,8 @@ function writeText(textObject, targetContext) {
 					
 					// Add symbol to render queue without drawing immediately
 					if (textObject.manaPrefix && 
-						(getManaSymbol(textObject.manaPrefix + possibleCode) != undefined || 
-						getManaSymbol(textObject.manaPrefix + possibleCode.split('').reverse().join('')) != undefined)) {
-						manaSymbol = getManaSymbol(textObject.manaPrefix + possibleCode) || 
-									getManaSymbol(textObject.manaPrefix + possibleCode.split('').reverse().join(''));
+						(getManaSymbol(textObject.manaPrefix + possibleCode) != undefined || getManaSymbol(textObject.manaPrefix + possibleCode.split('').reverse().join('')) != undefined)) {
+						manaSymbol = getManaSymbol(textObject.manaPrefix + possibleCode) || getManaSymbol(textObject.manaPrefix + possibleCode.split('').reverse().join(''));
 					} else {
 						manaSymbol = getManaSymbol(possibleCode) || getManaSymbol(possibleCode.split('').reverse().join(''));
 					}
