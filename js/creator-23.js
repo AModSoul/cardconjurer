@@ -4010,12 +4010,14 @@ function writeText(textObject, targetContext) {
 						outlineWidth: textOutlineWidth
 					});
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
+					
 					manaSymbolColor = origManaSymbolColor;
 					continue;
 				} else {
 					wordToWrite = word;
 				}
 			}
+
 			function renderManaSymbols() {
 				if (manaSymbolsToRender.length === 0) return;
 			
