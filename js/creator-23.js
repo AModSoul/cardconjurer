@@ -3992,6 +3992,7 @@ function writeText(textObject, targetContext) {
 						}
 						fakeShadowContext.drawImage(manaSymbol.image, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight);
 					}
+					lineContext.drawImage(fakeShadow, 0, 0);
 					//fake shadow ends (thanks, safari)
 					// Add to render queue
 					manaSymbolsToRender.push({
@@ -4009,6 +4010,7 @@ function writeText(textObject, targetContext) {
 						outlineWidth: textOutlineWidth
 					});
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
+					manaSymbolColor = origManaSymbolColor;
 					continue;
 				} else {
 					wordToWrite = word;
