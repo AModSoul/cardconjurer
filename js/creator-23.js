@@ -3967,23 +3967,6 @@ function writeText(textObject, targetContext) {
 					var fakeShadowContext = fakeShadow.getContext('2d');
 					fakeShadowContext.clearRect(0, 0, fakeShadow.width, fakeShadow.height);
 					var backImage = null;
-					if (textOutlineWidth > 0) {
-						fakeShadowContext.fillStyle = 'black';
-						fakeShadowContext.beginPath();
-						var scaleFactor = 0.8; // Make the circle 1.4x larger
-						var centerX = manaSymbolX + manaSymbolWidth/2;
-						var centerY = manaSymbolY + manaSymbolHeight/2;
-						var radius = (Math.max(manaSymbolWidth, manaSymbolHeight) * scaleFactor) / 2;
-						
-						fakeShadowContext.arc(
-							centerX,
-							centerY + (textArcRadius ?? 0), 
-							radius,
-							0,
-							2 * Math.PI
-						);
-						fakeShadowContext.fill();
-					}
 					if (textArcRadius > 0) {
 						if (manaSymbol.backs) {
 							fakeShadowContext.drawImageArc(backImage, manaSymbolX, manaSymbolY, manaSymbolWidth, manaSymbolHeight, textArcRadius, textArcStart, currentX);
@@ -4145,6 +4128,7 @@ function writeText(textObject, targetContext) {
 		}
 	}
 }
+//used to batch renders all mana symbols that have been queued up for the current line of text
 function renderManaSymbols() {
     if (manaSymbolsToRender.length === 0) return;
 
@@ -4158,7 +4142,7 @@ function renderManaSymbols() {
 
         batchContext.fillStyle = 'black';
         batchContext.beginPath();
-        var scaleFactor = 2;
+        var scaleFactor = 1.3;
         var centerX = symbolData.x + symbolData.width/2;
         var centerY = symbolData.y + symbolData.height/2;
         var radius = (Math.max(symbolData.width, symbolData.height) * scaleFactor) / 2;
