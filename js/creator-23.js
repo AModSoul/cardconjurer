@@ -3916,7 +3916,6 @@ function writeText(textObject, targetContext) {
 					// Add symbol to render queue without drawing immediately
 					var possibleCode = possibleCode.replaceAll('/', '');
 					var manaSymbol;
-					
 					// Add symbol to render queue without drawing immediately
 					if (textObject.manaPrefix && 
 						(getManaSymbol(textObject.manaPrefix + possibleCode) != undefined || getManaSymbol(textObject.manaPrefix + possibleCode.split('').reverse().join('')) != undefined)) {
