@@ -3508,10 +3508,9 @@ async function drawText() {
 		drawCard();
 	}
 }
-var manaSymbolsToRender = [];
 var justifyWidth = 90;
 function writeText(textObject, targetContext) {
-	 manaSymbolsToRender = [];
+	var manaSymbolsToRender = [];
 	//Most bits of info about text loaded, with defaults when needed
 	var textX = scaleX(textObject.x) || scaleX(0);
 	var textY = scaleY(textObject.y) || scaleY(0);
@@ -4004,7 +4003,53 @@ function writeText(textObject, targetContext) {
 					wordToWrite = word;
 				}
 			}
-
+			function renderManaSymbols() {
+				if (manaSymbolsToRender.length === 0) return;
+			
+				// Create single canvas for all symbols
+				var batchCanvas = lineCanvas.cloneNode();
+				var batchContext = batchCanvas.getContext('2d');
+			
+				// Draw all outlined versions first
+				manaSymbolsToRender.forEach(symbolData => {
+					if (!symbolData.hasOutline) return;
+			
+					batchContext.fillStyle = 'black';
+					batchContext.beginPath();
+					var scaleFactor = 1.3;
+					var centerX = symbolData.x + symbolData.width/2;
+					var centerY = symbolData.y + symbolData.height/2;
+					var radius = (Math.max(symbolData.width, symbolData.height) * scaleFactor) / 2;
+					
+					batchContext.arc(
+						centerX,
+						centerY + (symbolData.radius ?? 0),
+						radius,
+						0,
+						2 * Math.PI
+					);
+					batchContext.fill();
+				});
+			
+				manaSymbolsToRender.forEach(symbolData => {
+					if (symbolData.radius > 0) {
+						if (symbolData.symbol.backs) {
+							batchContext.drawImageArc(symbolData.backImage, symbolData.x, symbolData.y, symbolData.width, symbolData.height, symbolData.radius, symbolData.arcStart, symbolData.currentX);
+						}
+						batchContext.drawImageArc(symbolData.symbol.image, symbolData.x, symbolData.y, symbolData.width, symbolData.height, symbolData.radius, symbolData.arcStart, symbolData.currentX);
+					} else if (symbolData.color) {
+						batchContext.fillImage(symbolData.symbol.image, symbolData.x, symbolData.y, symbolData.width, symbolData.height, symbolData.color);
+					} else {
+						if (symbolData.symbol.backs) {
+							batchContext.drawImage(symbolData.backImage, symbolData.x, symbolData.y, symbolData.width, symbolData.height);
+						}
+						batchContext.drawImage(symbolData.symbol.image, symbolData.x, symbolData.y, symbolData.width, symbolData.height);
+					}
+				});
+			
+				lineContext.drawImage(batchCanvas, 0, 0);
+				manaSymbolsToRender = [];
+			}
 			if (wordToWrite && lineContext.font.endsWith('belerenb')) {
 				wordToWrite = wordToWrite.replace(/f(?:\s|$)/g, '\ue006').replace(/h(?:\s|$)/g, '\ue007').replace(/m(?:\s|$)/g, '\ue008').replace(/n(?:\s|$)/g, '\ue009').replace(/k(?:\s|$)/g, '\ue00a');
 			}
@@ -4128,54 +4173,7 @@ function writeText(textObject, targetContext) {
 		}
 	}
 }
-//used to batch renders all mana symbols that have been queued up for the current line of text
-function renderManaSymbols() {
-    if (manaSymbolsToRender.length === 0) return;
 
-    // Create single canvas for all symbols
-    var batchCanvas = lineCanvas.cloneNode();
-    var batchContext = batchCanvas.getContext('2d');
-
-    // Draw all outlined versions first
-    manaSymbolsToRender.forEach(symbolData => {
-        if (!symbolData.hasOutline) return;
-
-        batchContext.fillStyle = 'black';
-        batchContext.beginPath();
-        var scaleFactor = 1.3;
-        var centerX = symbolData.x + symbolData.width/2;
-        var centerY = symbolData.y + symbolData.height/2;
-        var radius = (Math.max(symbolData.width, symbolData.height) * scaleFactor) / 2;
-        
-        batchContext.arc(
-            centerX,
-            centerY + (symbolData.radius ?? 0),
-            radius,
-            0,
-            2 * Math.PI
-        );
-        batchContext.fill();
-    });
-
-    manaSymbolsToRender.forEach(symbolData => {
-        if (symbolData.radius > 0) {
-            if (symbolData.symbol.backs) {
-                batchContext.drawImageArc(symbolData.backImage, symbolData.x, symbolData.y, symbolData.width, symbolData.height, symbolData.radius, symbolData.arcStart, symbolData.currentX);
-            }
-            batchContext.drawImageArc(symbolData.symbol.image, symbolData.x, symbolData.y, symbolData.width, symbolData.height, symbolData.radius, symbolData.arcStart, symbolData.currentX);
-        } else if (symbolData.color) {
-            batchContext.fillImage(symbolData.symbol.image, symbolData.x, symbolData.y, symbolData.width, symbolData.height, symbolData.color);
-        } else {
-            if (symbolData.symbol.backs) {
-                batchContext.drawImage(symbolData.backImage, symbolData.x, symbolData.y, symbolData.width, symbolData.height);
-            }
-            batchContext.drawImage(symbolData.symbol.image, symbolData.x, symbolData.y, symbolData.width, symbolData.height);
-        }
-    });
-
-    lineContext.drawImage(batchCanvas, 0, 0);
-    manaSymbolsToRender = [];
-}
 CanvasRenderingContext2D.prototype.fillTextArc = function(text, x, y, radius, startRotation, distance = 0, outlineWidth = 0) {
 	this.save();
 	this.translate(x - distance + scaleWidth(0.5), y + radius);
