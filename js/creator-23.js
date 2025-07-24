@@ -5118,6 +5118,7 @@ function downloadCard(alt = false, jpeg = false) {
 }
 //IMPORT/SAVE TAB
 function importCard(cardObject) {
+	console.log('Import card called with:', cardObject); // Log initial import data
 	scryfallCard = cardObject;
 	const importIndex = document.querySelector('#import-index');
 	importIndex.innerHTML = null;
@@ -5249,15 +5250,163 @@ function extractSagaReminderText(text) {
   const match = text.match(/^\([^)]*\)/);
   return match ? match[0] : null;
 }
-
+function parseFlipCard(card) {
+	return new Promise((resolve) => {
+	  // If we have a card face, build a full flip card
+	  if (card.object === "card_face") {
+		console.log('Building flip card from face:', card);
+		
+		// Create the flip card structure
+		const flipCard = {
+		  name: card.name,
+		  card_faces: [
+			// Front face (the one we have)
+			{
+			  name: card.name,
+			  type_line: card.type_line,
+			  oracle_text: card.oracle_text,
+			  mana_cost: card.mana_cost,
+			  power: card.power,
+			  toughness: card.toughness
+			},
+			// Back face (need to find)
+			null
+		  ]
+		};
+  
+		// Attempt to find matching back face from scryfallCard array
+		const backFace = scryfallCard.find(face => 
+		  face.object === "card_face" && 
+		  face.name !== card.name
+		);
+  
+		if (backFace) {
+		  flipCard.card_faces[1] = {
+			name: backFace.name,
+			type_line: backFace.type_line, 
+			oracle_text: backFace.oracle_text,
+			mana_cost: backFace.mana_cost,
+			power: backFace.power,
+			toughness: backFace.toughness
+		  };
+		}
+  
+		console.log('Created flip card:', flipCard);
+		parseFlipCardData(flipCard, resolve);
+		return;
+	  }
+  
+	  // Otherwise process normally
+	  parseFlipCardData(card, resolve);
+	});
+  }
+  
+  function parseFlipCardData(card, resolve) {
+	// Add validation 
+	if (!card || !card.card_faces) {
+	  console.error('Invalid flip card data - missing card_faces:', card);
+	  resolve(null);
+	  return;
+	}
+  
+	// Load flip frame script
+	loadScript('/js/frames/packFlip.js');
+  
+	// Extract faces with safe access
+	const frontFace = card.card_faces[0] || {};
+	const backFace = card.card_faces[1] || {};
+  
+	console.log('Processing faces:', {front: frontFace, back: backFace});
+  
+	// Create faces object
+	const faces = {
+	  front: {
+		name: frontFace.name || '',
+		type: frontFace.type_line || '',
+		rules: frontFace.oracle_text || '',
+		mana: frontFace.mana_cost || '',
+		pt: frontFace.power ? `${frontFace.power}/${frontFace.toughness}` : ''
+	  },
+	  back: {
+		name: backFace.name || '',
+		type: backFace.type_line || '', 
+		rules: backFace.oracle_text || '',
+		mana: backFace.mana_cost || '',
+		pt: backFace.power ? `${backFace.power}/${backFace.toughness}` : ''
+	  }
+	};
+  
+	// Resolve with faces data
+	console.log('Returning faces:', faces);
+	setTimeout(() => {
+	  resolve(faces);
+	}, 100);
+  }
 function changeCardIndex() {
 	var cardToImport = scryfallCard[document.querySelector('#import-index').value];
+	// Add debug logging for flip card detection
+	console.log('Card layout:', cardToImport.layout);
+	console.log('Card version:', card.version);
+	console.log('Is flip card?', cardToImport.layout === 'flip' && card.version.includes('flip'));
 	//text
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
+// Handle flip cards
+if (cardToImport.layout === 'flip' && card.version.includes('flip')) {
+	console.log('Processing flip card in changeCardIndex');
+	
+	parseFlipCard(cardToImport).then(flipData => {
+	  if (!flipData) {
+		console.error('Failed to parse flip card data');
+		return;
+	  }
+	  
+	  console.log('Got flip data:', flipData);
+  
+	  // Add artist info
+	  if (cardToImport.artist) {
+		artistEdited(cardToImport.artist);
+	  }
+  
+	  // Handle art loading 
+	  if (cardToImport.image_uris?.art_crop) {
+		uploadArt(cardToImport.image_uris.art_crop, 'autoFit');
+	  }
+  
+	  // Handle set symbol
+	  if (!document.querySelector('#lockSetSymbolCode').checked) {
+		document.querySelector('#set-symbol-code').value = cardToImport.set;
+		document.querySelector('#set-symbol-rarity').value = cardToImport.rarity.slice(0, 1);
+		if (!document.querySelector('#lockSetSymbolURL').checked) {
+		  fetchSetSymbol();
+		}
+	  }
+  
+	  // Update text fields
+	  console.log('Text fields before update:', card.text);
+	  
+	  // Front face
+	  if (card.text?.title && card.text?.mana) {
+		card.text.title.text = langFontCode + flipData.front.name;
+		card.text.type.text = langFontCode + flipData.front.type; 
+		card.text.rules.text = langFontCode + flipData.front.rules;
+		card.text.mana.text = flipData.front.mana || '';
+	  }
+  
+	  // Back face
+	  if (card.text?.title2 && card.text?.mana2) {
+		card.text.title2.text = langFontCode + flipData.back.name;
+		card.text.type2.text = langFontCode + flipData.back.type;
+		card.text.rules2.text = langFontCode + flipData.back.rules;
+		card.text.mana2.text = flipData.back.mana || '';
+	  }
+  
+	  console.log('Text fields after update:', card.text);
+	  textEdited();
+	});
+  }
 	var name = cardToImport.name || '';
 	if (name.startsWith('A-')) { name = name.replace('A-', '{alchemy}'); }
-
 	if (card.text.title) {
 		if (card.version == 'wanted') {
 			var subtitle = '';
@@ -5414,7 +5563,7 @@ function changeCardIndex() {
 		updateAbilityHeights()
 	} else if (card.version.includes('battle')) {
 		card.text.defense.text = cardToImport.defense || '';
-	}
+	  }
 	document.querySelector('#text-editor').value = card.text[Object.keys(card.text)[selectedTextIndex]].text;
 	document.querySelector('#text-editor-font-size').value = 0;
 	//font size
@@ -5821,25 +5970,30 @@ function stretchSVGReal(data, frameObject) {
 function processScryfallCard(card, responseCards) {
 	if ('card_faces' in card) {
 		card.card_faces.forEach(face => {
-			face.set = card.set;
-			face.rarity = card.rarity;
-			face.collector_number = card.collector_number;
-			face.lang = card.lang;
-			if (card.lang != 'en') {
-				face.oracle_text = face.printed_text;
-				face.name = face.printed_name;
-				face.type_line = face.printed_type_line;
-			}
-			responseCards.push(face);
-			if (!face.image_uris) {
-				face.image_uris = card.image_uris;
-			}
+		face.set = card.set;
+		face.rarity = card.rarity;
+		face.collector_number = card.collector_number;
+		face.lang = card.lang;
+		face.layout = card.layout; // Add layout from parent card
+		if (card.lang != 'en') {
+		  face.oracle_text = face.printed_text;
+		  face.name = face.printed_name;
+		  face.type_line = face.printed_type_line;
+		}
+		responseCards.push(face);
+		if (!face.image_uris) {
+		  face.image_uris = card.image_uris;
+		}
 		});
 	} else {
 		if (card.lang != 'en') {
-			card.oracle_text = card.printed_text;
-			card.name = card.printed_name;
-			card.type_line = card.printed_type_line;
+		card.oracle_text = card.printed_text;
+		card.name = card.printed_name;
+		card.type_line = card.printed_type_line;
+		}
+		// Ensure layout is set even for single-faced cards
+		if (!card.layout) {
+			card.layout = 'normal';
 		}
 		responseCards.push(card);
 	}
