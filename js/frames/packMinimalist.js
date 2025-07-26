@@ -86,8 +86,8 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     dynamicCanvas.height = card.height;
     card.minimalist = {
         baseY: 0.9,
-        minHeight: 0.15,
-        maxHeight: 0.40,
+        minHeight: 0.10,
+        maxHeight: 0.30,
         spacing: 0.05,
         currentHeight: 0.15,
         canvas: dynamicCanvas,
@@ -179,42 +179,37 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				scale: function(text) {
 					// Clear canvas for measurements
 					card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
+					card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
 					
 					let currentHeight = card.minimalist.minHeight;
 					let textFits = false;
 					
-					while (!textFits && currentHeight <= card.minimalist.maxHeight) {
-						// Set up context for measurement
-						card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
-						
-						// Measure text at current height
-						const actualTextHeight = measureTextHeight(
-							text,
-							card.minimalist.ctx,
-							this.width * card.width,
-							this.size * card.height
-						);
-						
-						// Check if text fits current height
-						if (actualTextHeight <= currentHeight * card.height) {
-							textFits = true;
-						} else {
-							// Increase height and try again
-							currentHeight = Math.min(
-								currentHeight + 0.05, // Increment by 5%
-								card.minimalist.maxHeight
-							);
-						}
-					}
+					// Measure initial text height
+					const actualTextHeight = measureTextHeight(
+						text,
+						card.minimalist.ctx,
+						this.width * card.width,
+						this.size * card.height
+					);
 					
+					// Calculate needed height as percentage of card height
+					currentHeight = Math.min(
+						card.minimalist.maxHeight,
+						Math.max(
+							card.minimalist.minHeight,
+							(actualTextHeight / card.height)
+						)
+					);
+			
 					// Update positions with final height
 					card.minimalist.currentHeight = currentHeight;
 					updateTextPositions(currentHeight);
 					
 					console.log('Text scaling:', {
 						originalText: text,
+						measuredHeight: actualTextHeight,
 						finalHeight: currentHeight,
-						textFits: textFits
+						maxHeight: card.minimalist.maxHeight
 					});
 					
 					// Force redraw
