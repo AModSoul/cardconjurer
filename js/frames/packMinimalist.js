@@ -8,6 +8,46 @@ function createDynamicTextCanvas() {
     const ctx = textCanvas.getContext('2d');
     return { canvas: textCanvas, ctx: ctx };
 }
+function updateTextPositions(rulesHeight) {
+    // Calculate positions based on rules text height
+    const rulesY = card.minimalist.baseY - rulesHeight;
+    const typeY = rulesY - card.minimalist.spacing;
+    const titleY = typeY - card.minimalist.spacing;
+
+    // Update positions of all text elements
+    if (card.text.rules) {
+        card.text.rules.y = rulesY;
+        card.text.rules.height = rulesHeight;
+    }
+    if (card.text.type) {
+        card.text.type.y = typeY;
+    }
+    if (card.text.title) {
+        card.text.title.y = titleY;
+    }
+
+    return { rulesY, typeY, titleY };
+}
+function measureTextHeight(text, ctx, width, fontSize) {
+    const words = text.split(' ');
+    let lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        const testLine = currentLine + ' ' + words[i];
+        const metrics = ctx.measureText(testLine);
+        
+        if (metrics.width > width) {
+            lines.push(currentLine);
+            currentLine = words[i];
+        } else {
+            currentLine = testLine;
+        }
+    }
+    lines.push(currentLine);
+    
+    return lines.length * fontSize * 1.2; // 1.2 for line spacing
+}
 //defines available frames
 availableFrames = [
 	{name:'White Nickname', src:'/img/frames/m15/japanShowcase/nickname/w.png', bounds:bounds3},
@@ -124,44 +164,58 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				color: 'white'
 			},
 			rules: {
-				// ...existing properties...
+				name: 'Rules Text',
+				text: '',
+				x: 0.086,
+				y: card.minimalist.baseY - card.minimalist.currentHeight,
+				width: 0.771,
+				height: card.minimalist.currentHeight,
+				size: 0.033,
+				outlineWidth: 0.008,
+				font: 'Plantin MT Pro',
+				color: 'white',
+				oneLine: false,
+				align: 'left',
 				scale: function(text) {
 					// Clear canvas for measurements
 					card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
-					card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
 					
-					// Split text and measure
-					const lines = text.split('\n');
-					const lineHeight = this.size * 1.2; // 120% line height
+					let currentHeight = card.minimalist.minHeight;
+					let textFits = false;
 					
-					// Calculate height as percentage of card height
-					const heightPercentage = (lineHeight * lines.length) / card.height;
+					while (!textFits && currentHeight <= card.minimalist.maxHeight) {
+						// Set up context for measurement
+						card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
+						
+						// Measure text at current height
+						const actualTextHeight = measureTextHeight(
+							text,
+							card.minimalist.ctx,
+							this.width * card.width,
+							this.size * card.height
+						);
+						
+						// Check if text fits current height
+						if (actualTextHeight <= currentHeight * card.height) {
+							textFits = true;
+						} else {
+							// Increase height and try again
+							currentHeight = Math.min(
+								currentHeight + 0.05, // Increment by 5%
+								card.minimalist.maxHeight
+							);
+						}
+					}
 					
-					// Update heights with proper percentage calculation
-					const newHeight = Math.min(
-						card.minimalist.maxHeight,
-						Math.max(card.minimalist.minHeight, heightPercentage)
-					);
+					// Update positions with final height
+					card.minimalist.currentHeight = currentHeight;
+					updateTextPositions(currentHeight);
 					
-					console.log('Text height calculation:', {
-						lines: lines.length,
-						lineHeight,
-						heightPercentage,
-						newHeight
+					console.log('Text scaling:', {
+						originalText: text,
+						finalHeight: currentHeight,
+						textFits: textFits
 					});
-					
-					// Update positions
-					card.minimalist.currentHeight = newHeight;
-					this.height = newHeight;
-					this.y = card.minimalist.baseY - newHeight;
-					
-					// Move other elements
-					if (card.text.type) {
-						card.text.type.y = this.y - card.minimalist.spacing;
-					}
-					if (card.text.title) {
-						card.text.title.y = card.text.type.y - card.minimalist.spacing;
-					}
 					
 					// Force redraw
 					drawTextBuffer();
@@ -184,17 +238,22 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 			}
 		}, true);
 
-    // Set up input listener
-    const rulesInput = document.querySelector('#rules');
-    if (rulesInput) {
-        const newRulesInput = rulesInput.cloneNode(true);
-        rulesInput.parentNode.replaceChild(newRulesInput, rulesInput);
-        newRulesInput.addEventListener('input', function() {
-            if (card.text.rules) {
-                card.text.rules.scale(this.value);
-            }
-        });
-    }
+// Set up input listener
+const rulesInput = document.querySelector('#rules');
+if (rulesInput) {
+    const newRulesInput = rulesInput.cloneNode(true);
+    rulesInput.parentNode.replaceChild(newRulesInput, rulesInput);
+    newRulesInput.addEventListener('input', function() {
+        if (card.text.rules) {
+            const currentText = document.querySelector('#text-editor').value;
+            textEdited(); // Update text content first
+            requestAnimationFrame(() => {
+                card.text.rules.scale(currentText); // Use actual text content for scaling
+            });
+            console.log('Text changed:', currentText); // Debug log
+        }
+    });
+}
 
     // Restore saved text immediately after loading options
     for (const key in savedText) {
