@@ -87,7 +87,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     card.minimalist = {
         baseY: 0.9,
         minHeight: 0.15,
-        maxHeight: 0.6,
+        maxHeight: 0.40,
         spacing: 0.05,
         currentHeight: 0.15,
         canvas: dynamicCanvas,
@@ -239,18 +239,15 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		}, true);
 
 // Set up input listener
-const rulesInput = document.querySelector('#rules');
-if (rulesInput) {
-    const newRulesInput = rulesInput.cloneNode(true);
-    rulesInput.parentNode.replaceChild(newRulesInput, rulesInput);
-    newRulesInput.addEventListener('input', function() {
+const textEditor = document.querySelector('#text-editor');
+if (textEditor) {
+    textEditor.addEventListener('input', function() {
         if (card.text.rules) {
-            const currentText = document.querySelector('#text-editor').value;
             textEdited(); // Update text content first
             requestAnimationFrame(() => {
-                card.text.rules.scale(currentText); // Use actual text content for scaling
+                card.text.rules.scale(this.value); // Scale using current text value
             });
-            console.log('Text changed:', currentText); // Debug log
+            console.log('Text changed:', this.value); // Debug log
         }
     });
 }
