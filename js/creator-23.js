@@ -3508,8 +3508,10 @@ async function drawText() {
 		drawCard();
 	}
 }
+let manaSymbolsToRender = [];
 var justifyWidth = 90;
 function writeText(textObject, targetContext) {
+	manaSymbolsToRender = [];
 	//Most bits of info about text loaded, with defaults when needed
 	var textX = scaleX(textObject.x) || scaleX(0);
 	var textY = scaleY(textObject.y) || scaleY(0);
@@ -4114,6 +4116,9 @@ function writeText(textObject, targetContext) {
 				}
 				if (currentX > widestLineWidth) {
 					widestLineWidth = currentX;
+				}
+				if (manaSymbolsToRender.length > 0) {
+					renderManaSymbols();
 				}
 				paragraphContext.drawImage(lineCanvas, horizontalAdjust, currentY);
 				lineY = 0;
