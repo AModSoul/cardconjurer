@@ -1,13 +1,5 @@
 //Create objects for common properties across available frames
 var bounds3 = {x:0, y:0, width:1, height:1};
-function createDynamicTextCanvas() {
-    const textCanvas = document.createElement('canvas');
-    textCanvas.width = card.width;
-    textCanvas.height = card.height;
-    textCanvas.id = 'dynamicTextCanvas';
-    const ctx = textCanvas.getContext('2d');
-    return { canvas: textCanvas, ctx: ctx };
-}
 function updateTextPositions(rulesHeight) {
     // Calculate positions based on rules text height
     const rulesY = card.minimalist.baseY - rulesHeight;
@@ -48,6 +40,17 @@ function measureTextHeight(text, ctx, width, fontSize) {
     
     return lines.length * fontSize * 1.2; // 1.2 for line spacing
 }
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 //defines available frames
 availableFrames = [
 	{name:'White Nickname', src:'/img/frames/m15/japanShowcase/nickname/w.png', bounds:bounds3},
@@ -85,7 +88,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     dynamicCanvas.width = card.width;
     dynamicCanvas.height = card.height;
     card.minimalist = {
-        baseY: 0.9,
+        baseY: 0.92,
         minHeight: 0.10,
         maxHeight: 0.30,
         spacing: 0.05,
@@ -182,7 +185,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 					card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
 					
 					let currentHeight = card.minimalist.minHeight;
-					let textFits = false;
 					
 					// Measure initial text height
 					const actualTextHeight = measureTextHeight(
@@ -205,13 +207,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 					card.minimalist.currentHeight = currentHeight;
 					updateTextPositions(currentHeight);
 					
-					console.log('Text scaling:', {
-						originalText: text,
-						measuredHeight: actualTextHeight,
-						finalHeight: currentHeight,
-						maxHeight: card.minimalist.maxHeight
-					});
-					
 					// Force redraw
 					drawTextBuffer();
 					drawCard();
@@ -233,31 +228,46 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 			}
 		}, true);
 
-// Set up input listener
+// Get text editor element
 const textEditor = document.querySelector('#text-editor');
+
+// Set up input listener
 if (textEditor) {
-    textEditor.addEventListener('input', function() {
+    const debouncedScale = debounce((value) => {
         if (card.text.rules) {
             textEdited(); // Update text content first
             requestAnimationFrame(() => {
-                card.text.rules.scale(this.value); // Scale using current text value
+                card.text.rules.scale(value); // Scale using current text value
+                console.log('Text scaling triggered:', {
+                    text: value,
+                    currentHeight: card.minimalist.currentHeight,
+                    minHeight: card.minimalist.minHeight,
+                    maxHeight: card.minimalist.maxHeight,
+                    scale: card.text.rules.size // Add current scale value to log
+                }); // Enhanced debug log
             });
-            console.log('Text changed:', this.value); // Debug log
         }
+    }, 2000); // 5000ms = 5 seconds
+
+    textEditor.addEventListener('input', function() {
+        console.log('Text changed, waiting for pause...'); // Debug log
+        debouncedScale(this.value);
     });
 }
 
     // Restore saved text immediately after loading options
-    for (const key in savedText) {
+	for (const key in savedText) {
         if (card.text[key]) {
             card.text[key].text = savedText[key];
-            if (key === 'rules') {
+            if (key === 'rules' && savedText[key]) {
+                textEdited(); // Update text content first
                 requestAnimationFrame(() => {
-                    card.text.rules.scale(savedText[key]);
+                    card.text.rules.scale(savedText[key]); // Scale using saved text
                 });
+                console.log('Initial text loaded:', savedText[key]); // Debug log
             }
         }
-    }
+	}
 };
 
 //loads available frames
