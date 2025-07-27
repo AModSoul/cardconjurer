@@ -82,19 +82,17 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     
     //sets card version
     card.version = 'Minimalist';
+    card.onload = '/js/frames/versionMinimalist.js';
+    await loadScript('/js/frames/versionMinimalist.js');
 
-    // Create and store dynamic text canvas
-    const dynamicCanvas = document.createElement('canvas');
-    dynamicCanvas.width = card.width;
-    dynamicCanvas.height = card.height;
+	
     card.minimalist = {
-        baseY: 0.92,
+        baseY: 0.93,
         minHeight: 0.10,
         maxHeight: 0.30,
         spacing: 0.05,
         currentHeight: 0.15,
-        canvas: dynamicCanvas,
-        ctx: dynamicCanvas.getContext('2d')
+        ctx: textContext,
     };
 
     //art bounds
@@ -168,8 +166,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 					card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
 					card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
 					
-					let currentHeight = card.minimalist.minHeight;
-					
 					// Measure initial text height
 					const actualTextHeight = measureTextHeight(
 						text,
@@ -179,7 +175,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 					);
 					
 					// Calculate needed height as percentage of card height
-					currentHeight = Math.min(
+					const newHeight = Math.min(
 						card.minimalist.maxHeight,
 						Math.max(
 							card.minimalist.minHeight,
@@ -187,13 +183,16 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 						)
 					);
 			
-					// Update positions with final height
-					card.minimalist.currentHeight = currentHeight;
-					updateTextPositions(currentHeight);
-					
-					// Force redraw
-					drawTextBuffer();
-					drawCard();
+					// Batch updates to minimize redraws
+					requestAnimationFrame(() => {
+						// Update positions with final height
+						card.minimalist.currentHeight = newHeight;
+						updateTextPositions(newHeight);
+						
+						// Single redraw at the end
+						drawTextBuffer();
+						drawCard();
+					});
 				}
 			},
 			pt: {
