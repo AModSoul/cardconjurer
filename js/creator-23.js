@@ -113,6 +113,11 @@ async function resetCardIrregularities({canvas = [getStandardWidth(), getStandar
 	card.bottomInfoZoom = 1;
 	card.bottomInfoColor = 'white';
 	replacementMasks = {};
+	// Clear gradient unless maintaining it
+	if (!card.gradientOptions || resetOthers) {
+		clearGradient();
+		delete card.gradientOptions;
+	}
 	//rotation
 	if (card.landscape) {
 		// previewContext.scale(card.width/card.height, card.height/card.width);
@@ -186,6 +191,7 @@ sizeCanvas('card');
 sizeCanvas('frame');
 sizeCanvas('frameMasking');
 sizeCanvas('frameCompositing');
+sizeCanvas('gradient');
 sizeCanvas('text');
 sizeCanvas('paragraph');
 sizeCanvas('line');
@@ -382,6 +388,138 @@ function findManaSymbolIndex(string) {
 }
 function getManaSymbol(key) {
 	return mana.get(key);
+}
+function drawHorizontalGradient(options = {}) {
+    // Default options
+    const {
+        startFromBottom = true,
+        maxOpacity = 1,
+        height = 0.3, // Height as percentage of card height for the gradient fade
+        solidHeight = 0, // Height as percentage of card height for solid color
+        yPosition = null, // Custom Y position (null = auto based on startFromBottom)
+        color = 'black',
+        fadeDirection = 'up' // 'up' or 'down'
+    } = options;
+
+    // Clear gradient canvas
+    gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
+
+    // Calculate actual dimensions
+    const canvasWidth = gradientCanvas.width;
+    const canvasHeight = gradientCanvas.height;
+
+    if (yPosition !== null) {
+        // Custom positioning - handle fade and solid areas separately
+        const startY = Math.round(yPosition * canvasHeight);
+        const fadeHeight = Math.round(height * canvasHeight);
+        const solidAreaHeight = Math.round(solidHeight * canvasHeight);
+
+        if (fadeDirection === 'down') {
+            // Fade area first (from transparent to solid), then solid area
+            
+            // Draw fade area
+            const fadeStartY = startY;
+            const fadeEndY = startY + fadeHeight;
+            const fadeGradient = gradientContext.createLinearGradient(0, fadeStartY, 0, fadeEndY);
+            fadeGradient.addColorStop(0, 'rgba(0, 0, 0, 0)'); // Transparent at top
+            fadeGradient.addColorStop(1, `rgba(0, 0, 0, ${maxOpacity})`); // Solid at bottom
+            
+            gradientContext.fillStyle = fadeGradient;
+            gradientContext.fillRect(0, fadeStartY, canvasWidth, fadeHeight);
+            
+            // Draw solid area below the fade
+            if (solidAreaHeight > 0) {
+                gradientContext.fillStyle = `rgba(0, 0, 0, ${maxOpacity})`;
+                gradientContext.fillRect(0, fadeEndY, canvasWidth, solidAreaHeight);
+            }
+            
+        } else {
+            // fadeDirection === 'up'
+            // Solid area first, then fade area (from solid to transparent)
+            
+            // Draw solid area at bottom
+            if (solidAreaHeight > 0) {
+                const solidStartY = startY + fadeHeight;
+                gradientContext.fillStyle = `rgba(0, 0, 0, ${maxOpacity})`;
+                gradientContext.fillRect(0, solidStartY, canvasWidth, solidAreaHeight);
+            }
+            
+            // Draw fade area above solid
+            const fadeStartY = startY + fadeHeight; // Start from bottom of fade area
+            const fadeEndY = startY; // End at top of fade area
+            const fadeGradient = gradientContext.createLinearGradient(0, fadeStartY, 0, fadeEndY);
+            fadeGradient.addColorStop(0, `rgba(0, 0, 0, ${maxOpacity})`); // Solid at bottom
+            fadeGradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Transparent at top
+            
+            gradientContext.fillStyle = fadeGradient;
+            gradientContext.fillRect(0, startY, canvasWidth, fadeHeight);
+        }
+        
+    } else {
+        // Original logic for startFromBottom positioning
+        const gradientHeight = Math.round(height * canvasHeight);
+        const solidAreaHeight = Math.round(solidHeight * canvasHeight);
+        const totalHeight = gradientHeight + solidAreaHeight;
+        let startY = startFromBottom ? canvasHeight - totalHeight : 0;
+
+        // Draw solid area first (if any)
+        if (solidAreaHeight > 0) {
+            gradientContext.fillStyle = `rgba(0, 0, 0, ${maxOpacity})`;
+            if (startFromBottom) {
+                if (fadeDirection === 'up') {
+                    gradientContext.fillRect(0, startY + gradientHeight, canvasWidth, solidAreaHeight);
+                } else {
+                    gradientContext.fillRect(0, startY, canvasWidth, solidAreaHeight);
+                }
+            } else {
+                if (fadeDirection === 'down') {
+                    gradientContext.fillRect(0, startY, canvasWidth, solidAreaHeight);
+                } else {
+                    gradientContext.fillRect(0, startY + gradientHeight, canvasWidth, solidAreaHeight);
+                }
+            }
+        }
+
+        // Create and draw gradient
+        let gradient;
+        let gradientStartY, gradientEndY;
+
+        if (startFromBottom) {
+            if (fadeDirection === 'up') {
+                gradientStartY = startY + gradientHeight;
+                gradientEndY = startY;
+                gradient = gradientContext.createLinearGradient(0, gradientStartY, 0, gradientEndY);
+                gradient.addColorStop(0, `rgba(0, 0, 0, ${maxOpacity})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            } else {
+                gradientStartY = startY + gradientHeight;
+                gradientEndY = startY;
+                gradient = gradientContext.createLinearGradient(0, gradientStartY, 0, gradientEndY);
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                gradient.addColorStop(1, `rgba(0, 0, 0, ${maxOpacity})`);
+            }
+        } else {
+            if (fadeDirection === 'down') {
+                gradientStartY = startY;
+                gradientEndY = startY + gradientHeight;
+                gradient = gradientContext.createLinearGradient(0, gradientStartY, 0, gradientEndY);
+                gradient.addColorStop(0, `rgba(0, 0, 0, ${maxOpacity})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            } else {
+                gradientStartY = startY;
+                gradientEndY = startY + gradientHeight;
+                gradient = gradientContext.createLinearGradient(0, gradientStartY, 0, gradientEndY);
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                gradient.addColorStop(1, `rgba(0, 0, 0, ${maxOpacity})`);
+            }
+        }
+
+        gradientContext.fillStyle = gradient;
+        gradientContext.fillRect(0, startY, canvasWidth, gradientHeight);
+    }
+}	
+function clearGradient() {
+	gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
 }
 //FRAME TAB
 function drawFrames() {
@@ -4757,6 +4895,8 @@ function drawCard() {
 	}
 	cardContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
 	cardContext.restore();
+	// Add gradient here - after art but before frames
+	cardContext.drawImage(gradientCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
 	// frame elements
 	if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
 		cardContext.drawImage(planeswalkerPreFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);

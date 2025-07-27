@@ -11,11 +11,24 @@ availableFrames = [
 	{name:'Artifact Nickname', src:'/img/frames/m15/japanShowcase/nickname/a.png', bounds:bounds3},
 	{name:'Land Nickname', src:'/img/frames/m15/japanShowcase/nickname/L.png', bounds:bounds3}
 	];
+	// Add the debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 function updateTextPositions(rulesHeight) {
     // Calculate positions based on rules text height
     const rulesY = card.minimalist.baseY - rulesHeight;
-    const typeY = rulesY - card.minimalist.spacing;
-    const titleY = typeY - card.minimalist.spacing;
+    const typeY = rulesY - (card.minimalist.spacing *0.9);
+    const titleY = typeY - (card.minimalist.spacing * 0.65);
+    const manaY = titleY - (card.minimalist.spacing * 0.6); // Add mana position above title
 
     // Update positions of all text elements
     if (card.text.rules) {
@@ -28,8 +41,42 @@ function updateTextPositions(rulesHeight) {
     if (card.text.title) {
         card.text.title.y = titleY;
     }
+    if (card.text.mana) {
+        card.text.mana.y = manaY;
+    }
 
-    return { rulesY, typeY, titleY };
+    // Update gradient to match the text area
+    if (card.gradientOptions) {
+        // We want:
+        // 1. Solid from bottom (1.0) up to rules text start (rulesY)
+        // 2. Fade from rules text start up to slightly above mana (manaY - 0.03)
+        
+        const fadeTopY = manaY - 0.05; // Where fade ends (transparent) - now above mana
+        const fadeBottomY = rulesY +0.02; // Where fade starts (solid)
+        const solidStartY = rulesY; // Where solid area starts
+        const solidEndY = 1.0; // Where solid area ends (bottom of card)
+        
+        // Calculate heights as actual values (not percentages)
+        const fadeHeight = fadeBottomY - fadeTopY; // Height of fade area
+        const solidHeight = solidEndY - solidStartY; // Height of solid area
+        
+        // Update gradient options
+        card.gradientOptions = {
+            ...card.gradientOptions,
+            yPosition: fadeTopY, // Start at the top of the fade area
+            height: fadeHeight, // Actual fade height
+            solidHeight: solidHeight, // Actual solid height
+            maxOpacity: 0.99,
+            startFromBottom: false, // Using custom position
+            fadeDirection: 'down' // Fade from transparent (top) to solid (bottom)
+        };
+        
+        // Redraw the gradient with new parameters
+        drawHorizontalGradient(card.gradientOptions);
+        drawCard();
+    }
+
+    return { rulesY, typeY, titleY, manaY };
 }
 function measureTextHeight(text, ctx, width, fontSize) {
     const words = text.split(' ');
@@ -51,17 +98,6 @@ function measureTextHeight(text, ctx, width, fontSize) {
     
     return lines.length * fontSize * 1.2; // 1.2 for line spacing
 }
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
 
@@ -79,15 +115,14 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     }
 
     await resetCardIrregularities();
-    
+
     //sets card version
     card.version = 'Minimalist';
     card.onload = '/js/frames/versionMinimalist.js';
     await loadScript('/js/frames/versionMinimalist.js');
-
 	
     card.minimalist = {
-        baseY: 0.93,
+        baseY: 0.9,
         minHeight: 0.10,
         maxHeight: 0.30,
         spacing: 0.05,
@@ -95,8 +130,13 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
         ctx: textContext,
     };
 
+    // Initialize gradient options - this ensures the gradient system is enabled
+    card.gradientOptions = {
+        maxOpacity: 0.75
+    };
+
     //art bounds
-    card.artBounds = {x:0, y:0, width:1, height:0.9224};
+    card.artBounds = {x:0, y:0, width:1, height:1};
     autoFitArt();
     
     //set symbol bounds
@@ -111,12 +151,14 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
         mana: {
             name: 'Mana Cost',
             text: '',
-            y: 0.0683,
+            x: 0.090, // Align with title
+            y: card.minimalist.baseY - card.minimalist.currentHeight - 
+               card.minimalist.spacing - 0.12, // Position above title
             width: 0.9190,
             height: 71/2100,
             oneLine: true,
             size: 71/1638,
-            align: 'right',
+            align: 'left',
             shadowX: -0.001,
             shadowY: 0.0029,
             manaCost: true,
@@ -161,39 +203,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				color: 'white',
 				oneLine: false,
 				align: 'left',
-				scale: function(text) {
-					// Clear canvas for measurements
-					card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
-					card.minimalist.ctx.font = `${this.size * card.height}px "${this.font}"`;
-					
-					// Measure initial text height
-					const actualTextHeight = measureTextHeight(
-						text,
-						card.minimalist.ctx,
-						this.width * card.width,
-						this.size * card.height
-					);
-					
-					// Calculate needed height as percentage of card height
-					const newHeight = Math.min(
-						card.minimalist.maxHeight,
-						Math.max(
-							card.minimalist.minHeight,
-							(actualTextHeight / card.height)
-						)
-					);
-			
-					// Batch updates to minimize redraws
-					requestAnimationFrame(() => {
-						// Update positions with final height
-						card.minimalist.currentHeight = newHeight;
-						updateTextPositions(newHeight);
-						
-						// Single redraw at the end
-						drawTextBuffer();
-						drawCard();
-					});
-				}
 			},
 			pt: {
 				name: 'Power/Toughness',
@@ -211,46 +220,95 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 			}
 		}, true);
 
-// Get text editor element
-const textEditor = document.querySelector('#text-editor');
+    // Create debounced scaling function with the scaling logic
+    const debouncedScale = debounce((text) => {
+        if (card.text.rules && card.version === 'Minimalist') {
+            // Remove this line - it's causing the infinite loop
+            // textEdited(); // Update text content first
+            
+            // Clear canvas for measurements
+            card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
+            card.minimalist.ctx.font = `${card.text.rules.size * card.height}px "${card.text.rules.font}"`;
+            
+            // Measure initial text height
+            const actualTextHeight = measureTextHeight(
+                text,
+                card.minimalist.ctx,
+                card.text.rules.width * card.width,
+                card.text.rules.size * card.height
+            );
+            
+            // Calculate needed height as percentage of card height
+            const newHeight = Math.min(
+                card.minimalist.maxHeight,
+                Math.max(
+                    card.minimalist.minHeight,
+                    (actualTextHeight / card.height)
+                )
+            );
 
-// Set up input listener
-if (textEditor) {
-    const debouncedScale = debounce((value) => {
-        if (card.text.rules) {
-            textEdited(); // Update text content first
+            // Batch updates to minimize redraws
             requestAnimationFrame(() => {
-                card.text.rules.scale(value); // Scale using current text value
+                // Update positions with final height
+                card.minimalist.currentHeight = newHeight;
+                updateTextPositions(newHeight); // This handles the gradient!
+                
+                // Single redraw at the end
+                drawTextBuffer();
+                drawCard();
+                
                 console.log('Text scaling triggered:', {
-                    text: value,
+                    text: text,
                     currentHeight: card.minimalist.currentHeight,
-                    minHeight: card.minimalist.minHeight,
-                    maxHeight: card.minimalist.maxHeight,
-                    scale: card.text.rules.size // Add current scale value to log
-                }); // Enhanced debug log
+                    newHeight: newHeight,
+                    actualTextHeight: actualTextHeight
+                });
             });
         }
-    }, 2000); // 2000ms = 2 seconds
-
-    textEditor.addEventListener('input', function() {
-        console.log('Text changed, waiting for pause...'); // Debug log
-        debouncedScale(this.value);
-    });
-}
+    }, 300);
 
     // Restore saved text immediately after loading options
-	for (const key in savedText) {
+    let hasRulesText = false;
+    for (const key in savedText) {
         if (card.text[key]) {
             card.text[key].text = savedText[key];
             if (key === 'rules' && savedText[key]) {
+                hasRulesText = true;
                 textEdited(); // Update text content first
                 requestAnimationFrame(() => {
-                    card.text.rules.scale(savedText[key]); // Scale using saved text
+                    debouncedScale(savedText[key]);
                 });
-                console.log('Initial text loaded:', savedText[key]); // Debug log
+                console.log('Initial text loaded:', savedText[key]);
             }
         }
-	}
+    }
+
+    // If no rules text to restore, draw initial gradient
+    if (!hasRulesText) {
+        updateTextPositions(card.minimalist.currentHeight);
+    }
+
+    // Move these INSIDE the onclick function so they can access debouncedScale
+    // Set up input listener for live typing
+    const textEditor = document.querySelector('#text-editor');
+    if (textEditor) {
+        textEditor.addEventListener('input', function() {
+            debouncedScale(this.value);
+        });
+    }
+
+    // Set up listener for card imports
+    const originalTextEdited = window.textEdited;
+    window.textEdited = function() {
+        if (originalTextEdited) originalTextEdited();
+        
+        if (card.version === 'Minimalist' && card.text.rules && card.text.rules.text) {
+            setTimeout(() => {
+                debouncedScale(card.text.rules.text);
+            }, 50);
+        }
+    };
+
 };
 
 //loads available frames
