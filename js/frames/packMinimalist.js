@@ -1,5 +1,16 @@
 //Create objects for common properties across available frames
 var bounds3 = {x:0, y:0, width:1, height:1};
+//defines available frames
+availableFrames = [
+	{name:'White Nickname', src:'/img/frames/m15/japanShowcase/nickname/w.png', bounds:bounds3},
+	{name:'Blue Nickname', src:'/img/frames/m15/japanShowcase/nickname/u.png', bounds:bounds3},
+	{name:'Black Nickname', src:'/img/frames/m15/japanShowcase/nickname/b.png', bounds:bounds3},
+	{name:'Red Nickname', src:'/img/frames/m15/japanShowcase/nickname/r.png', bounds:bounds3},
+	{name:'Green Nickname', src:'/img/frames/m15/japanShowcase/nickname/g.png', bounds:bounds3},
+	{name:'Multicolored Nickname', src:'/img/frames/m15/japanShowcase/nickname/m.png', bounds:bounds3},
+	{name:'Artifact Nickname', src:'/img/frames/m15/japanShowcase/nickname/a.png', bounds:bounds3},
+	{name:'Land Nickname', src:'/img/frames/m15/japanShowcase/nickname/L.png', bounds:bounds3}
+	];
 function updateTextPositions(rulesHeight) {
     // Calculate positions based on rules text height
     const rulesY = card.minimalist.baseY - rulesHeight;
@@ -51,17 +62,6 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
-//defines available frames
-availableFrames = [
-	{name:'White Nickname', src:'/img/frames/m15/japanShowcase/nickname/w.png', bounds:bounds3},
-	{name:'Blue Nickname', src:'/img/frames/m15/japanShowcase/nickname/u.png', bounds:bounds3},
-	{name:'Black Nickname', src:'/img/frames/m15/japanShowcase/nickname/b.png', bounds:bounds3},
-	{name:'Red Nickname', src:'/img/frames/m15/japanShowcase/nickname/r.png', bounds:bounds3},
-	{name:'Green Nickname', src:'/img/frames/m15/japanShowcase/nickname/g.png', bounds:bounds3},
-	{name:'Multicolored Nickname', src:'/img/frames/m15/japanShowcase/nickname/m.png', bounds:bounds3},
-	{name:'Artifact Nickname', src:'/img/frames/m15/japanShowcase/nickname/a.png', bounds:bounds3},
-	{name:'Land Nickname', src:'/img/frames/m15/japanShowcase/nickname/L.png', bounds:bounds3}
-	];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
 
@@ -124,33 +124,19 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
             manaCost: true,
             manaSpacing: 0
         },
-        nickname: {
-                name: 'Nickname',
-                text: '',
-                x: 0.090,
-                y: 0.0582,
-                width: 0.8292,
-                height: 0.0543,
-                outlineWidth: 0.008,
-                oneLine: true,
-                font: 'belerenb',
-                size: 0.0381,
-                color: 'white'
-            },
 			title: {
 				name: 'Title',
 				text: '',
-				x: 0.14,
+				x: 0.090,
 				y: card.minimalist.baseY - card.minimalist.currentHeight - 
 				   card.minimalist.spacing - 0.08,
-				width: 0.768,
-				height: 0.0243,
+				width: 0.8292,
+				height: 0.0543,
 				oneLine: true,
-				outlineWidth: 0.0065,
-				font: 'mplantin',
-				size: 0.0229,
+				font: 'belerenb',
+				size: 0.0381,
 				color: 'white',
-				align: 'right'
+				align: 'left'
 			},
 			type: {
 				name: 'Type',
@@ -163,7 +149,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				oneLine: true,
 				font: 'belerenb',
 				size: 0.0279,
-				outlineWidth: 0.008,
 				color: 'white'
 			},
 			rules: {
@@ -174,7 +159,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				width: 0.771,
 				height: card.minimalist.currentHeight,
 				size: 0.033,
-				outlineWidth: 0.008,
 				font: 'Plantin MT Pro',
 				color: 'white',
 				oneLine: false,
