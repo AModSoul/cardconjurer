@@ -68,6 +68,7 @@ document.querySelector('#loadFrameVersion').disabled = false;
 //defines process for loading this version, if applicable
 document.querySelector('#loadFrameVersion').onclick = async function() {
     //resets things so that every frame doesn't have to
+	card.preserveGradient = true;
     // Store existing text
     const savedText = {};
     if (card.text) {
@@ -210,7 +211,37 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				color: 'white'
 			}
 		}, true);
+	
+// Store gradient configuration
+try {
+    const gradientConfig = {
+        context: frameContext,
+        color: 'rgb(0, 0, 0)', 
+        startY: 1.1,
+        height: 0.7,
+        maxOpacity: 0.5, // Changed from 0.75 to 0.5 for 50% opacity
+        fadeStart: 0.5,
+        fadeLength: 0.2
+    };
 
+    // Draw gradient and store configuration
+    const result = drawHorizontalGradient(gradientConfig);
+    
+    // Store complete config with gradient info
+    card.gradientConfig = {
+        enabled: true,
+        ...gradientConfig,
+        gradient: result.gradient,
+        bounds: result.bounds,
+        version: 'minimalist'
+    };
+
+    console.log('Gradient created successfully');
+
+} catch (error) {
+    console.error('Failed to create gradient:', error);
+    card.gradientConfig = { enabled: false };
+}
 // Get text editor element
 const textEditor = document.querySelector('#text-editor');
 
@@ -252,6 +283,5 @@ if (textEditor) {
         }
 	}
 };
-
 //loads available frames
 loadFramePack();

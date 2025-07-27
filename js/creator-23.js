@@ -113,6 +113,47 @@ async function resetCardIrregularities({canvas = [getStandardWidth(), getStandar
 	card.bottomInfoZoom = 1;
 	card.bottomInfoColor = 'white';
 	replacementMasks = {};
+    // Handle gradient clearing/preservation
+    if (!card.preserveGradient && canvas[2] === 0) {
+        // Only clear if not preserving and not loading margins
+        if (card.gradientConfig && card.gradientConfig.enabled) {
+            // Check if the new frame supports gradients before clearing
+            if (!frameSupportsGradients(card.version)) {
+                console.log('Clearing gradient - new frame does not support gradients');
+                // Reset gradient config to default disabled state
+                card.gradientConfig = {
+                    enabled: false,
+                    context: cardContext,
+                    color: 'black',
+                    startY: 0.8,
+                    height: 0.35,
+                    maxOpacity: 0.5,
+                    fadeStart: 0.2,
+                    fadeLength: 0.15
+                };
+            } else {
+                console.log('Preserving gradient - new frame supports gradients');
+                // Keep existing gradient config
+                card.gradientConfig.maxOpacity = card.gradientConfig.maxOpacity || 0.5;
+            }
+        }
+    } else {
+        console.log('Preserving gradient through frame switch');
+        
+        // Ensure opacity remains consistent if preserving
+        if (card.gradientConfig && card.gradientConfig.enabled) {
+            card.gradientConfig.maxOpacity = card.gradientConfig.maxOpacity || 0.5;
+        }
+    }
+
+    // Reset preserveGradient after use
+    card.preserveGradient = false;
+
+
+    // Reset preserveGradient after use
+    card.preserveGradient = false;
+
+
 	//rotation
 	if (card.landscape) {
 		// previewContext.scale(card.width/card.height, card.height/card.width);
@@ -186,6 +227,7 @@ sizeCanvas('card');
 sizeCanvas('frame');
 sizeCanvas('frameMasking');
 sizeCanvas('frameCompositing');
+sizeCanvas('gradient');
 sizeCanvas('text');
 sizeCanvas('paragraph');
 sizeCanvas('line');
@@ -207,6 +249,87 @@ function scaleHeight(input) {
 	return Math.round(input * card.height);
 }
 //Other nifty functions
+function drawHorizontalGradient({
+    context = frameContext,
+    color = 'black', 
+    startY = 0.8,
+    height = 0.35,
+    maxOpacity = 0.5, // Normalized to 0-1
+    fadeStart = 0.2,
+    fadeLength = 0.15
+} = {}) {
+    console.log('Drawing gradient with params:', {
+        startY,
+        height,
+        maxOpacity,
+        fadeStart, 
+        fadeLength
+    });
+
+    // Use dedicated gradient canvas
+    const gradientCanvas = window['gradientCanvas'];
+    const gradientContext = window['gradientContext'];
+
+    // Clear existing gradient if any
+    if (card.gradientConfig && card.gradientConfig.enabled) {
+        const bounds = card.gradientConfig.bounds;
+        gradientContext.clearRect(
+            0,
+            scaleY(bounds.y),
+            gradientCanvas.width,
+            scaleHeight(bounds.height)
+        );
+    }
+
+    // Create gradient 
+    const gradient = gradientContext.createLinearGradient(
+        0, 
+        scaleY(startY), 
+        0, 
+        scaleY(startY - height)
+    );
+
+    // Add stops
+    gradient.addColorStop(0, `rgba(0,0,0,${maxOpacity})`);
+    gradient.addColorStop(fadeStart, `rgba(0,0,0,${maxOpacity})`);
+    gradient.addColorStop(fadeStart + fadeLength, 'rgba(0,0,0,0)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+    // Draw gradient
+    gradientContext.fillStyle = gradient;
+    gradientContext.fillRect(
+        0, 
+        scaleY(startY - height),
+        gradientCanvas.width,
+        scaleHeight(height)
+    );
+
+    // Store config
+    const config = {
+        enabled: true,
+        context: gradientContext,
+        color: color,
+        startY: startY,
+        height: height,
+        maxOpacity: maxOpacity,
+        fadeStart: fadeStart, 
+        fadeLength: fadeLength,
+        gradient: gradient,
+        bounds: {
+            x: 0,
+            y: startY - height,
+            width: 1,
+            height: height
+        }
+    };
+
+    card.gradientConfig = config;
+
+    // Draw onto target canvas
+    context.drawImage(gradientCanvas, 0, 0);
+
+    return config;
+}
 function getElementIndex(element) {
 	return Array.prototype.indexOf.call(element.parentElement.children, element);
 }
@@ -4758,6 +4881,11 @@ function drawCard() {
 	cardContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
 	cardContext.restore();
 	// frame elements
+	cardContext.drawImage(frameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+    // Draw gradient if enabled
+    if (card.gradientConfig && card.gradientConfig.enabled) {
+        cardContext.drawImage(gradientCanvas, 0, 0);
+    }
 	if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
 		cardContext.drawImage(planeswalkerPreFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
 	}

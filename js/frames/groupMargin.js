@@ -20,6 +20,9 @@ loadFramePacks([
 
 //For multiple Margin packs
 var loadMarginVersion = async () => {
+    // Store gradient config before reset
+    const savedGradient = card.gradientConfig ? {...card.gradientConfig} : null;
+    console.log('Saved gradient state:', savedGradient);
 	//resets things so that every frame doesn't have to
 	await resetCardIrregularities({canvas:[getStandardWidth(), getStandardHeight(), 0.044, 1/35], resetOthers:false});
 	//sets card version
@@ -48,6 +51,33 @@ var loadMarginVersion = async () => {
 	if (changedArtBounds) {
 		autoFitArt();
 	}
+// Restore gradient if it was enabled
+try {
+    if (savedGradient && savedGradient.enabled) {
+        // Clone the saved gradient config without any position adjustments
+        const adjustedConfig = {
+            ...savedGradient,
+            context: frameContext
+        };
+
+        console.log('Restoring gradient with original config:', adjustedConfig);
+        
+        // Draw the new gradient
+        const result = drawHorizontalGradient(adjustedConfig);
+        
+        // Store result directly without modification
+        card.gradientConfig = result;
+        
+        // Force redraw of frame
+        drawFrames();
+        
+        console.log('Gradient restored with original position');
+    }
+} catch (error) {
+    console.error('Failed to restore gradient:', error);
+    console.error('Original config:', savedGradient);
+    card.gradientConfig = { enabled: false };
+}
 	//runs anything that needs to run
 	if (card.version.includes('planeswalker')) {
 		planeswalkerEdited();
