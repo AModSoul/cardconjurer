@@ -231,7 +231,7 @@ if (textEditor) {
                 }); // Enhanced debug log
             });
         }
-    }, 2000); // 5000ms = 5 seconds
+    }, 2000); // 2000ms = 2 seconds
 
     textEditor.addEventListener('input', function() {
         console.log('Text changed, waiting for pause...'); // Debug log
