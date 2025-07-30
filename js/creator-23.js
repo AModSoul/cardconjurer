@@ -3999,31 +3999,58 @@ function writeText(textObject, targetContext) {
 
 			function renderManaSymbols() {
 				if (manaSymbolsToRender.length === 0) return;
-			
+
+				// Detect Safari browser
+				var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 				// Check if any symbols actually need outlines
 				var hasAnyOutlines = manaSymbolsToRender.some(symbolData => symbolData.hasOutline);
 				
 				if (!hasAnyOutlines) {
 					// Simple path: no outlines needed, just draw symbols normally
 					manaSymbolsToRender.forEach(symbolData => {
+						var imageToUse = symbolData.symbol.image;
+						var backImageToUse = symbolData.backImage;
+						
+						// For Safari, create a combined canvas first, then apply shadow
+						if (isSafari && (symbolData.symbol.image.src?.includes('.svg') || (backImageToUse?.src?.includes('.svg')))) {
+							// Create a combined canvas for both symbols
+							var combinedCanvas = document.createElement('canvas');
+							combinedCanvas.width = symbolData.width;
+							combinedCanvas.height = symbolData.height;
+							var combinedContext = combinedCanvas.getContext('2d');
+							
+							// Draw back image first (if exists)
+							if (symbolData.symbol.backs && backImageToUse) {
+								combinedContext.drawImage(backImageToUse, 0, 0, symbolData.width, symbolData.height);
+							}
+							
+							// Draw main symbol on top
+							combinedContext.drawImage(symbolData.symbol.image, 0, 0, symbolData.width, symbolData.height);
+							
+							// Now use the combined canvas as the image source
+							imageToUse = combinedCanvas;
+							backImageToUse = null; // Don't draw back separately since it's already combined
+						}
+						
 						if (symbolData.radius > 0) {
-							if (symbolData.symbol.backs) {
-								lineContext.drawImageArc(symbolData.backImage, symbolData.x, symbolData.y, 
+							if (symbolData.symbol.backs && backImageToUse) {
+								lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
 									symbolData.width, symbolData.height, symbolData.radius, 
 									symbolData.arcStart, symbolData.currentX);
 							}
-							lineContext.drawImageArc(symbolData.symbol.image, symbolData.x, symbolData.y, 
+							lineContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
 								symbolData.width, symbolData.height, symbolData.radius,
 								symbolData.arcStart, symbolData.currentX);
 						} else if (symbolData.color) {
-							lineContext.fillImage(symbolData.symbol.image, symbolData.x, symbolData.y,
+							lineContext.fillImage(imageToUse, symbolData.x, symbolData.y,
 								symbolData.width, symbolData.height, symbolData.color);
 						} else {
-							if (symbolData.symbol.backs) {
-								lineContext.drawImage(symbolData.backImage, symbolData.x, symbolData.y,
+							if (symbolData.symbol.backs && backImageToUse) {
+								lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
 									symbolData.width, symbolData.height);
 							}
-							lineContext.drawImage(symbolData.symbol.image, symbolData.x, symbolData.y,
+							lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
 								symbolData.width, symbolData.height);
 						}
 					});
@@ -4031,7 +4058,7 @@ function writeText(textObject, targetContext) {
 					manaSymbolsToRender = [];
 					return; // This exits the function completely - no complex rendering
 				}
-			
+
 				// Complex path: outlines needed, do multi-pass rendering
 				// This code should ONLY run when hasAnyOutlines is true
 				var outlineCanvas = lineCanvas.cloneNode(); 
@@ -4042,7 +4069,7 @@ function writeText(textObject, targetContext) {
 				symbolContext.shadowOffsetX = lineContext.shadowOffsetX;
 				symbolContext.shadowOffsetY = lineContext.shadowOffsetY;
 				symbolContext.shadowBlur = lineContext.shadowBlur;
-			
+
 				// Save existing text content
 				var tempCanvas = lineCanvas.cloneNode();
 				var tempContext = tempCanvas.getContext('2d');
@@ -4071,28 +4098,52 @@ function writeText(textObject, targetContext) {
 				
 				// Second pass: Draw mana symbols
 				manaSymbolsToRender.forEach(symbolData => {
+					var imageToUse = symbolData.symbol.image;
+					var backImageToUse = symbolData.backImage;
+					
+					// For Safari, create a combined canvas first, then apply shadow
+					if (isSafari && (symbolData.symbol.image.src?.includes('.svg') || (backImageToUse?.src?.includes('.svg')))) {
+						// Create a combined canvas for both symbols
+						var combinedCanvas = document.createElement('canvas');
+						combinedCanvas.width = symbolData.width;
+						combinedCanvas.height = symbolData.height;
+						var combinedContext = combinedCanvas.getContext('2d');
+						
+						// Draw back image first (if exists)
+						if (symbolData.symbol.backs && backImageToUse) {
+							combinedContext.drawImage(backImageToUse, 0, 0, symbolData.width, symbolData.height);
+						}
+						
+						// Draw main symbol on top
+						combinedContext.drawImage(symbolData.symbol.image, 0, 0, symbolData.width, symbolData.height);
+						
+						// Now use the combined canvas as the image source
+						imageToUse = combinedCanvas;
+						backImageToUse = null; // Don't draw back separately since it's already combined
+					}
+					
 					if (symbolData.radius > 0) {
-						if (symbolData.symbol.backs) {
-							symbolContext.drawImageArc(symbolData.backImage, symbolData.x, symbolData.y, 
+						if (symbolData.symbol.backs && backImageToUse) {
+							symbolContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
 								symbolData.width, symbolData.height, symbolData.radius, 
 								symbolData.arcStart, symbolData.currentX);
 						}
-						symbolContext.drawImageArc(symbolData.symbol.image, symbolData.x, symbolData.y, 
+						symbolContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
 							symbolData.width, symbolData.height, symbolData.radius,
 							symbolData.arcStart, symbolData.currentX);
 					} else if (symbolData.color) {
-						symbolContext.fillImage(symbolData.symbol.image, symbolData.x, symbolData.y,
+						symbolContext.fillImage(imageToUse, symbolData.x, symbolData.y,
 							symbolData.width, symbolData.height, symbolData.color);
 					} else {
-						if (symbolData.symbol.backs) {
-							symbolContext.drawImage(symbolData.backImage, symbolData.x, symbolData.y,
+						if (symbolData.symbol.backs && backImageToUse) {
+							symbolContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
 								symbolData.width, symbolData.height);
 						}
-						symbolContext.drawImage(symbolData.symbol.image, symbolData.x, symbolData.y,
+						symbolContext.drawImage(imageToUse, symbolData.x, symbolData.y,
 							symbolData.width, symbolData.height);
 					}
 				});
-			
+
 				// Draw symbols on top of text
 				lineContext.drawImage(symbolCanvas, 0, 0);
 				
