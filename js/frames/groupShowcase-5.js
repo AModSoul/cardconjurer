@@ -1,6 +1,6 @@
 loadFramePacks([
 	{name:'Set Showcase Frames (Chronological)', value:'disabled'},
-	{name:'Stellar Sights (EOE)', value:'StellarSights'},
+	{name:'Borderless Stellar Sights (EOE)', value:'BorderlessStellarSights'},
 	{name:'Draconic (TDM)', value:'Draconic'},
 	{name:'Ghostfire (TDM)', value:'Ghostfire'},
 	{name:'Japan Showcase', value:'JapanShowcase'},
