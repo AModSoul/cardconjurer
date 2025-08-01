@@ -1,24 +1,24 @@
 //Create objects for common properties across available frames
-var masks = [{src:'/img/frames/stellarSights/masks/maskTitle.png', name:'Title'}, {src:'/img/frames/stellarSights/masks/maskRules.png', name:'Rules'}, {src:'/img/frames/stellarSights/masks/maskTextBoxes.png', name:'Text Boxes'}, {src:'/img/frames/stellarSights/masks/maskFrame.png', name:'Frame'}, {src:'/img/frames/stellarSights/masks/maskNoBorder.png', name:'No Border'}, {src:'/img/frames/stellarSights/masks/maskBorder.png', name:'Border'}];
-var masks2 = [{src:'/img/frames/stellarSights/pt/masks/maskOuterFrame.png', name:'Outer Frame'}];
+var masks = [{src:'/img/frames/stellarSights/borderlessStellarSights/masks/maskTitle.png', name:'Title'}, {src:'/img/frames/stellarSights/borderlessStellarSights/masks/maskRules.png', name:'Rules'}, {src:'/img/frames/stellarSights/borderlessStellarSights/masks/maskTextBoxes.png', name:'Text Boxes'}, {src:'/img/frames/stellarSights/borderlessStellarSights/masks/maskFrame.png', name:'Frame'}, {src:'/img/frames/stellarSights/borderlessStellarSights/masks/maskNoBorder.png', name:'No Border'}, {src:'/img/frames/stellarSights/borderlessStellarSights/masks/maskBorder.png', name:'Border'}];
+var masks2 = [{src:'/img/frames/stellarSights/borderlessStellarSights/pt/masks/maskOuterFrame.png', name:'Outer Frame'}];
 //defines available frames
 availableFrames = [
-	{name:'White Frame', src:'/img/frames/stellarSights/w.png', masks:masks},
-	{name:'Blue Frame', src:'/img/frames/stellarSights/u.png', masks:masks},
-	{name:'Black Frame', src:'/img/frames/stellarSights/b.png', masks:masks},
-	{name:'Red Frame', src:'/img/frames/stellarSights/r.png', masks:masks},
-	{name:'Green Frame', src:'/img/frames/stellarSights/g.png', masks:masks},
-	{name:'Multicolored Frame', src:'/img/frames/stellarSights/m.png', masks:masks},
-	{name:'Artifact Frame', src:'/img/frames/stellarSights/a.png', masks:masks},
-	{name:'Land Frame', src:'/img/frames/stellarSights/L.png', masks:masks},
-	{name:'White Power/Toughness', src:'/img/frames/stellarSights/pt/w.png', masks:masks2},
-	{name:'Blue Power/Toughness', src:'/img/frames/stellarSights/pt/u.png', masks:masks2},
-	{name:'Black Power/Toughness', src:'/img/frames/stellarSights/pt/b.png', masks:masks2},
-	{name:'Red Power/Toughness', src:'/img/frames/stellarSights/pt/r.png', masks:masks2,},
-	{name:'Green Power/Toughness', src:'/img/frames/stellarSights/pt/g.png', masks:masks2,},
-	{name:'Multicolored Power/Toughness', src:'/img/frames/stellarSights/pt/m.png', masks:masks2},
-	{name:'Artifact Power/Toughness', src:'/img/frames/stellarSights/pt/a.png', masks:masks2},
-	{name:'Land Power/Toughness', src:'/img/frames/stellarSights/pt/L.png', masks:masks2}
+	{name:'White Frame', src:'/img/frames/stellarSights/borderlessStellarSights/w.png', masks:masks},
+	{name:'Blue Frame', src:'/img/frames/stellarSights/borderlessStellarSights/u.png', masks:masks},
+	{name:'Black Frame', src:'/img/frames/stellarSights/borderlessStellarSights/b.png', masks:masks},
+	{name:'Red Frame', src:'/img/frames/stellarSights/borderlessStellarSights/r.png', masks:masks},
+	{name:'Green Frame', src:'/img/frames/stellarSights/borderlessStellarSights/g.png', masks:masks},
+	{name:'Multicolored Frame', src:'/img/frames/stellarSights/borderlessStellarSights/m.png', masks:masks},
+	{name:'Artifact Frame', src:'/img/frames/stellarSights/borderlessStellarSights/a.png', masks:masks},
+	{name:'Land Frame', src:'/img/frames/stellarSights/borderlessStellarSights/L.png', masks:masks},
+	{name:'White Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/w.png', masks:masks2},
+	{name:'Blue Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/u.png', masks:masks2},
+	{name:'Black Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/b.png', masks:masks2},
+	{name:'Red Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/r.png', masks:masks2,},
+	{name:'Green Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/g.png', masks:masks2,},
+	{name:'Multicolored Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/m.png', masks:masks2},
+	{name:'Artifact Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/a.png', masks:masks2},
+	{name:'Land Power/Toughness', src:'/img/frames/stellarSights/borderlessStellarSights/pt/L.png', masks:masks2}
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
