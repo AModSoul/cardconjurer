@@ -5313,6 +5313,7 @@ function extractSagaReminderText(text) {
   const match = text.match(/^\([^)]*\)/);
   return match ? match[0] : null;
 }
+
 function parseFlipCard(card) {
 	return new Promise((resolve) => {
 	  // If we have a card face, build a full flip card
