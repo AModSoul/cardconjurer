@@ -5314,11 +5314,11 @@ function extractSagaReminderText(text) {
   return match ? match[0] : null;
 }
 
-function parseFlipCard(card) {
+function parseMultiFacedCards(card) {
 	return new Promise((resolve) => {
-	  // If we have a card face, build a full flip card
-	  if (card.object === "card_face") {
-		console.log('Building flip card from face:', card);
+      // If we have a card face, build a full flip/split card
+      if (card.object === "card_face") {
+        console.log('Building flip/split card from face:', card);
 		
 		// Create the flip card structure
 		const flipCard = {
@@ -5355,27 +5355,29 @@ function parseFlipCard(card) {
 		  };
 		}
   
-		console.log('Created flip card:', flipCard);
-		parseFlipCardData(flipCard, resolve);
+		console.log('Created flip/split card:', flipCard);
+		parseMultiFacedCardData(flipCard, resolve);
 		return;
 	  }
   
 	  // Otherwise process normally
-	  parseFlipCardData(card, resolve);
+	  parseMultiFacedCardData(card, resolve);
 	});
   }
   
-  function parseFlipCardData(card, resolve) {
+  function parseMultiFacedCardData(card, resolve) {
 	// Add validation 
 	if (!card || !card.card_faces) {
-	  console.error('Invalid flip card data - missing card_faces:', card);
+	  console.error('Invalid flip/split card data - missing card_faces:', card);
 	  resolve(null);
 	  return;
 	}
   
     // Only load flip frame script if we're actually using flip frames
-    if (card.version === 'flip') {
+    if (card.layout === 'flip') {
         loadScript('/js/frames/packFlip.js');
+    } else if (card.layout === 'split') {
+        loadScript('/js/frames/packSplit.js');
     }
   
 	// Extract faces with safe access
@@ -5425,65 +5427,83 @@ function changeCardIndex() {
 	//text
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
-// Handle flip cards
-if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc'|| cardToImport.layout === 'transform' || cardToImport.layout === 'split') && card.version === 'flip') {
-    console.log('Processing flip card in changeCardIndex');
-	
-	parseFlipCard(cardToImport).then(flipData => {
-	  if (!flipData) {
-		console.error('Failed to parse flip card data');
-		return;
-	  }
-	  
-	  console.log('Got flip data:', flipData);
+// Handle flip cards and split cards
+if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) && ['flip', 'split'].includes(card.version)) {
+    console.log('Processing flip/split card in changeCardIndex');
+    
+    parseMultiFacedCards(cardToImport).then(flipData => {
+      if (!flipData) {
+        console.error('Failed to parse flip/split card data');
+        return;
+      }
+      
+      console.log('Got flip/split data:', flipData);
   
-	  // Add artist info
-	  if (cardToImport.artist) {
-		artistEdited(cardToImport.artist);
-	  }
+      // Add artist info
+      if (cardToImport.artist) {
+        artistEdited(cardToImport.artist);
+      }
   
-	  // Handle art loading 
-	  if (cardToImport.image_uris?.art_crop) {
-		uploadArt(cardToImport.image_uris.art_crop, 'autoFit');
-	  }
+      // Handle art loading 
+      if (cardToImport.image_uris?.art_crop) {
+        uploadArt(cardToImport.image_uris.art_crop, 'autoFit');
+      }
   
-	  // Handle set symbol
-	  if (!document.querySelector('#lockSetSymbolCode').checked) {
-		document.querySelector('#set-symbol-code').value = cardToImport.set;
-		document.querySelector('#set-symbol-rarity').value = cardToImport.rarity.slice(0, 1);
-		if (!document.querySelector('#lockSetSymbolURL').checked) {
-		  fetchSetSymbol();
-		}
-	  }
+      // Handle set symbol
+      if (!document.querySelector('#lockSetSymbolCode').checked) {
+        document.querySelector('#set-symbol-code').value = cardToImport.set;
+        document.querySelector('#set-symbol-rarity').value = cardToImport.rarity.slice(0, 1);
+        if (!document.querySelector('#lockSetSymbolURL').checked) {
+          fetchSetSymbol();
+        }
+      }
   
-	  // Update text fields
-	  console.log('Text fields before update:', card.text);
-	  
-	  // Front face
-	  if (card.text?.title && card.text?.mana) {
-		card.text.title.text = langFontCode + flipData.front.name;
-		card.text.type.text = langFontCode + flipData.front.type; 
-		card.text.rules.text = langFontCode + flipData.front.rules;
-		card.text.mana.text = flipData.front.mana || '';
-		if (card.text.pt) {
-			card.text.pt.text = flipData.front.pt || '';
-		  }
-	  }
+      // Update text fields based on card version
+      console.log('Text fields before update:', card.text);
+      
+      if (card.version === 'flip') {
+          // Flip card logic (existing)
+          if (card.text?.title && card.text?.mana) {
+            card.text.title.text = langFontCode + flipData.front.name;
+            card.text.type.text = langFontCode + flipData.front.type; 
+            card.text.rules.text = langFontCode + flipData.front.rules;
+            card.text.mana.text = flipData.front.mana || '';
+            if (card.text.pt) {
+                card.text.pt.text = flipData.front.pt || '';
+            }
+          }
+      
+          if (card.text?.title2 && card.text?.mana2) {
+            card.text.title2.text = langFontCode + flipData.back.name;
+            card.text.type2.text = langFontCode + flipData.back.type;
+            card.text.rules2.text = langFontCode + flipData.back.rules;
+            card.text.mana2.text = flipData.back.mana || '';
+            if (card.text.pt2) {
+                card.text.pt2.text = flipData.back.pt || '';
+            }
+          }
+      } else if (card.version === 'split') {
+          // Split card logic (new)
+          // Left side (front face)
+          if (card.text?.title && card.text?.mana) {
+            card.text.title.text = langFontCode + flipData.front.name;
+            card.text.type.text = langFontCode + flipData.front.type; 
+            card.text.rules.text = langFontCode + flipData.front.rules;
+            card.text.mana.text = flipData.front.mana || '';
+          }
+          
+          // Right side (back face)
+          if (card.text?.title2 && card.text?.mana2) {
+            card.text.title2.text = langFontCode + flipData.back.name;
+            card.text.type2.text = langFontCode + flipData.back.type;
+            card.text.rules2.text = langFontCode + flipData.back.rules;
+            card.text.mana2.text = flipData.back.mana || '';
+          }
+      }
   
-	  // Back face
-	  if (card.text?.title2 && card.text?.mana2) {
-		card.text.title2.text = langFontCode + flipData.back.name;
-		card.text.type2.text = langFontCode + flipData.back.type;
-		card.text.rules2.text = langFontCode + flipData.back.rules;
-		card.text.mana2.text = flipData.back.mana || '';
-        if (card.text.pt2) {
-			card.text.pt2.text = flipData.back.pt || '';
-		  }
-	  }
-  
-	  console.log('Text fields after update:', card.text);
-	  textEdited();
-	});
+      console.log('Text fields after update:', card.text);
+      textEdited();
+    });
   }
 	var name = cardToImport.name || '';
 	if (name.startsWith('A-')) { name = name.replace('A-', '{alchemy}'); }
