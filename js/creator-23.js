@@ -5378,7 +5378,9 @@ function parseMultiFacedCards(card) {
         loadScript('/js/frames/packFlip.js');
     } else if (card.layout === 'split') {
         loadScript('/js/frames/packSplit.js');
-    }
+	} else if (card.layout === 'fuse') {
+		loadScript('/js/frames/packFuse.js');
+	}
   
 	// Extract faces with safe access
 	const frontFace = card.card_faces[0] || {};
@@ -5417,27 +5419,37 @@ function changeCardIndex() {
 	console.log('Card version:', card.version);
 	console.log('Is flip card?', cardToImport.layout === 'flip' && card.version.includes('flip'));
 
-	    // Clear all existing text fields to prevent old data from persisting
-		if (card.text) {
-			Object.keys(card.text).forEach(key => {
-				card.text[key].text = '';
-			});
-		}
+    // Clear all existing text fields to prevent old data from persisting BUT preserve fuse reminder text if we're using a fuse frame
+    var savedFuseReminderText = '';
+    if (card.text && card.text.reminder && card.version === 'fuse') {
+        savedFuseReminderText = card.text.reminder.text;
+    }
+    
+    if (card.text) {
+        Object.keys(card.text).forEach(key => {
+            card.text[key].text = '';
+        });
+    }
+
+	// Restore fuse reminder text if it was saved
+	if (savedFuseReminderText && card.text && card.text.reminder && card.version === 'fuse') {
+		card.text.reminder.text = savedFuseReminderText;
+	}
 		
 	//text
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
-// Handle flip cards and split cards
-if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) && ['flip', 'split'].includes(card.version)) {
-    console.log('Processing flip/split card in changeCardIndex');
+// Handle flip cards, split cards, and fuse cards
+if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) && ['flip', 'split', 'fuse'].includes(card.version)) {
+    console.log('Processing flip/split/fuse card in changeCardIndex');
     
     parseMultiFacedCards(cardToImport).then(flipData => {
-      if (!flipData) {
-        console.error('Failed to parse flip/split card data');
-        return;
-      }
+	if (!flipData) {
+		console.error('Failed to parse flip/split/fuse card data');
+		return;
+		}
       
-      console.log('Got flip/split data:', flipData);
+	console.log('Got flip/split/fuse data:', flipData);
   
       // Add artist info
       if (cardToImport.artist) {
@@ -5482,7 +5494,7 @@ if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) &&
                 card.text.pt2.text = flipData.back.pt || '';
             }
           }
-      } else if (card.version === 'split') {
+      } else if (card.version === 'split' || card.version === 'fuse') {
           // Split card logic (new)
           // Left side (front face)
           if (card.text?.title && card.text?.mana) {
@@ -5490,6 +5502,9 @@ if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) &&
             card.text.type.text = langFontCode + flipData.front.type; 
             card.text.rules.text = langFontCode + flipData.front.rules;
             card.text.mana.text = flipData.front.mana || '';
+            if (card.text.pt) {
+                card.text.pt.text = flipData.front.pt || '';
+            }
           }
           
           // Right side (back face)
@@ -5498,6 +5513,9 @@ if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) &&
             card.text.type2.text = langFontCode + flipData.back.type;
             card.text.rules2.text = langFontCode + flipData.back.rules;
             card.text.mana2.text = flipData.back.mana || '';
+			if (card.text.pt2) {
+                card.text.pt2.text = flipData.back.pt || '';
+            }
           }
       }
   
