@@ -5318,7 +5318,6 @@ function parseMultiFacedCards(card) {
 	return new Promise((resolve) => {
       // If we have a card face, build a full flip/split card
       if (card.object === "card_face") {
-        console.log('Building flip/split card from face:', card);
 		
 		// Create the flip card structure
 		const flipCard = {
@@ -5355,7 +5354,6 @@ function parseMultiFacedCards(card) {
 		  };
 		}
   
-		console.log('Created flip/split card:', flipCard);
 		parseMultiFacedCardData(flipCard, resolve);
 		return;
 	  }
@@ -5368,7 +5366,6 @@ function parseMultiFacedCards(card) {
   function parseMultiFacedCardData(card, resolve) {
 	// Add validation 
 	if (!card || !card.card_faces) {
-	  console.error('Invalid flip/split card data - missing card_faces:', card);
 	  resolve(null);
 	  return;
 	}
@@ -5385,9 +5382,7 @@ function parseMultiFacedCards(card) {
 	// Extract faces with safe access
 	const frontFace = card.card_faces[0] || {};
 	const backFace = card.card_faces[1] || {};
-  
-	console.log('Processing faces:', {front: frontFace, back: backFace});
-  
+   
 	// Create faces object
 	const faces = {
 	  front: {
@@ -5407,7 +5402,6 @@ function parseMultiFacedCards(card) {
 	};
   
 	// Resolve with faces data
-	console.log('Returning faces:', faces);
 	setTimeout(() => {
 	  resolve(faces);
 	}, 100);
@@ -5417,7 +5411,6 @@ function changeCardIndex() {
 	// Add debug logging for flip card detection
 	console.log('Card layout:', cardToImport.layout);
 	console.log('Card version:', card.version);
-	console.log('Is flip card?', cardToImport.layout === 'flip' && card.version.includes('flip'));
 
     // Clear all existing text fields to prevent old data from persisting BUT preserve fuse reminder text if we're using a fuse frame
     var savedFuseReminderText = '';
@@ -5441,15 +5434,12 @@ function changeCardIndex() {
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
 // Handle flip cards, split cards, and fuse cards
 if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) && ['flip', 'split', 'fuse'].includes(card.version)) {
-    console.log('Processing flip/split/fuse card in changeCardIndex');
     
     parseMultiFacedCards(cardToImport).then(flipData => {
 	if (!flipData) {
 		console.error('Failed to parse flip/split/fuse card data');
 		return;
 		}
-      
-	console.log('Got flip/split/fuse data:', flipData);
   
       // Add artist info
       if (cardToImport.artist) {
@@ -5471,7 +5461,6 @@ if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) &&
       }
   
       // Update text fields based on card version
-      console.log('Text fields before update:', card.text);
       
       if (card.version === 'flip') {
           // Flip card logic (existing)
@@ -5519,7 +5508,6 @@ if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) &&
           }
       }
   
-      console.log('Text fields after update:', card.text);
       textEdited();
     });
   }
