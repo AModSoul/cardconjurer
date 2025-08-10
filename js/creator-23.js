@@ -4036,23 +4036,23 @@ function writeText(textObject, targetContext) {
 						if (symbolData.radius > 0) {
 							if (symbolData.symbol.backs && backImageToUse) {
 								lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
-									symbolData.width, symbolData.height, symbolData.radius,
+									symbolData.width, symbolData.height, symbolData.radius, 
 									symbolData.arcStart, symbolData.currentX);
+							}
+							lineContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
+								symbolData.width, symbolData.height, symbolData.radius,
+								symbolData.arcStart, symbolData.currentX);
+						} else if (symbolData.color) {
+							lineContext.fillImage(imageToUse, symbolData.x, symbolData.y,
+								symbolData.width, symbolData.height, symbolData.color);
+						} else {
+							if (symbolData.symbol.backs && backImageToUse) {
+								lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
+									symbolData.width, symbolData.height);
 								}
-								lineContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
-									symbolData.width, symbolData.height, symbolData.radius,
-									symbolData.arcStart, symbolData.currentX);
-							} else if (symbolData.color) {
-								lineContext.fillImage(imageToUse, symbolData.x, symbolData.y,
-									symbolData.width, symbolData.height, symbolData.color);
-							} else {
-								if (symbolData.symbol.backs && backImageToUse) {
-									lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
-										symbolData.width, symbolData.height);
-									}
-									lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
-										symbolData.width, symbolData.height);
-								}
+								lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
+									symbolData.width, symbolData.height);
+							}
 
 					});
 					
