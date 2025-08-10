@@ -3987,7 +3987,8 @@ function writeText(textObject, targetContext) {
 						shadowColor: textShadowColor,
 						shadowOffsetX: textShadowOffsetX,
 						shadowOffsetY: textShadowOffsetY,
-						shadowBlur: textShadowBlur
+						shadowBlur: textShadowBlur,
+						rotation: textRotation // Add this line
 					});
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
 
@@ -4033,25 +4034,56 @@ function writeText(textObject, targetContext) {
 							backImageToUse = null; // Don't draw back separately since it's already combined
 						}
 						
-						if (symbolData.radius > 0) {
-							if (symbolData.symbol.backs && backImageToUse) {
-								lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
-									symbolData.width, symbolData.height, symbolData.radius, 
+						// Handle rotation if present
+						if (symbolData.rotation && !textManaCost) {
+							lineContext.save();
+							lineContext.translate(symbolData.x + symbolData.width/2, symbolData.y + symbolData.height/2);
+							lineContext.rotate(Math.PI * symbolData.rotation / 180);
+							
+							if (symbolData.radius > 0) {
+								if (symbolData.symbol.backs && backImageToUse) {
+									lineContext.drawImageArc(backImageToUse, -symbolData.width/2, -symbolData.height/2, 
+										symbolData.width, symbolData.height, symbolData.radius, 
+										symbolData.arcStart, symbolData.currentX);
+								}
+								lineContext.drawImageArc(imageToUse, -symbolData.width/2, -symbolData.height/2, 
+									symbolData.width, symbolData.height, symbolData.radius,
 									symbolData.arcStart, symbolData.currentX);
-							}
-							lineContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
-								symbolData.width, symbolData.height, symbolData.radius,
-								symbolData.arcStart, symbolData.currentX);
-						} else if (symbolData.color) {
-							lineContext.fillImage(imageToUse, symbolData.x, symbolData.y,
-								symbolData.width, symbolData.height, symbolData.color);
-						} else {
-							if (symbolData.symbol.backs && backImageToUse) {
-								lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
+							} else if (symbolData.color) {
+								lineContext.fillImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
+									symbolData.width, symbolData.height, symbolData.color);
+							} else {
+								if (symbolData.symbol.backs && backImageToUse) {
+									lineContext.drawImage(backImageToUse, -symbolData.width/2, -symbolData.height/2,
+										symbolData.width, symbolData.height);
+								}
+								lineContext.drawImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
 									symbolData.width, symbolData.height);
 							}
-							lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
-								symbolData.width, symbolData.height);
+							
+							lineContext.restore();
+						} else {
+
+							if (symbolData.radius > 0) {
+								if (symbolData.symbol.backs && backImageToUse) {
+									lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
+										symbolData.width, symbolData.height, symbolData.radius, 
+										symbolData.arcStart, symbolData.currentX);
+								}
+								lineContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
+									symbolData.width, symbolData.height, symbolData.radius,
+									symbolData.arcStart, symbolData.currentX);
+							} else if (symbolData.color) {
+								lineContext.fillImage(imageToUse, symbolData.x, symbolData.y,
+									symbolData.width, symbolData.height, symbolData.color);
+							} else {
+								if (symbolData.symbol.backs && backImageToUse) {
+									lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
+										symbolData.width, symbolData.height);
+								}
+								lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
+									symbolData.width, symbolData.height);
+							}
 						}
 					});
 					
@@ -4122,6 +4154,36 @@ function writeText(textObject, targetContext) {
 						backImageToUse = null; // Don't draw back separately since it's already combined
 					}
 					
+				// Handle rotation for symbols with outlines
+				if (symbolData.rotation && !textManaCost) {
+					symbolContext.save();
+					symbolContext.translate(symbolData.x + symbolData.width/2, symbolData.y + symbolData.height/2);
+					symbolContext.rotate(Math.PI * symbolData.rotation / 180);
+					
+					if (symbolData.radius > 0) {
+						if (symbolData.symbol.backs && backImageToUse) {
+							symbolContext.drawImageArc(backImageToUse, -symbolData.width/2, -symbolData.height/2, 
+								symbolData.width, symbolData.height, symbolData.radius, 
+								symbolData.arcStart, symbolData.currentX);
+						}
+						symbolContext.drawImageArc(imageToUse, -symbolData.width/2, -symbolData.height/2, 
+							symbolData.width, symbolData.height, symbolData.radius,
+							symbolData.arcStart, symbolData.currentX);
+					} else if (symbolData.color) {
+						symbolContext.fillImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
+							symbolData.width, symbolData.height, symbolData.color);
+					} else {
+						if (symbolData.symbol.backs && backImageToUse) {
+							symbolContext.drawImage(backImageToUse, -symbolData.width/2, -symbolData.height/2,
+								symbolData.width, symbolData.height);
+						}
+						symbolContext.drawImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
+							symbolData.width, symbolData.height);
+					}
+					
+					symbolContext.restore();
+				} else {
+					// Original non-rotated code for outlined symbols
 					if (symbolData.radius > 0) {
 						if (symbolData.symbol.backs && backImageToUse) {
 							symbolContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
@@ -4142,7 +4204,8 @@ function writeText(textObject, targetContext) {
 						symbolContext.drawImage(imageToUse, symbolData.x, symbolData.y,
 							symbolData.width, symbolData.height);
 					}
-				});
+				}
+			});
 
 				// Draw symbols on top of text
 				lineContext.drawImage(symbolCanvas, 0, 0);
@@ -5348,11 +5411,19 @@ function changeCardIndex() {
 	console.log('Card layout:', cardToImport.layout);
 	console.log('Card version:', card.version);
 	console.log('Is flip card?', cardToImport.layout === 'flip' && card.version.includes('flip'));
+
+	    // Clear all existing text fields to prevent old data from persisting
+		if (card.text) {
+			Object.keys(card.text).forEach(key => {
+				card.text[key].text = '';
+			});
+		}
+		
 	//text
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
 // Handle flip cards
-if (cardToImport.layout === 'flip' && card.version.includes('flip')) {
+if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc') && card.version.includes('flip')) {
 	console.log('Processing flip card in changeCardIndex');
 	
 	parseFlipCard(cardToImport).then(flipData => {
@@ -5391,6 +5462,9 @@ if (cardToImport.layout === 'flip' && card.version.includes('flip')) {
 		card.text.type.text = langFontCode + flipData.front.type; 
 		card.text.rules.text = langFontCode + flipData.front.rules;
 		card.text.mana.text = flipData.front.mana || '';
+		if (card.text.pt) {
+			card.text.pt.text = flipData.front.pt || '';
+		  }
 	  }
   
 	  // Back face
@@ -5399,6 +5473,9 @@ if (cardToImport.layout === 'flip' && card.version.includes('flip')) {
 		card.text.type2.text = langFontCode + flipData.back.type;
 		card.text.rules2.text = langFontCode + flipData.back.rules;
 		card.text.mana2.text = flipData.back.mana || '';
+        if (card.text.pt2) {
+			card.text.pt2.text = flipData.back.pt || '';
+		  }
 	  }
   
 	  console.log('Text fields after update:', card.text);
