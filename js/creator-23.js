@@ -4049,11 +4049,10 @@ function writeText(textObject, targetContext) {
 							if (symbolData.symbol.backs && backImageToUse) {
 								lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
 									symbolData.width, symbolData.height);
-								}
-								lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
-									symbolData.width, symbolData.height);
 							}
-
+							lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
+								symbolData.width, symbolData.height);
+						}
 					});
 					
 					manaSymbolsToRender = [];
