@@ -3987,7 +3987,7 @@ function writeText(textObject, targetContext) {
 						shadowColor: textShadowColor,
 						shadowOffsetX: textShadowOffsetX,
 						shadowOffsetY: textShadowOffsetY,
-						shadowBlur: textShadowBlur,
+						shadowBlur: textShadowBlur
 					});
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
 
@@ -4033,11 +4033,11 @@ function writeText(textObject, targetContext) {
 							backImageToUse = null; // Don't draw back separately since it's already combined
 						}
 						
-							if (symbolData.radius > 0) {
-								if (symbolData.symbol.backs && backImageToUse) {
-									lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
-										symbolData.width, symbolData.height, symbolData.radius, 
-										symbolData.arcStart, symbolData.currentX);
+						if (symbolData.radius > 0) {
+							if (symbolData.symbol.backs && backImageToUse) {
+								lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
+									symbolData.width, symbolData.height, symbolData.radius,
+									symbolData.arcStart, symbolData.currentX);
 								}
 								lineContext.drawImageArc(imageToUse, symbolData.x, symbolData.y, 
 									symbolData.width, symbolData.height, symbolData.radius,
@@ -4049,11 +4049,11 @@ function writeText(textObject, targetContext) {
 								if (symbolData.symbol.backs && backImageToUse) {
 									lineContext.drawImage(backImageToUse, symbolData.x, symbolData.y,
 										symbolData.width, symbolData.height);
+									}
+									lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
+										symbolData.width, symbolData.height);
 								}
-								lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
-									symbolData.width, symbolData.height);
-							}
-						
+
 					});
 					
 					manaSymbolsToRender = [];
@@ -4122,8 +4122,6 @@ function writeText(textObject, targetContext) {
 						imageToUse = combinedCanvas;
 						backImageToUse = null; // Don't draw back separately since it's already combined
 
-				} else {
-					// Original non-rotated code for outlined symbols
 					if (symbolData.radius > 0) {
 						if (symbolData.symbol.backs && backImageToUse) {
 							symbolContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
