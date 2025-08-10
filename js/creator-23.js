@@ -5525,7 +5525,7 @@ if (['flip', 'modal_dfc', 'transform', 'split'].includes(cardToImport.layout) &&
   }
 	var name = cardToImport.name || '';
 	if (name.startsWith('A-')) { name = name.replace('A-', '{alchemy}'); }
-	
+
 	if (card.text.title) {
 		if (card.version == 'wanted') {
 			var subtitle = '';
