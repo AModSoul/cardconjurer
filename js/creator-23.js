@@ -4121,7 +4121,7 @@ function writeText(textObject, targetContext) {
 						imageToUse = combinedCanvas;
 						backImageToUse = null; // Don't draw back separately since it's already combined
 					}
-
+					
 					if (symbolData.radius > 0) {
 						if (symbolData.symbol.backs && backImageToUse) {
 							symbolContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
@@ -4142,7 +4142,7 @@ function writeText(textObject, targetContext) {
 						symbolContext.drawImage(imageToUse, symbolData.x, symbolData.y,
 							symbolData.width, symbolData.height);
 					}
-			});
+				});
 
 				// Draw symbols on top of text
 				lineContext.drawImage(symbolCanvas, 0, 0);
