@@ -6047,26 +6047,26 @@ function stretchSVGReal(data, frameObject) {
 function processScryfallCard(card, responseCards) {
 	if ('card_faces' in card) {
 		card.card_faces.forEach(face => {
-		face.set = card.set;
-		face.rarity = card.rarity;
-		face.collector_number = card.collector_number;
-		face.lang = card.lang;
-		face.layout = card.layout; // Add layout from parent card
-		if (card.lang != 'en') {
-		  face.oracle_text = face.printed_text;
-		  face.name = face.printed_name;
-		  face.type_line = face.printed_type_line;
-		}
-		responseCards.push(face);
-		if (!face.image_uris) {
-		  face.image_uris = card.image_uris;
-		}
+			face.set = card.set;
+			face.rarity = card.rarity;
+			face.collector_number = card.collector_number;
+			face.lang = card.lang;
+			face.layout = card.layout; // Add layout from parent card
+			if (card.lang != 'en') {
+			face.oracle_text = face.printed_text;
+			face.name = face.printed_name;
+			face.type_line = face.printed_type_line;
+			}
+			responseCards.push(face);
+			if (!face.image_uris) {
+			face.image_uris = card.image_uris;
+			}
 		});
 	} else {
 		if (card.lang != 'en') {
-		card.oracle_text = card.printed_text;
-		card.name = card.printed_name;
-		card.type_line = card.printed_type_line;
+			card.oracle_text = card.printed_text;
+			card.name = card.printed_name;
+			card.type_line = card.printed_type_line;
 		}
 		// Ensure layout is set even for single-faced cards
 		if (!card.layout) {
