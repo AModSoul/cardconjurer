@@ -5426,7 +5426,7 @@ function changeCardIndex() {
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
 // Handle flip cards
-if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc'|| cardToImport.layout === 'transform') && card.version === 'flip') {
+if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc'|| cardToImport.layout === 'transform' || cardToImport.layout === 'split') && card.version === 'flip') {
     console.log('Processing flip card in changeCardIndex');
 	
 	parseFlipCard(cardToImport).then(flipData => {
