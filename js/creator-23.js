@@ -6053,9 +6053,9 @@ function processScryfallCard(card, responseCards) {
 			face.lang = card.lang;
 			face.layout = card.layout; // Add layout from parent card
 			if (card.lang != 'en') {
-			face.oracle_text = face.printed_text;
-			face.name = face.printed_name;
-			face.type_line = face.printed_type_line;
+				face.oracle_text = face.printed_text;
+				face.name = face.printed_name;
+				face.type_line = face.printed_type_line;
 			}
 			responseCards.push(face);
 			if (!face.image_uris) {
