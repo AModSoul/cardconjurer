@@ -5484,6 +5484,7 @@ if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc') && c
   }
 	var name = cardToImport.name || '';
 	if (name.startsWith('A-')) { name = name.replace('A-', '{alchemy}'); }
+	
 	if (card.text.title) {
 		if (card.version == 'wanted') {
 			var subtitle = '';
@@ -5640,7 +5641,7 @@ if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc') && c
 		updateAbilityHeights()
 	} else if (card.version.includes('battle')) {
 		card.text.defense.text = cardToImport.defense || '';
-	  }
+	}
 	document.querySelector('#text-editor').value = card.text[Object.keys(card.text)[selectedTextIndex]].text;
 	document.querySelector('#text-editor-font-size').value = 0;
 	//font size
@@ -6059,7 +6060,7 @@ function processScryfallCard(card, responseCards) {
 			}
 			responseCards.push(face);
 			if (!face.image_uris) {
-			face.image_uris = card.image_uris;
+				face.image_uris = card.image_uris;
 			}
 		});
 	} else {
