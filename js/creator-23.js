@@ -3988,7 +3988,6 @@ function writeText(textObject, targetContext) {
 						shadowOffsetX: textShadowOffsetX,
 						shadowOffsetY: textShadowOffsetY,
 						shadowBlur: textShadowBlur,
-						rotation: textRotation // Add this line
 					});
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
 
@@ -4034,36 +4033,6 @@ function writeText(textObject, targetContext) {
 							backImageToUse = null; // Don't draw back separately since it's already combined
 						}
 						
-						// Handle rotation if present
-						if (symbolData.rotation && !textManaCost) {
-							lineContext.save();
-							lineContext.translate(symbolData.x + symbolData.width/2, symbolData.y + symbolData.height/2);
-							lineContext.rotate(Math.PI * symbolData.rotation / 180);
-							
-							if (symbolData.radius > 0) {
-								if (symbolData.symbol.backs && backImageToUse) {
-									lineContext.drawImageArc(backImageToUse, -symbolData.width/2, -symbolData.height/2, 
-										symbolData.width, symbolData.height, symbolData.radius, 
-										symbolData.arcStart, symbolData.currentX);
-								}
-								lineContext.drawImageArc(imageToUse, -symbolData.width/2, -symbolData.height/2, 
-									symbolData.width, symbolData.height, symbolData.radius,
-									symbolData.arcStart, symbolData.currentX);
-							} else if (symbolData.color) {
-								lineContext.fillImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
-									symbolData.width, symbolData.height, symbolData.color);
-							} else {
-								if (symbolData.symbol.backs && backImageToUse) {
-									lineContext.drawImage(backImageToUse, -symbolData.width/2, -symbolData.height/2,
-										symbolData.width, symbolData.height);
-								}
-								lineContext.drawImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
-									symbolData.width, symbolData.height);
-							}
-							
-							lineContext.restore();
-						} else {
-
 							if (symbolData.radius > 0) {
 								if (symbolData.symbol.backs && backImageToUse) {
 									lineContext.drawImageArc(backImageToUse, symbolData.x, symbolData.y, 
@@ -4084,7 +4053,7 @@ function writeText(textObject, targetContext) {
 								lineContext.drawImage(imageToUse, symbolData.x, symbolData.y,
 									symbolData.width, symbolData.height);
 							}
-						}
+						
 					});
 					
 					manaSymbolsToRender = [];
@@ -4152,36 +4121,7 @@ function writeText(textObject, targetContext) {
 						// Now use the combined canvas as the image source
 						imageToUse = combinedCanvas;
 						backImageToUse = null; // Don't draw back separately since it's already combined
-					}
-					
-				// Handle rotation for symbols with outlines
-				if (symbolData.rotation && !textManaCost) {
-					symbolContext.save();
-					symbolContext.translate(symbolData.x + symbolData.width/2, symbolData.y + symbolData.height/2);
-					symbolContext.rotate(Math.PI * symbolData.rotation / 180);
-					
-					if (symbolData.radius > 0) {
-						if (symbolData.symbol.backs && backImageToUse) {
-							symbolContext.drawImageArc(backImageToUse, -symbolData.width/2, -symbolData.height/2, 
-								symbolData.width, symbolData.height, symbolData.radius, 
-								symbolData.arcStart, symbolData.currentX);
-						}
-						symbolContext.drawImageArc(imageToUse, -symbolData.width/2, -symbolData.height/2, 
-							symbolData.width, symbolData.height, symbolData.radius,
-							symbolData.arcStart, symbolData.currentX);
-					} else if (symbolData.color) {
-						symbolContext.fillImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
-							symbolData.width, symbolData.height, symbolData.color);
-					} else {
-						if (symbolData.symbol.backs && backImageToUse) {
-							symbolContext.drawImage(backImageToUse, -symbolData.width/2, -symbolData.height/2,
-								symbolData.width, symbolData.height);
-						}
-						symbolContext.drawImage(imageToUse, -symbolData.width/2, -symbolData.height/2,
-							symbolData.width, symbolData.height);
-					}
-					
-					symbolContext.restore();
+
 				} else {
 					// Original non-rotated code for outlined symbols
 					if (symbolData.radius > 0) {
