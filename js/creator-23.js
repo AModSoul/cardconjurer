@@ -5373,8 +5373,10 @@ function parseFlipCard(card) {
 	  return;
 	}
   
-	// Load flip frame script
-	loadScript('/js/frames/packFlip.js');
+    // Only load flip frame script if we're actually using flip frames
+    if (card.version === 'flip') {
+        loadScript('/js/frames/packFlip.js');
+    }
   
 	// Extract faces with safe access
 	const frontFace = card.card_faces[0] || {};
@@ -5424,8 +5426,8 @@ function changeCardIndex() {
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
 // Handle flip cards
-if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc') && card.version.includes('flip')) {
-	console.log('Processing flip card in changeCardIndex');
+if ((cardToImport.layout === 'flip' || cardToImport.layout === 'modal_dfc'|| cardToImport.layout === 'transform') && card.version === 'flip') {
+    console.log('Processing flip card in changeCardIndex');
 	
 	parseFlipCard(cardToImport).then(flipData => {
 	  if (!flipData) {
