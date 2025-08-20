@@ -1,6 +1,6 @@
 //Create objects for common properties across available frames
 var masks = [{src:'/img/frames/vault/margin/masks/maskBorderless.png', name:'Borderless'}, {src:'/img/frames/vault/margin/masks/maskBottomFrame.png', name:'Bottom Frame'}, {src:'/img/frames/vault/margin/masks/maskNoBorder.png', name:'No Border'}, {src:'/img/frames/vault/margin/masks/maskBottomFrameNoBorder.png', name:'Bottom Frame No Border'}];
-var bounds = {x:-89/2010, y:-79/2817, width:2187/2010, height:2975/2817};
+var bounds = {x:-88/2010, y:-80/2817, width:2187/2010, height:2978/2817};
 var ogBounds = {x:0, y:0, width:1, height:1};
 //defines available frames
 availableFrames = [
