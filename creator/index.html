@@ -352,6 +352,19 @@
 							</label>
 						</div>
 						<div class='readable-background padding margin-bottom'>
+						<h5 class='input-description padding margin-bottom'>Mirror Art Options</h5>
+						<div class='input-grid margin-bottom'>
+							<label class='checkbox-container input margin-bottom'>Mirror Art (Mirrors art to the edge of the canvas for margin)
+								<input id='art-margin-mirror' type='checkbox' onchange='artMirrored();'>
+								<span class='checkmark'></span>
+							</label>
+							<label class='checkbox-container input margin-bottom'>Adds a blur effect to the mirrored art
+								<input id='blur-mirror-art-effect' type='checkbox' onchange='blurArtMirrored();' disabled>
+								<span class='checkmark'></span>
+							</label>
+						</div>
+					</div>
+						<div class='readable-background padding margin-bottom'>
 							<h5 class='padding margin-bottom input-description'>Clears the art, making it blank</h5>
 							<button class='input margin-bottom' onclick='uploadArt(blank.src);'>Remove Art</button>
 						</div>

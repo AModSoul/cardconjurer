@@ -47,7 +47,7 @@ function getStandardHeight() {
 }
 
 //card object
-var card = {width:getStandardWidth(), height:getStandardHeight(), marginX:0, marginY:0, frames:[], artSource:fixUri('/img/blank.png'), artX:0, artY:0, artZoom:1, artRotate:0, setSymbolSource:fixUri('/img/blank.png'), setSymbolX:0, setSymbolY:0, setSymbolZoom:1, watermarkSource:fixUri('/img/blank.png'), watermarkX:0, watermarkY:0, watermarkZoom:1, watermarkLeft:'none', watermarkRight:'none', watermarkOpacity:0.4, version:'', manaSymbols:[]};
+var card = {width:getStandardWidth(), height:getStandardHeight(), marginX:0, marginY:0, frames:[], artSource:fixUri('/img/blank.png'), artX:0, artY:0, artZoom:1, artRotate:0,artMirror: false, artMirrorBlur: false, setSymbolSource:fixUri('/img/blank.png'), setSymbolX:0, setSymbolY:0, setSymbolZoom:1, watermarkSource:fixUri('/img/blank.png'), watermarkX:0, watermarkY:0, watermarkZoom:1, watermarkLeft:'none', watermarkRight:'none', watermarkOpacity:0.4, version:'', manaSymbols:[]};
 //core images/masks
 const black = new Image(); black.crossOrigin = 'anonymous'; black.src = fixUri('/img/black.png');
 const blank = new Image(); blank.crossOrigin = 'anonymous'; blank.src = fixUri('/img/blank.png');
@@ -4615,6 +4615,148 @@ function artStopDrag(e) {
 		draggingArt = false;
 	}
 }
+//Handle art mirroring and blurring for margin
+function artMirrored() {
+    card.artMirror = document.querySelector('#art-margin-mirror').checked;
+    // Enable/disable the blur checkbox based on mirror checkbox
+    const blurCheckbox = document.querySelector('#blur-mirror-art-effect');
+    blurCheckbox.disabled = !card.artMirror;
+    if (!card.artMirror) {
+        blurCheckbox.checked = false;
+        card.artMirrorBlur = false;
+    }
+    drawCard();
+}
+function blurArtMirrored() {
+    card.artMirrorBlur = document.querySelector('#blur-mirror-art-effect').checked;
+    drawCard();
+}
+function drawMirroredArt() {
+    if (!card.artMirror || card.artZoom <= 0) {
+        return null;
+    }
+    // Create a canvas for the mirrored art
+    const mirrorCanvas = document.createElement('canvas');
+    mirrorCanvas.width = cardCanvas.width;
+    mirrorCanvas.height = cardCanvas.height;
+    const mirrorContext = mirrorCanvas.getContext('2d');
+
+	// Apply grayscale filter if enabled
+	if (document.querySelector('#grayscale-art').checked) {
+		mirrorContext.filter = 'grayscale(1)';
+	}
+    // Draw the original art
+    mirrorContext.save();
+    mirrorContext.translate(scaleX(card.artX), scaleY(card.artY));
+    mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+    mirrorContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+    mirrorContext.restore();
+    // Create the mirrored version
+    const artWidth = art.width * card.artZoom;
+    const artHeight = art.height * card.artZoom;
+    const artX = scaleX(card.artX);
+    const artY = scaleY(card.artY);
+    
+    let leftMirrorCreated = false;
+    let rightMirrorCreated = false;
+    let topMirrorCreated = false;
+    let bottomMirrorCreated = false;
+	
+    // Mirror horizontally to the left
+    if (artX > 0) {
+        mirrorContext.save();
+        mirrorContext.scale(-1, 1);
+        mirrorContext.translate(-artX, 0);
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, 0, artY, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+        leftMirrorCreated = true;
+    }   
+    // Mirror horizontally to the right
+    if (artX + artWidth < cardCanvas.width) {
+        mirrorContext.save();
+        mirrorContext.scale(-1, 1);
+        mirrorContext.translate(-(artX + artWidth * 2), 0);
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, 0, artY, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+        rightMirrorCreated = true;
+    }   
+    // Mirror vertically upward
+    if (artY > 0) {
+        mirrorContext.save();
+        mirrorContext.scale(1, -1);
+        mirrorContext.translate(0, -artY);
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, artX, 0, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+        topMirrorCreated = true;
+    }    
+    // Mirror vertically downward
+    if (artY + artHeight < cardCanvas.height) {
+        mirrorContext.save();
+        mirrorContext.scale(1, -1);
+        mirrorContext.translate(0, -(artY + artHeight * 2));
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, artX, 0, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+        bottomMirrorCreated = true;
+    }    
+    // Check if there are still uncovered areas and create corner mirrors
+    // Mirror left mirror upward (top-left corner)
+    if (leftMirrorCreated && artY > 0) {
+        mirrorContext.save();
+        mirrorContext.scale(-1, -1);
+        mirrorContext.translate(-artX, -artY);
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+    }  
+    // Mirror left mirror downward (bottom-left corner)
+    if (leftMirrorCreated && artY + artHeight < cardCanvas.height) {
+        mirrorContext.save();
+        mirrorContext.scale(-1, -1);
+        mirrorContext.translate(-artX, -(artY + artHeight * 2));
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+    }   
+    // Mirror right mirror upward (top-right corner)
+    if (rightMirrorCreated && artY > 0) {
+        mirrorContext.save();
+        mirrorContext.scale(-1, -1);
+        mirrorContext.translate(-(artX + artWidth * 2), -artY);
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+    }   
+    // Mirror right mirror downward (bottom-right corner)
+    if (rightMirrorCreated && artY + artHeight < cardCanvas.height) {
+        mirrorContext.save();
+        mirrorContext.scale(-1, -1);
+        mirrorContext.translate(-(artX + artWidth * 2), -(artY + artHeight * 2));
+        mirrorContext.rotate(Math.PI / 180 * (card.artRotate || 0));
+        mirrorContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+        mirrorContext.restore();
+    }   
+    // Apply blur effect if enabled
+    if (card.artMirrorBlur) {
+        mirrorContext.filter = 'blur(8px)';
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = mirrorCanvas.width;
+        tempCanvas.height = mirrorCanvas.height;
+        const tempContext = tempCanvas.getContext('2d');
+        tempContext.filter = 'blur(8px)';
+        tempContext.drawImage(mirrorCanvas, 0, 0);
+        
+        // Clear the mirror canvas and draw the blurred version
+        mirrorContext.filter = 'none';
+        mirrorContext.clearRect(0, 0, mirrorCanvas.width, mirrorCanvas.height);
+        mirrorContext.drawImage(tempCanvas, 0, 0);
+    }
+    
+    return mirrorCanvas;
+}
 //SET SYMBOL TAB
 function uploadSetSymbol(imageSource, otherParams) {
 	setSymbol.src = imageSource;
@@ -4971,7 +5113,16 @@ function drawCard() {
 	// reset
 	cardContext.globalCompositeOperation = 'source-over';
 	cardContext.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
-	// art
+	
+	// art - draw mirrored art first if enabled
+	if (card.artMirror) {
+		const mirroredArt = drawMirroredArt();
+		if (mirroredArt) {
+			cardContext.drawImage(mirroredArt, 0, 0);
+		}
+	}
+	
+	// art - original art on top
 	cardContext.save();
 	cardContext.translate(scaleX(card.artX), scaleY(card.artY));
 	cardContext.rotate(Math.PI / 180 * (card.artRotate || 0));
@@ -4979,6 +5130,8 @@ function drawCard() {
 		cardContext.filter='grayscale(1)';
 	}
 	cardContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+	// Reset the filter after drawing
+	cardContext.filter = 'none';
 	cardContext.restore();
 	// frame elements
 	if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
