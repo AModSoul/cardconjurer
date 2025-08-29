@@ -26,11 +26,6 @@ var loadMarginVersion = async () => {
 	// card.version = 'margin';
 	card.margins = true;
 
-	// Maintain gradient when moving to margin
-	if (card.gradientOptions) {
-		drawHorizontalGradient(card.gradientOptions);
-	}
-	
 	//art stuff
 	var changedArtBounds = false;
 	if (card.artBounds.width == 1) {
