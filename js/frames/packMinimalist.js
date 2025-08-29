@@ -20,7 +20,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
         }
     }
 
-	await resetCardIrregularities({canvas:[2187, 2975, 0, 0]});
+	await resetCardIrregularities({canvas:[3264, 4440, 0, 0]});
 
     //sets card version
     card.version = 'Minimalist';

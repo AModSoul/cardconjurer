@@ -1,6 +1,33 @@
 //checks to see if it needs to run
 if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     loadedVersions.push('/js/frames/versionMinimalist.js');
+
+        // Initialize card.minimalist if it doesn't exist
+        if (!card.minimalist) {
+            card.minimalist = {
+                baseY: 0.9,  // Default value - adjust as needed
+                spacing: 0.05,  // Default value - adjust as needed
+                minHeight: 0.1,  // Minimum text box height
+                maxHeight: 0.4,  // Maximum text box height
+                currentHeight: 0.2,  // Default starting height
+                textCache: {},
+                lastTextLength: 0,
+                lastProcessedText: '',
+                lastFullUpdate: 0,
+                settings: {
+                    maxOpacity: 0.95,
+                    fadeBottomOffset: +0.01,
+                    fadeTopOffset: -0.06,
+                    solidEnd: 1
+                }
+            };
+            
+            // Create a canvas context for text measurements
+            const measureCanvas = document.createElement('canvas');
+            measureCanvas.width = card.width;
+            measureCanvas.height = card.height;
+            card.minimalist.ctx = measureCanvas.getContext('2d');
+        }
     
     // Set up the UI tab for minimalist gradient settings
     document.querySelector('#creator-menu-tabs').innerHTML += '<h3 class="selectable readable-background" onclick="toggleCreatorTabs(event, `minimalist`)">Minimalist</h3>';
@@ -76,7 +103,15 @@ window.resetMinimalistGradient = function() {
         resetButton.classList.remove('success-highlight');
     }, 1500);
 };
+// Add this near the beginning of your script
+if (!card.minimalist.textCache) {
+    card.minimalist.textCache = {};
+}
 
+// Add this function to clear cache when needed
+window.clearMinimalistTextCache = function() {
+    card.minimalist.textCache = {};
+};
 
     // Make debounce globally accessible
     window.debounce = function(func, wait) {
@@ -176,96 +211,130 @@ window.resetMinimalistGradient = function() {
         return { rulesY, typeY, titleY, manaY };
     };
     
-    window.measureTextHeight = function(text, ctx, width, fontSize) {
-        const words = text.split(' ');
-        let lines = [];
-        let currentLine = words[0];
-
-        for (let i = 1; i < words.length; i++) {
-            const testLine = currentLine + ' ' + words[i];
-            const metrics = ctx.measureText(testLine);
+        window.measureTextHeight = function(text, ctx, width, fontSize) {
+            // More efficient implementation
+            if (!text) return 0;
             
-            if (metrics.width > width) {
-                lines.push(currentLine);
-                currentLine = words[i];
-            } else {
-                currentLine = testLine;
-            }
-        }
-        lines.push(currentLine);
-        
-        return lines.length * fontSize * 1.2; // 1.2 for line spacing
-    };
-        // Main initialization function that the pack calls
-        window.initializeMinimalistVersion = function(savedText) {
-            // Initialize settings if not present
-            if (!card.minimalist.settings) {
-                card.minimalist.settings = {
-                    maxOpacity: 0.95,
-                    fadeBottomOffset: +0.01,
-                    fadeTopOffset: -0.06,
-                    solidEnd: 1
-                };
+            // Cache text metrics where possible
+            const cacheKey = `${text.length}_${width}_${fontSize}`;
+            if (card.minimalist.textCache && card.minimalist.textCache[cacheKey]) {
+                return card.minimalist.textCache[cacheKey];
             }
             
-            // Set UI values from stored settings
-            document.getElementById('minimalist-max-opacity').value = card.minimalist.settings.maxOpacity;
-            document.getElementById('minimalist-fade-bottom-offset').value = card.minimalist.settings.fadeBottomOffset;
-            document.getElementById('minimalist-fade-top-offset').value = card.minimalist.settings.fadeTopOffset;
-
-            // Create debounced scaling function with the scaling logic
-            const debouncedScale = window.debounce((text) => {
-                if (card.text.rules && card.version === 'Minimalist') {
-                    // Clear canvas for measurements
-                    card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
-                    card.minimalist.ctx.font = `${card.text.rules.size * card.height}px "${card.text.rules.font}"`;
-                    
-                    // Measure initial text height
-                    const actualTextHeight = window.measureTextHeight(
-                        text,
-                        card.minimalist.ctx,
-                        card.text.rules.width * card.width,
-                        card.text.rules.size * card.height
-                    );
-                    
-                    // Calculate needed height as percentage of card height
-                    const newHeight = Math.min(
-                        card.minimalist.maxHeight,
-                        Math.max(
-                            card.minimalist.minHeight,
-                            (actualTextHeight / card.height)
-                        )
-                    );
-    
-                    // Batch updates to minimize redraws
-                    requestAnimationFrame(() => {
-                        // Update positions with final height
-                        card.minimalist.currentHeight = newHeight;
-                        window.updateTextPositions(newHeight);
-                        
-                        // Single redraw at the end
-                        drawTextBuffer();
-                        drawCard();
-                    });
-                }
-            }, 300);
-    
-            // Restore saved text immediately after loading options
-            let hasRulesText = false;
-            for (const key in savedText) {
-                if (card.text[key]) {
-                    card.text[key].text = savedText[key];
-                    if (key === 'rules' && savedText[key]) {
-                        hasRulesText = true;
-                        textEdited();
-                        requestAnimationFrame(() => {
-                            debouncedScale(savedText[key]);
-                        });
+            // Split by lines first, then process words in each line
+            const paragraphs = text.split('\n');
+            let totalLines = 0;
+            
+            for (const paragraph of paragraphs) {
+                const words = paragraph.split(' ');
+                let currentLine = words[0] || '';
+                
+                for (let i = 1; i < words.length; i++) {
+                    const testLine = currentLine + ' ' + words[i];
+                    if (ctx.measureText(testLine).width > width) {
+                        totalLines++;
+                        currentLine = words[i];
+                    } else {
+                        currentLine = testLine;
                     }
                 }
+                
+                // Count the last line of each paragraph
+                totalLines++;
             }
+            
+            const result = totalLines * fontSize * 1.2;
+            
+            // Cache the result
+            if (!card.minimalist.textCache) card.minimalist.textCache = {};
+            card.minimalist.textCache[cacheKey] = result;
+            
+            return result;
+        };
+            // Main initialization function that the pack calls
+    window.initializeMinimalistVersion = function(savedText) {
+        // Initialize settings if not present
+        if (!card.minimalist.settings) {
+            card.minimalist.settings = {
+                maxOpacity: 0.95,
+                fadeBottomOffset: +0.01,
+                fadeTopOffset: -0.06,
+                solidEnd: 1
+            };
+        }
+        
+        // Set UI values from stored settings
+        document.getElementById('minimalist-max-opacity').value = card.minimalist.settings.maxOpacity;
+        document.getElementById('minimalist-fade-bottom-offset').value = card.minimalist.settings.fadeBottomOffset;
+        document.getElementById('minimalist-fade-top-offset').value = card.minimalist.settings.fadeTopOffset;
 
-                    // If no rules text to restore, draw initial gradient
+        // Create debounced scaling function with the scaling logic
+        const debouncedScale = window.debounce((text) => {
+            if (card.text.rules && card.version === 'Minimalist') {
+                // Skip processing if text is identical to last processed text
+                if (card.minimalist.lastProcessedText === text) {
+                    return;
+                }
+            
+                card.minimalist.lastProcessedText = text;  
+
+                // Clear canvas for measurements
+                card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
+                card.minimalist.ctx.font = `${card.text.rules.size * card.height}px "${card.text.rules.font}"`;
+                
+                // Measure initial text height
+                const actualTextHeight = window.measureTextHeight(
+                    text,
+                    card.minimalist.ctx,
+                    card.text.rules.width * card.width,
+                    card.text.rules.size * card.height
+                );
+                        
+                // Calculate needed height as percentage of card height
+                const newHeight = Math.min(
+                    card.minimalist.maxHeight,
+                    Math.max(
+                        card.minimalist.minHeight,
+                        (actualTextHeight / card.height)
+                    )
+                );
+
+                // Only update visual elements if text length changed significantly
+                // or if significant time has passed since last full update
+                const now = Date.now();
+                const textLengthChanged = Math.abs((card.minimalist.lastTextLength || 0) - text.length) > 10;
+                const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
+                
+                if (textLengthChanged || timeElapsed) {
+                    requestAnimationFrame(() => {
+                        card.minimalist.currentHeight = newHeight;
+                        window.updateTextPositions(newHeight);
+                        drawTextBuffer();
+                        drawCard();
+                        
+                        card.minimalist.lastTextLength = text.length;
+                        card.minimalist.lastFullUpdate = now;
+                    });
+                }
+            }
+        }, 100);
+        
+        // Restore saved text immediately after loading options
+        let hasRulesText = false;
+        for (const key in savedText) {
+            if (card.text[key]) {
+                card.text[key].text = savedText[key];
+                if (key === 'rules' && savedText[key]) {
+                    hasRulesText = true;
+                    textEdited();
+                    requestAnimationFrame(() => {
+                        debouncedScale(savedText[key]);
+                    });
+                }
+            }
+        }
+
+        // If no rules text to restore, draw initial gradient
         if (!hasRulesText) {
             window.updateTextPositions(card.minimalist.currentHeight);
         }
@@ -274,9 +343,21 @@ window.resetMinimalistGradient = function() {
         const textEditor = document.querySelector('#text-editor');
         if (textEditor) {
             textEditor.addEventListener('input', function() {
-                debouncedScale(this.value);
+                const text = this.value;
+                
+                // For very long text, use a more aggressive throttle
+                if (text.length > 500) {
+                    // Use a more aggressive debounce for long text
+                    setTimeout(() => {
+                        debouncedScale(text);
+                    }, 250);
+                } else {
+                    // Normal handling for shorter text
+                    debouncedScale(text);
+                }
             });
         }
+
 
         // Set up listener for card imports
         const originalTextEdited = window.textEdited;
