@@ -317,7 +317,7 @@ window.clearMinimalistTextCache = function() {
                     });
                 }
             }
-        }, 100);
+        }, 200);
         
         // Restore saved text immediately after loading options
         let hasRulesText = false;
@@ -367,7 +367,7 @@ window.clearMinimalistTextCache = function() {
             if (card.version === 'Minimalist' && card.text.rules && card.text.rules.text) {
                 setTimeout(() => {
                     debouncedScale(card.text.rules.text);
-                }, 50);
+                }, 400);
             }
         };
     };
