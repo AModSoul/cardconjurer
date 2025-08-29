@@ -5082,7 +5082,9 @@ function drawCard() {
 	// text
 	cardContext.drawImage(textCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
 	// set symbol
-	cardContext.drawImage(setSymbol, scaleX(card.setSymbolX), scaleY(card.setSymbolY), setSymbol.width * card.setSymbolZoom, setSymbol.height * card.setSymbolZoom);
+	if (card.setSymbolBounds) {
+		drawSetSymbol(cardContext, setSymbol, card.setSymbolBounds); 
+	}
 	// serial
 	if (card.serialNumber || card.serialTotal) {
 		var x = parseInt(card.serialX) || 172;
