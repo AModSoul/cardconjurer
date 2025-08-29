@@ -2,6 +2,82 @@
 if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     loadedVersions.push('/js/frames/versionMinimalist.js');
     
+    // Set up the UI tab for minimalist gradient settings
+    document.querySelector('#creator-menu-tabs').innerHTML += '<h3 class="selectable readable-background" onclick="toggleCreatorTabs(event, `minimalist`)">Minimalist</h3>';
+    var newHTML = document.createElement('div');
+    newHTML.id = 'creator-menu-minimalist';
+    newHTML.classList.add('hidden');
+    
+    // Modify the UI HTML to include the reset button
+    newHTML.innerHTML = `
+    <div class='readable-background padding'>
+        <h5 class='padding margin-bottom input-description' style="font-size: 2em; font-weight: bold;">Gradient Settings</h5>
+
+        <div style="height: 55px;"></div>
+
+        <h5 class='padding input-description'>Maximum Opacity (0-1):</h5>
+        <div class='padding input-grid margin-bottom'>
+            <input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
+        </div>
+        
+        <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 30px 0;"></div>
+        
+        <h5 class='padding input-description'>Fade Start Position:</h5>
+        <div class='padding input-grid margin-bottom'>
+            <input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
+        </div>
+        
+        <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 30px 0;"></div>
+        
+        <h5 class='padding input-description'>Fade End Position:</h5>
+        <div class='padding input-grid margin-bottom'>
+            <input id='minimalist-fade-top-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.5' max='0' step='0.01' value='-0.15'>
+        </div>
+        
+        <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 30px 0;"></div>
+        
+        <h5 class='padding input-description'>Reset Gradient Settings</h5>
+        <div class='padding input-grid margin-bottom'>
+            <button id='reset-minimalist-gradient' class='input' onclick='resetMinimalistGradient();'>Reset Gradient</button>
+        </div>
+    </div>`;
+    document.querySelector('#creator-menu-sections').appendChild(newHTML);
+
+// Then add the reset function
+window.resetMinimalistGradient = function() {
+    // Default values
+    const defaultSettings = {
+        maxOpacity: 0.95,
+        fadeBottomOffset: -0.05,
+        fadeTopOffset: -0.15,
+        solidEnd: 1.05
+    };
+    
+    // Update the UI inputs
+    document.getElementById('minimalist-max-opacity').value = defaultSettings.maxOpacity;
+    document.getElementById('minimalist-fade-bottom-offset').value = defaultSettings.fadeBottomOffset;
+    document.getElementById('minimalist-fade-top-offset').value = defaultSettings.fadeTopOffset;
+    
+    // Update the card settings
+    card.minimalist.settings = { ...defaultSettings };
+    
+    // Apply the changes
+    window.updateTextPositions(card.minimalist.currentHeight);
+    
+    // Provide visual feedback
+    const resetButton = document.getElementById('reset-minimalist-gradient');
+    const originalText = resetButton.textContent;
+    resetButton.textContent = 'Settings Reset!';
+    resetButton.classList.add('success-highlight');
+    
+    // Revert button text after a short delay
+    setTimeout(() => {
+        resetButton.textContent = originalText;
+        resetButton.classList.remove('success-highlight');
+    }, 1500);
+};
+
+
     // Make debounce globally accessible
     window.debounce = function(func, wait) {
         let timeout;
@@ -15,13 +91,36 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
         };
     };
 
+    // Function to update gradient based on UI settings
+    window.updateMinimalistGradient = function() {
+        if (card.version === 'Minimalist' && card.gradientOptions) {
+            // Get values from inputs
+            const maxOpacity = parseFloat(document.getElementById('minimalist-max-opacity').value);
+            const fadeBottomOffset = parseFloat(document.getElementById('minimalist-fade-bottom-offset').value);
+            const fadeTopOffset = parseFloat(document.getElementById('minimalist-fade-top-offset').value);
+            
+            // Store values in card object for persistence
+            card.minimalist.settings = {
+                maxOpacity,
+                fadeBottomOffset,
+                fadeTopOffset,
+                solidEnd: 1   // Fixed value that extends to bottom of card
+            };
+            
+            // Re-calculate positions with current text positions
+            if (card.text.rules) {
+                window.updateTextPositions(card.minimalist.currentHeight);
+            }
+        }
+    };
+    
     window.updateTextPositions = function(rulesHeight) {
         // Calculate positions based on rules text height
         const rulesY = card.minimalist.baseY - rulesHeight;
         const typeY = rulesY - (card.minimalist.spacing *0.9);
         const titleY = typeY - (card.minimalist.spacing * 0.65);
-        const manaY = titleY - (card.minimalist.spacing * 0.6); // Add mana position above title
-
+        const manaY = titleY - (card.minimalist.spacing * 0.6);
+    
         // Update positions of all text elements
         if (card.text.rules) {
             card.text.rules.y = rulesY;
@@ -36,38 +135,44 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
         if (card.text.mana) {
             card.text.mana.y = manaY;
         }
-
+    
         // Update gradient to match the text area
         if (card.gradientOptions) {
-            // We want:
-            // 1. Solid from bottom (1.0) up to rules text start (rulesY)
-            // 2. Fade from rules text start up to slightly above mana (manaY - 0.03)
+            // Get settings from the stored values
+            const settings = card.minimalist.settings || {
+                maxOpacity: 0.95,
+                fadeBottomOffset: -0.05,
+                fadeTopOffset: -0.15,
+                solidEnd: 1
+            };
             
-            const fadeTopY = manaY - 0.05; // Where fade ends (transparent) - now above mana
-            const fadeBottomY = rulesY +0.02; // Where fade starts (solid)
-            const solidStartY = rulesY; // Where solid area starts
-            const solidEndY = 1.0; // Where solid area ends (bottom of card)
+            // Apply settings to calculate gradient positions
+            const fadeTopY = manaY + settings.fadeTopOffset; // Where fade ends (transparent)
+            const fadeBottomY = rulesY + settings.fadeBottomOffset; // Where fade starts (solid)
+            const solidStartY = fadeBottomY; // Where solid area starts (aligned with fade bottom)
+            const solidEndY = settings.solidEnd; // Where solid area ends (bottom of card)
             
             // Calculate heights as actual values (not percentages)
             const fadeHeight = fadeBottomY - fadeTopY; // Height of fade area
             const solidHeight = solidEndY - solidStartY; // Height of solid area
             
-            // Update gradient options
+            // Update gradient options with the settings values
             card.gradientOptions = {
                 ...card.gradientOptions,
                 yPosition: fadeTopY, // Start at the top of the fade area
                 height: fadeHeight, // Actual fade height
                 solidHeight: solidHeight, // Actual solid height
-                maxOpacity: 0.99,
+                maxOpacity: settings.maxOpacity, // Use the settings value
                 startFromBottom: false, // Using custom position
-                fadeDirection: 'down' // Fade from transparent (top) to solid (bottom)
+                fadeDirection: 'down', // Fade from transparent (top) to solid (bottom)
+                endOpacity: settings.maxOpacity // Ensure consistent opacity at the bottom
             };
             
             // Redraw the gradient with new parameters
             drawHorizontalGradient(card.gradientOptions);
             drawCard();
         }
-
+    
         return { rulesY, typeY, titleY, manaY };
     };
     
@@ -93,6 +198,21 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     };
         // Main initialization function that the pack calls
         window.initializeMinimalistVersion = function(savedText) {
+            // Initialize settings if not present
+            if (!card.minimalist.settings) {
+                card.minimalist.settings = {
+                    maxOpacity: 0.95,
+                    fadeBottomOffset: +0.01,
+                    fadeTopOffset: -0.06,
+                    solidEnd: 1
+                };
+            }
+            
+            // Set UI values from stored settings
+            document.getElementById('minimalist-max-opacity').value = card.minimalist.settings.maxOpacity;
+            document.getElementById('minimalist-fade-bottom-offset').value = card.minimalist.settings.fadeBottomOffset;
+            document.getElementById('minimalist-fade-top-offset').value = card.minimalist.settings.fadeTopOffset;
+
             // Create debounced scaling function with the scaling logic
             const debouncedScale = window.debounce((text) => {
                 if (card.text.rules && card.version === 'Minimalist') {
