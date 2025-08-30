@@ -32,11 +32,11 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     await new Promise(resolve => setTimeout(resolve, 50));
 	
     card.minimalist = {
-        baseY: 0.9,
+        baseY: 0.935,
         minHeight: 0.10,
-        maxHeight: 0.30,
+        maxHeight: 0.3,
         spacing: 0.05,
-        currentHeight: 0.15,
+        currentHeight: 0.12,
         ctx: textContext,
     };
 

@@ -5,11 +5,11 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
         // Initialize card.minimalist if it doesn't exist
         if (!card.minimalist) {
             card.minimalist = {
-                baseY: 0.9,  // Default value - adjust as needed
+                baseY: 0.95,  // Default value - adjust as needed
                 spacing: 0.05,  // Default value - adjust as needed
                 minHeight: 0.1,  // Minimum text box height
-                maxHeight: 0.4,  // Maximum text box height
-                currentHeight: 0.2,  // Default starting height
+                maxHeight: 0.35,  // Maximum text box height
+                currentHeight: 0.1,  // Default starting height
                 textCache: {},
                 lastTextLength: 0,
                 lastProcessedText: '',
@@ -150,9 +150,13 @@ window.clearMinimalistTextCache = function() {
     };
     
     window.updateTextPositions = function(rulesHeight) {
-        // Calculate positions based on rules text height
-        const rulesY = card.minimalist.baseY - rulesHeight;
-        const typeY = rulesY - (card.minimalist.spacing *0.9);
+        // Add offset to move everything up to account for divider gradient
+        const dividerOffset = 0.03; // Adjust this value to control how much everything moves up
+        const dividerSpacing = 0.02; // Additional spacing to account for the divider bar
+        
+        // Calculate positions based on rules text height with offset
+        const rulesY = card.minimalist.baseY - rulesHeight - dividerOffset;
+        const typeY = rulesY - (card.minimalist.spacing * 0.9) - dividerSpacing; // Move type up more to account for divider
         const titleY = typeY - (card.minimalist.spacing * 0.65);
         const manaY = titleY - (card.minimalist.spacing * 0.6);
     
@@ -181,36 +185,233 @@ window.clearMinimalistTextCache = function() {
                 solidEnd: 1
             };
             
-            // Apply settings to calculate gradient positions
-            const fadeTopY = manaY + settings.fadeTopOffset; // Where fade ends (transparent)
-            const fadeBottomY = rulesY + settings.fadeBottomOffset; // Where fade starts (solid)
-            const solidStartY = fadeBottomY; // Where solid area starts (aligned with fade bottom)
-            const solidEndY = settings.solidEnd; // Where solid area ends (bottom of card)
-            
-            // Calculate heights as actual values (not percentages)
-            const fadeHeight = fadeBottomY - fadeTopY; // Height of fade area
-            const solidHeight = solidEndY - solidStartY; // Height of solid area
-            
-            // Update gradient options with the settings values
-            card.gradientOptions = {
-                ...card.gradientOptions,
-                yPosition: fadeTopY, // Start at the top of the fade area
-                height: fadeHeight, // Actual fade height
-                solidHeight: solidHeight, // Actual solid height
-                maxOpacity: settings.maxOpacity, // Use the settings value
-                startFromBottom: false, // Using custom position
-                fadeDirection: 'down', // Fade from transparent (top) to solid (bottom)
-                endOpacity: settings.maxOpacity // Ensure consistent opacity at the bottom
-            };
-            
-            // Redraw the gradient with new parameters
-            drawHorizontalGradient(card.gradientOptions);
-            drawCard();
+        // Apply settings to calculate gradient positions
+        const fadeTopY = manaY + settings.fadeTopOffset; // Where fade ends (transparent)
+        const fadeBottomY = rulesY + settings.fadeBottomOffset; // Where fade starts (solid)
+        const solidStartY = fadeBottomY; // Where solid area starts (aligned with fade bottom)
+        const solidEndY = settings.solidEnd; // Where solid area ends (bottom of card)
+        
+        // Calculate heights as actual values (not percentages)
+        const fadeHeight = fadeBottomY - fadeTopY; // Height of fade area
+        const solidHeight = solidEndY - solidStartY; // Height of solid area
+        
+        // Update gradient options with the settings values
+        card.gradientOptions = {
+            ...card.gradientOptions,
+            yPosition: fadeTopY, // Start at the top of the fade area
+            height: fadeHeight, // Actual fade height
+            solidHeight: solidHeight, // Actual solid height
+            maxOpacity: settings.maxOpacity, // Use the settings value
+            startFromBottom: false, // Using custom position
+            fadeDirection: 'down', // Fade from transparent (top) to solid (bottom)
+            endOpacity: settings.maxOpacity // Ensure consistent opacity at the bottom
+        };
+        
+        // Redraw the gradient with new parameters
+        drawHorizontalGradient(card.gradientOptions);
+        // Draw the divider gradient on top
+        window.drawDividerGradient();
+        
+        drawCard();
+    }
+
+    return { rulesY, typeY, titleY, manaY };
+};
+
+    window.drawDividerGradient = function() {
+        if (!card.text.rules || !card.text.type || card.version !== 'Minimalist') {
+            return;
         }
-    
-        return { rulesY, typeY, titleY, manaY };
+        
+        // Create a separate canvas for the divider gradient
+        if (!card.dividerCanvas) {
+            card.dividerCanvas = document.createElement('canvas');
+            card.dividerCanvas.width = card.width;
+            card.dividerCanvas.height = card.height;
+            card.dividerContext = card.dividerCanvas.getContext('2d');
+        }
+        
+        // Clear the divider canvas
+        card.dividerContext.clearRect(0, 0, card.dividerCanvas.width, card.dividerCanvas.height);
+        
+        // Get mana colors from mana cost
+        const manaColors = getManaColorsFromText();
+        
+        // Get text box dimensions
+        const rulesX = card.text.rules.x;
+        const rulesWidth = card.text.rules.width;
+        const typeY = card.text.type.y;
+        const rulesY = card.text.rules.y;
+        
+        // Position divider slightly below the type text
+        const dividerOffset = 0.050; // How far below the type text to place the divider
+        const dividerY = typeY + dividerOffset;
+        
+        // Calculate divider bar dimensions (same width as rules text)
+        const dividerHeight = 0.002; // Adjust this for bar thickness
+        
+        // Convert to actual pixel values
+        const actualX = rulesX * card.width;
+        const actualY = dividerY * card.height;
+        const actualWidth = rulesWidth * card.width;
+        const actualHeight = dividerHeight * card.height;
+        
+        // Create gradient based on mana colors
+        const gradient = card.dividerContext.createLinearGradient(actualX, 0, actualX + actualWidth, 0);
+        
+        if (manaColors.length === 0) {
+            // No mana colors, use grey
+            gradient.addColorStop(0, hexToRgba('#CBC2C0', 0.5));
+            gradient.addColorStop(0.25, hexToRgba('#CBC2C0', 1));
+            gradient.addColorStop(0.75, hexToRgba('#CBC2C0', 1));
+            gradient.addColorStop(1, hexToRgba('#CBC2C0', 0.5));
+        } else if (manaColors.length === 1) {
+            // Single color
+            const color = getColorHex(manaColors[0]);
+            gradient.addColorStop(0, hexToRgba(color, 0.5));
+            gradient.addColorStop(0.25, hexToRgba(color, 1));
+            gradient.addColorStop(0.75, hexToRgba(color, 1));
+            gradient.addColorStop(1, hexToRgba(color, 0.5));
+        } else if (manaColors.length === 2) {
+            // Two colors - split half and half with transition
+            const color1 = getColorHex(manaColors[0]);
+            const color2 = getColorHex(manaColors[1]);
+            
+            // Left side (first color)
+            gradient.addColorStop(0, hexToRgba(color1, 0.5));
+            gradient.addColorStop(0.25, hexToRgba(color1, 1));
+            gradient.addColorStop(0.45, hexToRgba(color1, 1));
+            
+            // Transition zone
+            gradient.addColorStop(0.5, hexToRgba(blendColors(color1, color2), 1));
+            
+            // Right side (second color)
+            gradient.addColorStop(0.55, hexToRgba(color2, 1));
+            gradient.addColorStop(0.75, hexToRgba(color2, 1));
+            gradient.addColorStop(1, hexToRgba(color2, 0.5));
+        } else if (manaColors.length === 3) {
+            // Three colors - split into thirds with transitions
+            const color1 = getColorHex(manaColors[0]);
+            const color2 = getColorHex(manaColors[1]);
+            const color3 = getColorHex(manaColors[2]);
+            
+            // First third
+            gradient.addColorStop(0, hexToRgba(color1, 0.5));
+            gradient.addColorStop(0.167, hexToRgba(color1, 1));
+            gradient.addColorStop(0.31, hexToRgba(color1, 1));
+            
+            // First transition
+            gradient.addColorStop(0.333, hexToRgba(blendColors(color1, color2), 1));
+            
+            // Second third
+            gradient.addColorStop(0.356, hexToRgba(color2, 1));
+            gradient.addColorStop(0.644, hexToRgba(color2, 1));
+            
+            // Second transition
+            gradient.addColorStop(0.667, hexToRgba(blendColors(color2, color3), 1));
+            
+            // Third third
+            gradient.addColorStop(0.69, hexToRgba(color3, 1));
+            gradient.addColorStop(0.833, hexToRgba(color3, 1));
+            gradient.addColorStop(1, hexToRgba(color3, 0.5));
+        } else {
+            // More than 3 colors - use gold
+            gradient.addColorStop(0, hexToRgba('#e3d193', 0.5));
+            gradient.addColorStop(0.25, hexToRgba('#e3d193', 1));
+            gradient.addColorStop(0.75, hexToRgba('#e3d193', 1));
+            gradient.addColorStop(1, hexToRgba('#e3d193', 0.5));
+        }
+        
+        // Draw the divider bar
+        card.dividerContext.fillStyle = gradient;
+        card.dividerContext.fillRect(actualX, actualY, actualWidth, actualHeight);
     };
-    
+
+    // Helper function to extract mana colors from mana cost text
+    function getManaColorsFromText() {
+        if (!card.text.mana || !card.text.mana.text) {
+            return [];
+        }
+        
+        const manaText = card.text.mana.text;
+        const colors = [];
+        const colorMap = {
+            'w': 'white',
+            'u': 'blue', 
+            'b': 'black',
+            'r': 'red',
+            'g': 'green'
+        };
+        
+        // Find all {x} patterns in the mana cost
+        const manaMatches = manaText.match(/\{[^}]+\}/g) || [];
+        
+        for (const match of manaMatches) {
+            const symbol = match.toLowerCase().replace(/[{}]/g, '');
+            
+            // Check for basic colors only (w, u, b, r, g)
+            if (colorMap[symbol]) {
+                if (!colors.includes(colorMap[symbol])) {
+                    colors.push(colorMap[symbol]);
+                }
+            }
+            // Check for hybrid mana like {w/u}
+            else if (symbol.includes('/')) {
+                const hybridColors = symbol.split('/');
+                for (const hybridColor of hybridColors) {
+                    if (colorMap[hybridColor] && !colors.includes(colorMap[hybridColor])) {
+                        colors.push(colorMap[hybridColor]);
+                    }
+                }
+            }
+            // Ignore numbers, 'c', and anything else
+        }
+        
+        return colors;
+    }
+
+    // Helper function to convert hex color to RGB
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : {r: 255, g: 255, b: 255}; // Default to white if parsing fails
+    }
+
+    // Helper function to create rgba string from hex and alpha
+    function hexToRgba(hex, alpha) {
+        const rgb = hexToRgb(hex);
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    }
+
+    // Helper function to get hex values for mana colors
+    function getColorHex(colorName) {
+        const colorMap = {
+            'white': '#FFF7D8',
+            'blue': '#26C7FE',
+            'black': '#B264FF',
+            'red': '#F13F35',
+            'green': '#29EEA6',
+
+        };
+        
+        return colorMap[colorName] || '#FFFFFF'; // Default to white
+    }
+
+    // Helper function to blend two hex colors
+    function blendColors(hex1, hex2, ratio = 0.5) {
+        const rgb1 = hexToRgb(hex1);
+        const rgb2 = hexToRgb(hex2);
+        
+        const r = Math.round(rgb1.r * (1 - ratio) + rgb2.r * ratio);
+        const g = Math.round(rgb1.g * (1 - ratio) + rgb2.g * ratio);
+        const b = Math.round(rgb1.b * (1 - ratio) + rgb2.b * ratio);
+        
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+
         window.measureTextHeight = function(text, ctx, width, fontSize) {
             // More efficient implementation
             if (!text) return 0;

@@ -4897,6 +4897,10 @@ function drawCard() {
 	cardContext.restore();
 	// Add gradient here - after art but before frames
 	cardContext.drawImage(gradientCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+	// Add divider gradient if it exists (for minimalist version)
+	if (card.dividerCanvas && card.version === 'Minimalist') {
+		cardContext.drawImage(card.dividerCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+	}
 	// frame elements
 	if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
 		cardContext.drawImage(planeswalkerPreFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
