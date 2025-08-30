@@ -159,6 +159,14 @@ window.clearMinimalistTextCache = function() {
         const typeY = rulesY - (card.minimalist.spacing * 0.9) - dividerSpacing; // Move type up more to account for divider
         const titleY = typeY - (card.minimalist.spacing * 0.65);
         const manaY = titleY - (card.minimalist.spacing * 0.6);
+        
+        // Calculate divider position (same as in drawDividerGradient)
+        const dividerOffset2 = 0.050; // How far below the type text the divider is placed
+        const dividerY = typeY + dividerOffset2;
+        
+        // Position set symbol above the divider
+        const setSymbolOffsetAboveDivider = 0.025; // Distance above divider
+        const setSymbolY = dividerY - setSymbolOffsetAboveDivider;
     
         // Update positions of all text elements
         if (card.text.rules) {
@@ -174,17 +182,24 @@ window.clearMinimalistTextCache = function() {
         if (card.text.mana) {
             card.text.mana.y = manaY;
         }
+        
+        // Update set symbol position (keep same x coordinates, update y)
+        if (card.setSymbolBounds) {
+            card.setSymbolBounds.y = setSymbolY;
+            // Trigger set symbol redraw with new position
+            resetSetSymbol();
+        }
     
-        // Update gradient to match the text area
-        if (card.gradientOptions) {
-            // Get settings from the stored values
-            const settings = card.minimalist.settings || {
-                maxOpacity: 0.95,
-                fadeBottomOffset: -0.05,
-                fadeTopOffset: -0.15,
-                solidEnd: 1
-            };
-            
+    // Update gradient to match the text area
+    if (card.gradientOptions) {
+        // Get settings from the stored values
+        const settings = card.minimalist.settings || {
+            maxOpacity: 0.95,
+            fadeBottomOffset: -0.05,
+            fadeTopOffset: -0.15,
+            solidEnd: 1
+        };
+        
         // Apply settings to calculate gradient positions
         const fadeTopY = manaY + settings.fadeTopOffset; // Where fade ends (transparent)
         const fadeBottomY = rulesY + settings.fadeBottomOffset; // Where fade starts (solid)
@@ -215,7 +230,7 @@ window.clearMinimalistTextCache = function() {
         drawCard();
     }
 
-    return { rulesY, typeY, titleY, manaY };
+    return { rulesY, typeY, titleY, manaY, setSymbolY };
 };
 
     window.drawDividerGradient = function() {
