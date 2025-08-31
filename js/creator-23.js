@@ -5306,11 +5306,15 @@ function changeCardIndex() {
 		} else if (card.version == 'pokemon') {
 			card.text.middleStat.text = '{' + (cardToImport.power || '') + '}';
 			card.text.pt.text = '{' + (cardToImport.toughness || '') + '}';
-
+	
 			if (card.text.middleStat && card.text.middleStat.text == '{}') {card.text.middleStat.text = '';}
 		} else {
 			card.text.pt.text = cardToImport.power + '/' + cardToImport.toughness || '';
 		}
+	}
+	else if (card.version == 'Minimalist' && card.text.power && card.text.toughness) {
+		card.text.power.text = cardToImport.power || '';
+		card.text.toughness.text = cardToImport.toughness || '';
 	}
 	if (card.text.pt && card.text.pt.text == undefined + '/' + undefined) {card.text.pt.text = '';}
 	if (card.text.pt && card.text.pt.text == undefined + '\n' + undefined) {card.text.pt.text = '';}

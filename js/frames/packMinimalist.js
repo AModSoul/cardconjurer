@@ -74,9 +74,12 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 			rules: {
 				name: 'Rules Text', text: '', x: 0.086, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.831, height: card.minimalist.currentHeight,
 				size: 0.033, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
-			pt: {
-				name: 'Power/Toughness', text: '', x: 0.804, y: 0.896, width: 0.1180, height: 0.049, size: 0.04,
-				outlineWidth: 0.008, font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'}
+            power: {
+                name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.05, height: 0.049, size: 0.04,
+                outlineWidth: 0.008, font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'},
+            toughness: {
+                name: 'Toughness', text: '', x: 0.854, y: 0.896, width: 0.05, height: 0.049, size: 0.04,
+                outlineWidth: 0.008, font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'}
 		}, true);
 
 		//bottom info
