@@ -1,13 +1,45 @@
 //checks to see if it needs to run
+
+const powerSymbol = new Image();
+powerSymbol.crossOrigin = 'anonymous';
+powerSymbol.src = fixUri('/img/frames/minimalist/p.svg');
+let powerSymbolLoaded = false;
+powerSymbol.onload = () => {
+    powerSymbolLoaded = true;
+    console.log('Power symbol loaded successfully');
+    drawCard();
+};
+powerSymbol.onerror = () => {
+    console.error('Failed to load power symbol');
+};
+
+const toughnessSymbol = new Image();
+toughnessSymbol.crossOrigin = 'anonymous';
+toughnessSymbol.src = fixUri('/img/frames/minimalist/t.svg');
+let toughnessSymbolLoaded = false;
+toughnessSymbol.onload = () => {
+    toughnessSymbolLoaded = true;
+    console.log('Toughness symbol loaded successfully');
+    drawCard();
+};
+toughnessSymbol.onerror = () => {
+    console.error('Failed to load toughness symbol');
+};
+
+console.log('Power symbol loaded:', powerSymbolLoaded);
+console.log('Toughness symbol loaded:', toughnessSymbolLoaded);
+console.log('Power symbol path:', powerSymbol.src);
+console.log('Toughness symbol path:', toughnessSymbol.src);
+
 if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     loadedVersions.push('/js/frames/versionMinimalist.js');
 
     if (!card.minimalist) {
         card.minimalist = {
-            baseY: 0.95,
+            baseY: 0.935,
             spacing: 0.05,
             minHeight: 0.1,
-            maxHeight: 0.35,
+            maxHeight: 0.25,
             currentHeight: 0.1,
             textCache: {},
             lastTextLength: 0,
@@ -537,6 +569,108 @@ window.drawDividerGradient = function() {
     // Draw the divider bar
     card.dividerContext.fillStyle = gradient;
     card.dividerContext.fillRect(actualX, actualY, actualWidth, actualHeight);
+
+    // PT Symbols Drawing Logic
+    if (card.text.power && card.text.toughness) {
+        // Only draw if there are actual numbers in the fields
+        const hasPower = card.text.power.text && card.text.power.text.length > 0;
+        const hasToughness = card.text.toughness.text && card.text.toughness.text.length > 0;
+
+        if (hasPower || hasToughness) {
+            // Get mana colors first
+            const manaColors = getManaColorsFromText();
+            
+            // Determine colors for power and toughness symbols
+            let powerColor, toughnessColor;
+            
+            if (manaColors.length === 0) {
+                // No colors - use grey
+                powerColor = '#CBC2C0';
+                toughnessColor = '#CBC2C0';
+            } else if (manaColors.length === 1) {
+                // One color - use that color for both
+                powerColor = getColorHex(manaColors[0]);
+                toughnessColor = powerColor;
+            } else if (manaColors.length === 2) {
+                // Two colors - first color for power, second for toughness
+                powerColor = getColorHex(manaColors[0]);
+                toughnessColor = getColorHex(manaColors[1]);
+            } else {
+                // Three or more colors - use gold
+                powerColor = '#e3d193';
+                toughnessColor = '#e3d193';
+            }
+
+            // Get text box positions and sizes
+            const powerX = card.text.power.x;
+            const powerY = card.text.power.y;
+            const toughnessX = card.text.toughness.x;
+            const toughnessY = card.text.toughness.y;
+            
+            // Calculate symbol size based on text size (5% larger)
+            const textSize = card.text.power.size * card.height;
+            const symbolSize = textSize * 1.05;
+            
+            // Symbol dimensions
+            const symbolWidth = symbolSize;
+            const symbolHeight = symbolSize;
+            
+            // Adjust offset to place directly next to numbers
+            const offsetX = -symbolWidth * 0.81;
+            
+            // Set composite operation
+            card.dividerContext.globalCompositeOperation = 'source-over';
+            
+            if (hasPower && powerSymbolLoaded && powerSymbol.complete) {
+                const pX = powerX * card.width + offsetX;
+                const pY = powerY * card.height - (symbolHeight - textSize)/2;
+                
+                // Create temporary canvas for colored symbol
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = symbolWidth;
+                tempCanvas.height = symbolHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Draw symbol in white
+                tempCtx.drawImage(powerSymbol, 0, 0, symbolWidth, symbolHeight);
+                
+                // Color the symbol
+                tempCtx.globalCompositeOperation = 'source-in';
+                tempCtx.fillStyle = powerColor;
+                tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
+                
+                // Draw colored symbol to main canvas
+                card.dividerContext.drawImage(tempCanvas, pX, pY);
+            }
+
+            if (hasToughness && toughnessSymbolLoaded && toughnessSymbol.complete) {
+                const tX = toughnessX * card.width + offsetX;
+                const tY = toughnessY * card.height - (symbolHeight - textSize)/2;
+                
+                // Create temporary canvas for colored symbol
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = symbolWidth;
+                tempCanvas.height = symbolHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Draw symbol in white
+                tempCtx.drawImage(toughnessSymbol, 0, 0, symbolWidth, symbolHeight);
+                
+                // Color the symbol
+                tempCtx.globalCompositeOperation = 'source-in';
+                tempCtx.fillStyle = toughnessColor;
+                tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
+                
+                // Draw colored symbol to main canvas
+                card.dividerContext.drawImage(tempCanvas, tX, tY);
+            }
+            
+            // Reset composite operation and filter
+            card.dividerContext.globalCompositeOperation = 'source-over';
+            card.dividerContext.filter = 'none';
+        }
+    }
+
 };
 
     // Helper function to extract mana colors from mana cost text

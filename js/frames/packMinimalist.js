@@ -34,7 +34,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     card.minimalist = {
         baseY: 0.935,
         minHeight: 0.10,
-        maxHeight: 0.3,
+        maxHeight: 0.25,
         spacing: 0.05,
         currentHeight: 0.12,
         ctx: textContext,
@@ -70,16 +70,16 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.0381, color: 'white', align: 'left'},
 			type: {
 				name: 'Type', text: '', x: 0.0854, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.04, width: 0.71,
-				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.0279, color: 'white'},
+				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.022, color: 'white'},
 			rules: {
 				name: 'Rules Text', text: '', x: 0.086, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.831, height: card.minimalist.currentHeight,
-				size: 0.033, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
+				size: 0.028, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
             power: {
                 name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.05, height: 0.049, size: 0.04,
-                outlineWidth: 0.008, font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'},
+                font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'},
             toughness: {
                 name: 'Toughness', text: '', x: 0.854, y: 0.896, width: 0.05, height: 0.049, size: 0.04,
-                outlineWidth: 0.008, font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'}
+                font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'}
 		}, true);
 
 		//bottom info
