@@ -733,11 +733,17 @@ function resetMinimalistGradient() {
     // Set all UI defaults
     setUIDefaults();
     
-    // Update color inputs with mana colors
-    Object.keys(defaultColors).forEach(key => {
-        const element = document.getElementById(`minimalist-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`);
-        if (element) element.value = defaultColors[key];
-    });
+    // Update color inputs with mana colors - FIXED
+    document.getElementById('minimalist-color-1').value = defaultColors.color1;
+    document.getElementById('minimalist-color-2').value = defaultColors.color2;
+    document.getElementById('minimalist-color-3').value = defaultColors.color3;
+    document.getElementById('minimalist-color-count').value = defaultColors.colorCount;
+    
+    // Update background color inputs
+    document.getElementById('minimalist-bg-color-1').value = defaultColors.bgColor1;
+    document.getElementById('minimalist-bg-color-2').value = defaultColors.bgColor2;
+    document.getElementById('minimalist-bg-color-3').value = defaultColors.bgColor3;
+    document.getElementById('minimalist-bg-color-count').value = defaultColors.bgColorCount;
     
     // Update card settings
     updateCardSettings('settings', { ...MINIMALIST_DEFAULTS.settings, ...defaultColors });
