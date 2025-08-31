@@ -405,90 +405,106 @@ function drawHorizontalGradient(options = {}) {
     const canvasWidth = gradientCanvas.width;
     const canvasHeight = gradientCanvas.height;
     
-    // Helper function to create multi-color horizontal gradient with proper opacity
-    function createHorizontalGradient(alpha = maxOpacity) {
-        const gradient = gradientContext.createLinearGradient(0, 0, canvasWidth, 0);
+    // Consolidate color logic - determine final colors to use
+    function getFinalColors() {
+        if (colors.length === 0) return ['#808080']; // Grey for 0 colors
+        if (colors.length > 3) return ['#e3d193']; // Gold for 4+ colors
+        return colors;
+    }
+    
+    // Create gradient stops for any number of colors
+    function createGradientStops(gradient, colorsToUse, alpha) {
+        const colorCount = colorsToUse.length;
         
-        if (colors.length === 1) {
-            const rgb = hexToRgb(colors[0]);
-            gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
-            gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
-        } else {
-            // Create gradient with transitions between colors using the specified alpha
-            if (colors.length === 2) {
-                const rgb1 = hexToRgb(colors[0]);
-                const rgb2 = hexToRgb(colors[1]);
-                
-                gradient.addColorStop(0, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
-                gradient.addColorStop(0.45, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
-                
-                // Blend colors for transition
-                const blended = blendColors(colors[0], colors[1]);
-                const blendedRgb = hexToRgb(blended);
-                gradient.addColorStop(0.5, `rgba(${blendedRgb.r}, ${blendedRgb.g}, ${blendedRgb.b}, ${alpha})`);
-                
-                gradient.addColorStop(0.55, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
-                gradient.addColorStop(1, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
-            } else if (colors.length === 3) {
-                const rgb1 = hexToRgb(colors[0]);
-                const rgb2 = hexToRgb(colors[1]);
-                const rgb3 = hexToRgb(colors[2]);
-                
-                gradient.addColorStop(0, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
-                gradient.addColorStop(0.31, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
-                
-                // First transition
-                const blended1 = blendColors(colors[0], colors[1]);
-                const blendedRgb1 = hexToRgb(blended1);
-                gradient.addColorStop(0.333, `rgba(${blendedRgb1.r}, ${blendedRgb1.g}, ${blendedRgb1.b}, ${alpha})`);
-                
-                gradient.addColorStop(0.356, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
-                gradient.addColorStop(0.644, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
-                
-                // Second transition
-                const blended2 = blendColors(colors[1], colors[2]);
-                const blendedRgb2 = hexToRgb(blended2);
-                gradient.addColorStop(0.667, `rgba(${blendedRgb2.r}, ${blendedRgb2.g}, ${blendedRgb2.b}, ${alpha})`);
-                
-                gradient.addColorStop(0.69, `rgba(${rgb3.r}, ${rgb3.g}, ${rgb3.b}, ${alpha})`);
-                gradient.addColorStop(1, `rgba(${rgb3.r}, ${rgb3.g}, ${rgb3.b}, ${alpha})`);
-            }
+        if (colorCount === 1) {
+            const rgb = hexToRgb(colorsToUse[0]);
+            const color = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, color);
+        } else if (colorCount === 2) {
+            const [color1, color2] = colorsToUse;
+            const rgb1 = hexToRgb(color1);
+            const rgb2 = hexToRgb(color2);
+            const blended = blendColors(color1, color2);
+            const blendedRgb = hexToRgb(blended);
+            
+            gradient.addColorStop(0, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
+            gradient.addColorStop(0.45, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
+            gradient.addColorStop(0.5, `rgba(${blendedRgb.r}, ${blendedRgb.g}, ${blendedRgb.b}, ${alpha})`);
+            gradient.addColorStop(0.55, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
+            gradient.addColorStop(1, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
+        } else if (colorCount === 3) {
+            const [color1, color2, color3] = colorsToUse;
+            const positions = [0, 0.31, 0.333, 0.356, 0.644, 0.667, 0.69, 1];
+            const colorValues = [
+                hexToRgb(color1),
+                hexToRgb(color1),
+                hexToRgb(blendColors(color1, color2)),
+                hexToRgb(color2),
+                hexToRgb(color2),
+                hexToRgb(blendColors(color2, color3)),
+                hexToRgb(color3),
+                hexToRgb(color3)
+            ];
+            
+            positions.forEach((pos, i) => {
+                const rgb = colorValues[i];
+                gradient.addColorStop(pos, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
+            });
         }
         
         return gradient;
     }
     
-    // Calculate positioning
-    let startY, fadeHeight, solidAreaHeight;
+    // Helper function to create multi-color horizontal gradient with proper opacity
+    function createHorizontalGradient(alpha = maxOpacity) {
+        const gradient = gradientContext.createLinearGradient(0, 0, canvasWidth, 0);
+        const colorsToUse = getFinalColors();
+        return createGradientStops(gradient, colorsToUse, alpha);
+    }
     
-    if (yPosition !== null) {
-        // Custom positioning
-        startY = Math.round(yPosition * canvasHeight);
-        fadeHeight = Math.round(height * canvasHeight);
-        solidAreaHeight = Math.round(solidHeight * canvasHeight);
-    } else {
-        // Original logic
-        fadeHeight = Math.round(height * canvasHeight);
-        solidAreaHeight = Math.round(solidHeight * canvasHeight);
-        const totalHeight = fadeHeight + solidAreaHeight;
-        startY = startFromBottom ? canvasHeight - totalHeight : 0;
+    // Calculate positioning (consolidated logic)
+    const { startY, fadeHeight, solidAreaHeight } = calculatePositioning();
+    
+    function calculatePositioning() {
+        let startY, fadeHeight, solidAreaHeight;
+        
+        if (yPosition !== null) {
+            startY = Math.round(yPosition * canvasHeight);
+            fadeHeight = Math.round(height * canvasHeight);
+            solidAreaHeight = Math.round(solidHeight * canvasHeight);
+        } else {
+            fadeHeight = Math.round(height * canvasHeight);
+            solidAreaHeight = Math.round(solidHeight * canvasHeight);
+            const totalHeight = fadeHeight + solidAreaHeight;
+            startY = startFromBottom ? canvasHeight - totalHeight : 0;
+        }
+        
+        return { startY, fadeHeight, solidAreaHeight };
     }
     
     // Draw solid area with proper opacity
     if (solidAreaHeight > 0) {
         const solidY = fadeDirection === 'down' ? startY + fadeHeight : startY + fadeHeight;
-        gradientContext.fillStyle = createHorizontalGradient(maxOpacity); // Use maxOpacity here
+        gradientContext.fillStyle = createHorizontalGradient(maxOpacity);
         gradientContext.fillRect(0, solidY, canvasWidth, solidAreaHeight);
     }
     
-    // Draw fade area
-    if (colors.length === 1) {
-        // Single color vertical fade
+    // Draw fade area (consolidated fade logic)
+    const colorsToUse = getFinalColors();
+    
+    if (colorsToUse.length === 1) {
+        drawSingleColorFade(colorsToUse[0], startY, fadeHeight);
+    } else {
+        drawMultiColorFade(startY, fadeHeight);
+    }
+    
+    function drawSingleColorFade(color, startY, fadeHeight) {
         const fadeStartY = fadeDirection === 'down' ? startY : startY + fadeHeight;
         const fadeEndY = fadeDirection === 'down' ? startY + fadeHeight : startY;
         const fadeGradient = gradientContext.createLinearGradient(0, fadeStartY, 0, fadeEndY);
         
-        const rgb = hexToRgb(colors[0]);
+        const rgb = hexToRgb(color);
         const transparentColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`;
         const solidColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${maxOpacity})`;
         
@@ -502,8 +518,9 @@ function drawHorizontalGradient(options = {}) {
         
         gradientContext.fillStyle = fadeGradient;
         gradientContext.fillRect(0, startY, canvasWidth, fadeHeight);
-    } else {
-        // Multi-color fade (line by line) - this now properly uses varying alpha
+    }
+    
+    function drawMultiColorFade(startY, fadeHeight) {
         const fadeStart = fadeDirection === 'down' ? startY : startY + fadeHeight;
         const increment = fadeDirection === 'down' ? 1 : -1;
         
@@ -512,7 +529,6 @@ function drawHorizontalGradient(options = {}) {
             const fadeProgress = y / fadeHeight;
             const alpha = fadeDirection === 'down' ? fadeProgress * maxOpacity : (1 - fadeProgress) * maxOpacity;
             
-            // Use the helper function with the calculated alpha
             gradientContext.fillStyle = createHorizontalGradient(alpha);
             gradientContext.fillRect(0, currentY, canvasWidth, 1);
         }
