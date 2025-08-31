@@ -26,10 +26,6 @@ toughnessSymbol.onerror = () => {
     console.error('Failed to load toughness symbol');
 };
 
-console.log('Power symbol loaded:', powerSymbolLoaded);
-console.log('Toughness symbol loaded:', toughnessSymbolLoaded);
-console.log('Power symbol path:', powerSymbol.src);
-console.log('Toughness symbol path:', toughnessSymbol.src);
 
 if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     loadedVersions.push('/js/frames/versionMinimalist.js');
@@ -84,21 +80,17 @@ newHTML.innerHTML = `
         <span class='checkmark'></span>
     </label>
 
-    <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-
     <h5 class='padding input-description'>Maximum Opacity (0-1):</h5>
     <div class='padding input-grid margin-bottom'>
         <input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
     </div>
     
-    <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
     
     <h5 class='padding input-description'>Fade Start Position:</h5>
     <div class='padding input-grid margin-bottom'>
         <input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
     </div>
     
-    <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
     
     <h5 class='padding input-description'>Fade End Position:</h5>
     <div class='padding input-grid margin-bottom'>
@@ -108,6 +100,16 @@ newHTML.innerHTML = `
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
 
     <h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Background Gradient Colors</h5>
+
+    <h5 class='padding input-description'>Background Colors:</h5>
+    <div class='padding input-grid margin-bottom'>
+        <select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient();'>
+            <option value='1' selected>1 Color</option>
+            <option value='mana-auto'>Auto (Mana Colors)</option>
+            <option value='2'>2 Colors</option>
+            <option value='3'>3 Colors</option>
+        </select>
+    </div> 
     
     <h5 class='padding input-description'>Background Color 1:</h5>
     <div class='padding input-grid margin-bottom'>
@@ -124,28 +126,27 @@ newHTML.innerHTML = `
         <input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
     </div>
 
-    <h5 class='padding input-description'>Background Colors:</h5>
-    <div class='padding input-grid margin-bottom'>
-        <select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient();'>
-            <option value='1' selected>1 Color</option>
-            <option value='mana-auto'>Auto (Mana Colors)</option>
-            <option value='2'>2 Colors</option>
-            <option value='3'>3 Colors</option>
-        </select>
-    </div> 
     
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-    
-    <h5 class='input-description margin-bottom'>Enable Divider Bar</h5>
+
+
+    <h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Divider Bar</h5>
+
+        <h5 class='input-description margin-bottom'>Enable Divider Bar</h5>
     <label class='checkbox-container input margin-bottom'>Toggle Divider Bar
         <input id='minimalist-divider-enabled' type='checkbox' class='input' onchange='updateDividerColors();' checked>
     <span class='checkmark'></span>
     </label>
 
-    <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-
-
-    <h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Divider Colors</h5>
+    <h5 class='padding input-description'>Divider Colors:</h5>
+    <div class='padding input-grid margin-bottom'>
+        <select id='minimalist-color-count' class='input' onchange='updateDividerColors();'>
+            <option value='auto'>Auto (from mana cost)</option>
+            <option value='1'>1 Color</option>
+            <option value='2'>2 Colors</option>
+            <option value='3'>3 Colors</option>
+        </select>
+    </div>
     
     <h5 class='padding input-description'>Color 1:</h5>
     <div class='padding input-grid margin-bottom'>
@@ -161,17 +162,37 @@ newHTML.innerHTML = `
     <div class='padding input-grid margin-bottom'>
         <input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
     </div>
+
     
-    <h5 class='padding input-description'>Number of Colors:</h5>
+    <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 10px 0;"></div>
+    
+    <h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">P/T Symbols</h5>
+
+    <h5 class='input-description margin-bottom'>Enable P/T Symbols</h5>
+    <label class='checkbox-container input margin-bottom'>Toggle P/T Symbols
+        <input id='minimalist-pt-symbols-enabled' type='checkbox' class='input' onchange='updatePTSymbols();' checked>
+        <span class='checkmark'></span>
+    </label>
+
+    <h5 class='padding input-description'>Symbol Colors:</h5>
     <div class='padding input-grid margin-bottom'>
-        <select id='minimalist-color-count' class='input' onchange='updateDividerColors();'>
+        <select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols();'>
             <option value='auto'>Auto (from mana cost)</option>
             <option value='1'>1 Color</option>
             <option value='2'>2 Colors</option>
-            <option value='3'>3 Colors</option>
         </select>
     </div>
-    
+
+    <h5 class='padding input-description'>Color 1:</h5>
+    <div class='padding input-grid margin-bottom'>
+        <input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+    </div>
+
+    <h5 class='padding input-description'>Color 2:</h5>
+    <div class='padding input-grid margin-bottom'>
+        <input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+    </div>
+
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
     
     <h5 class='padding input-description'>Reset Settings</h5>
@@ -181,33 +202,7 @@ newHTML.innerHTML = `
 </div>`;
     document.querySelector('#creator-menu-sections').appendChild(newHTML);
 
-    window.updateDividerColors = function() {
-        if (card.version === 'Minimalist') {
-            // Get color values from inputs
-            const color1 = document.getElementById('minimalist-color-1').value;
-            const color2 = document.getElementById('minimalist-color-2').value;
-            const color3 = document.getElementById('minimalist-color-3').value;
-            const colorCount = document.getElementById('minimalist-color-count').value;
-            
-            // Store values in card object for persistence
-            if (!card.minimalist.dividerSettings) {
-                card.minimalist.dividerSettings = {};
-            }
-            
-            card.minimalist.dividerSettings = {
-                color1,
-                color2,
-                color3,
-                colorCount
-            };
-            
-            // Redraw the divider
-            window.drawDividerGradient();
-            drawCard();
-        }
-    };
-
-    // Then add the reset function
+    // reset function to restore default settings
     window.resetMinimalistGradient = function() {
 
         // Reset checkbox states
@@ -221,19 +216,26 @@ newHTML.innerHTML = `
             fadeTopOffset: -0.15,
             solidEnd: 1.05
         };
-        
-    // Get colors from mana cost for reset
-    const manaColors = getManaColorsFromText();
-    const defaultColors = {
-        color1: getColorHex(manaColors[0]) || '#FFF7D8',
-        color2: getColorHex(manaColors[1]) || '#26C7FE', 
-        color3: getColorHex(manaColors[2]) || '#B264FF',
-        colorCount: 'auto',
-        bgColor1: '#000000',    // Black background
-        bgColor2: '#000000',    // Black background
-        bgColor3: '#000000',    // Black background
-        bgColorCount: '1'       // Single black color
-    };
+
+        const defaultPTSettings = {
+            enabled: true,
+            colorMode: 'auto',
+            color1: '#FFFFFF',
+            color2: '#FFFFFF'
+        };
+
+        // Get colors from mana cost for reset
+        const manaColors = getManaColorsFromText();
+        const defaultColors = {
+            color1: getColorHex(manaColors[0]) || '#FFF7D8',
+            color2: getColorHex(manaColors[1]) || '#26C7FE', 
+            color3: getColorHex(manaColors[2]) || '#B264FF',
+            colorCount: 'auto',
+            bgColor1: '#000000',    // Black background
+            bgColor2: '#000000',    // Black background
+            bgColor3: '#000000',    // Black background
+            bgColorCount: '1'       // Single black color
+        };
         
         // Update the UI inputs
         document.getElementById('minimalist-max-opacity').value = defaultSettings.maxOpacity;
@@ -251,6 +253,12 @@ newHTML.innerHTML = `
         document.getElementById('minimalist-color-2').value = defaultColors.color2;
         document.getElementById('minimalist-color-3').value = defaultColors.color3;
         document.getElementById('minimalist-color-count').value = defaultColors.colorCount;
+
+        // Update the UI elements
+        document.getElementById('minimalist-pt-symbols-enabled').checked = defaultPTSettings.enabled;
+        document.getElementById('minimalist-pt-color-mode').value = defaultPTSettings.colorMode;
+        document.getElementById('minimalist-pt-color-1').value = defaultPTSettings.color1;
+        document.getElementById('minimalist-pt-color-2').value = defaultPTSettings.color2;
         
         // Update the card settings
         card.minimalist.settings = { ...defaultSettings, ...defaultColors };
@@ -260,7 +268,12 @@ newHTML.innerHTML = `
             color3: defaultColors.color3,
             colorCount: defaultColors.colorCount
         };
-        
+
+        if (!card.minimalist.ptSettings) {
+            card.minimalist.ptSettings = {};
+        }
+        card.minimalist.ptSettings = { ...defaultPTSettings };
+
         // Apply the changes
         window.updateTextPositions(card.minimalist.currentHeight);
         
@@ -332,6 +345,59 @@ newHTML.innerHTML = `
             }
         }
     };
+
+    window.updateDividerColors = function() {
+        if (card.version === 'Minimalist') {
+            // Get color values from inputs
+            const color1 = document.getElementById('minimalist-color-1').value;
+            const color2 = document.getElementById('minimalist-color-2').value;
+            const color3 = document.getElementById('minimalist-color-3').value;
+            const colorCount = document.getElementById('minimalist-color-count').value;
+            
+            // Store values in card object for persistence
+            if (!card.minimalist.dividerSettings) {
+                card.minimalist.dividerSettings = {};
+            }
+            
+            card.minimalist.dividerSettings = {
+                color1,
+                color2,
+                color3,
+                colorCount
+            };
+            
+            // Redraw the divider
+            window.drawDividerGradient();
+            drawCard();
+        }
+    };
+
+// Update the updatePTSymbols function:
+window.updatePTSymbols = function() {
+    if (card.version === 'Minimalist') {
+        const enabled = document.getElementById('minimalist-pt-symbols-enabled').checked;
+        const colorMode = document.getElementById('minimalist-pt-color-mode').value;
+        const color1 = document.getElementById('minimalist-pt-color-1').value;
+        const color2 = document.getElementById('minimalist-pt-color-2').value;
+        
+        // Store settings
+        if (!card.minimalist.ptSettings) {
+            card.minimalist.ptSettings = {};
+        }
+        
+        card.minimalist.ptSettings = {
+            enabled: enabled,
+            colorMode: colorMode,
+            color1: color1,
+            color2: color2
+        };
+        
+        // Redraw
+        window.drawDividerGradient();
+        drawCard();
+    }
+};
+
     
     window.updateTextPositions = function(rulesHeight) {
         // Add offset to move everything up to account for divider gradient
@@ -572,35 +638,15 @@ window.drawDividerGradient = function() {
 
     // PT Symbols Drawing Logic
     if (card.text.power && card.text.toughness) {
-        // Only draw if there are actual numbers in the fields
+        // Check if PT symbols are enabled
+        const ptEnabled = card.minimalist.ptSettings?.enabled ?? true;
+        if (!ptEnabled) return;
+    
+        // Check for actual power/toughness values
         const hasPower = card.text.power.text && card.text.power.text.length > 0;
         const hasToughness = card.text.toughness.text && card.text.toughness.text.length > 0;
-
+    
         if (hasPower || hasToughness) {
-            // Get mana colors first
-            const manaColors = getManaColorsFromText();
-            
-            // Determine colors for power and toughness symbols
-            let powerColor, toughnessColor;
-            
-            if (manaColors.length === 0) {
-                // No colors - use grey
-                powerColor = '#CBC2C0';
-                toughnessColor = '#CBC2C0';
-            } else if (manaColors.length === 1) {
-                // One color - use that color for both
-                powerColor = getColorHex(manaColors[0]);
-                toughnessColor = powerColor;
-            } else if (manaColors.length === 2) {
-                // Two colors - first color for power, second for toughness
-                powerColor = getColorHex(manaColors[0]);
-                toughnessColor = getColorHex(manaColors[1]);
-            } else {
-                // Three or more colors - use gold
-                powerColor = '#e3d193';
-                toughnessColor = '#e3d193';
-            }
-
             // Get text box positions and sizes
             const powerX = card.text.power.x;
             const powerY = card.text.power.y;
@@ -614,9 +660,35 @@ window.drawDividerGradient = function() {
             // Symbol dimensions
             const symbolWidth = symbolSize;
             const symbolHeight = symbolSize;
+
+                // Adjust offset to place directly next to numbers
+                const offsetX = -symbolWidth * 0.81;
             
-            // Adjust offset to place directly next to numbers
-            const offsetX = -symbolWidth * 0.81;
+            // Get color mode and colors
+            const colorMode = card.minimalist.ptSettings?.colorMode ?? 'auto';
+            let powerColor, toughnessColor;
+    
+            if (colorMode === 'auto') {
+                // Use auto color logic based on mana colors
+                const manaColors = getManaColorsFromText();
+                if (manaColors.length === 0) {
+                    powerColor = toughnessColor = '#CBC2C0';
+                } else if (manaColors.length === 1) {
+                    powerColor = toughnessColor = getColorHex(manaColors[0]);
+                } else if (manaColors.length === 2) {
+                    powerColor = getColorHex(manaColors[0]);
+                    toughnessColor = getColorHex(manaColors[1]);
+                } else {
+                    powerColor = toughnessColor = '#e3d193';
+                }
+            } else if (colorMode === '1') {
+                // Use single color for both
+                powerColor = toughnessColor = card.minimalist.ptSettings.color1;
+            } else {
+                // Use two separate colors
+                powerColor = card.minimalist.ptSettings.color1;
+                toughnessColor = card.minimalist.ptSettings.color2;
+            }
             
             // Set composite operation
             card.dividerContext.globalCompositeOperation = 'source-over';
