@@ -4,6 +4,9 @@
 // CONSTANTS AND CONFIGURATION
 //============================================================================
 
+const MEASUREMENT_CACHE = new Map();
+const MAX_CACHE_SIZE = 1000;
+
 const MINIMALIST_DEFAULTS = {
     baseY: 0.935,
     spacing: 0.05,
@@ -21,9 +24,9 @@ const MINIMALIST_DEFAULTS = {
         bgColorCount: '1'
     },
     dividerSettings: {
-        color1: '#FFF7D8',
-        color2: '#26C7FE',
-        color3: '#B264FF',
+        color1: '#FFFFFF',
+        color2: '#FFFFFF',
+        color3: '#FFFFFF',
         colorCount: 'auto'
     },
     ptSettings: {
@@ -66,23 +69,14 @@ let toughnessSymbolLoaded = false;
 
 powerSymbol.onload = () => {
     powerSymbolLoaded = true;
-    console.log('Power symbol loaded successfully');
     drawCard();
-};
-
-powerSymbol.onerror = () => {
-    console.error('Failed to load power symbol');
 };
 
 toughnessSymbol.onload = () => {
     toughnessSymbolLoaded = true;
-    console.log('Toughness symbol loaded successfully');
     drawCard();
 };
 
-toughnessSymbol.onerror = () => {
-    console.error('Failed to load toughness symbol');
-};
 
 //============================================================================
 // UTILITY FUNCTIONS
@@ -183,18 +177,100 @@ function setUIDefaults() {
     });
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+class DebouncedUpdater {
+    constructor() {
+        this.timeouts = new Map();
+        this.lastExecution = new Map();
+    }
+    
+    debounce(key, func, wait, immediate = false) {
+        const now = Date.now();
+        const lastTime = this.lastExecution.get(key) || 0;
+        
+        if (immediate && (now - lastTime) > wait) {
+            func();
+            this.lastExecution.set(key, now);
+            return;
+        }
+        
+        if (this.timeouts.has(key)) {
+            clearTimeout(this.timeouts.get(key));
+        }
+        
+        const timeout = setTimeout(() => {
+            func();
+            this.lastExecution.set(key, Date.now());
+            this.timeouts.delete(key);
+        }, wait);
+        
+        this.timeouts.set(key, timeout);
+    }
+    
+    immediate(key, func) {
+        if (this.timeouts.has(key)) {
+            clearTimeout(this.timeouts.get(key));
+            this.timeouts.delete(key);
+        }
+        func();
+        this.lastExecution.set(key, Date.now());
+    }
+    
+    clear() {
+        this.timeouts.forEach(timeout => clearTimeout(timeout));
+        this.timeouts.clear();
+        this.lastExecution.clear();
+    }
 }
 
+const updater = new DebouncedUpdater();
+
+class EventManager {
+    constructor() {
+        this.listeners = new Map();
+        this.boundMethods = new Map();
+    }
+    
+    add(elementId, eventType, handler, options = {}) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.warn(`Element not found: ${elementId}`);
+            return false;
+        }
+        
+        // Create a bound version of the handler for proper cleanup
+        const boundHandler = handler.bind(this);
+        const key = `${elementId}_${eventType}`;
+        
+        // Store for cleanup
+        this.listeners.set(key, { element, eventType, handler: boundHandler });
+        this.boundMethods.set(key, boundHandler);
+        
+        // Add the event listener
+        element.addEventListener(eventType, boundHandler, options);
+        return true;
+    }
+    
+    remove(elementId, eventType) {
+        const key = `${elementId}_${eventType}`;
+        const listener = this.listeners.get(key);
+        
+        if (listener) {
+            listener.element.removeEventListener(eventType, listener.handler);
+            this.listeners.delete(key);
+            this.boundMethods.delete(key);
+        }
+    }
+    
+    removeAll() {
+        this.listeners.forEach((listener, key) => {
+            listener.element.removeEventListener(listener.eventType, listener.handler);
+        });
+        this.listeners.clear();
+        this.boundMethods.clear();
+    }
+}
+
+const eventManager = new EventManager();
 //============================================================================
 // TEXT MEASUREMENT AND POSITIONING
 //============================================================================
@@ -202,12 +278,16 @@ function debounce(func, wait) {
 function measureTextHeight(text, ctx, width, fontSize) {
     if (!text) return 0;
     
-    const cacheKey = `${text.length}_${width}_${fontSize}`;
-    if (card.minimalist.textCache && card.minimalist.textCache[cacheKey]) {
-        return card.minimalist.textCache[cacheKey];
+    // Improved cache key that's more specific and normalized
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+    const cacheKey = `${normalizedText}_${width}_${fontSize}`;
+    
+    // Use global Map for better performance
+    if (MEASUREMENT_CACHE.has(cacheKey)) {
+        return MEASUREMENT_CACHE.get(cacheKey);
     }
     
-    const paragraphs = text.split('\n');
+    const paragraphs = normalizedText.split('\n');
     let totalLines = 0;
     
     for (const paragraph of paragraphs) {
@@ -228,9 +308,13 @@ function measureTextHeight(text, ctx, width, fontSize) {
     
     const result = totalLines * fontSize * 1.2;
     
-    if (!card.minimalist.textCache) card.minimalist.textCache = {};
-    card.minimalist.textCache[cacheKey] = result;
+    // Cache management to prevent memory leaks
+    if (MEASUREMENT_CACHE.size >= MAX_CACHE_SIZE) {
+        const firstKey = MEASUREMENT_CACHE.keys().next().value;
+        MEASUREMENT_CACHE.delete(firstKey);
+    }
     
+    MEASUREMENT_CACHE.set(cacheKey, result);
     return result;
 }
 
@@ -266,11 +350,8 @@ function updateTextPositions(rulesHeight) {
     // Update background gradient
     updateBackgroundGradient(manaY, rulesY);
     
-    // Update divider
-    const dividerEnabled = getMinimalistSetting('divider-enabled');
-    if (dividerEnabled) {
-        drawDividerGradient();
-    }
+    // Call drawDividerGradient to handle both divider and P/T symbols
+    drawDividerGradient();
     
     drawCard();
     return { rulesY, typeY, titleY, manaY, setSymbolY };
@@ -377,29 +458,30 @@ function drawDividerGradient() {
     }
     
     const dividerEnabled = getMinimalistSetting('divider-enabled');
-    if (!dividerEnabled) {
+    const ptEnabled = card.minimalist.ptSettings?.enabled ?? true;
+    
+    if (!dividerEnabled && !ptEnabled) {
         if (card.dividerCanvas) {
             card.dividerContext.clearRect(0, 0, card.dividerCanvas.width, card.dividerCanvas.height);
         }
         return;
     }
 
-    // Initialize divider canvas
-    if (!card.dividerCanvas) {
-        card.dividerCanvas = document.createElement('canvas');
-        card.dividerCanvas.width = card.width;
-        card.dividerCanvas.height = card.height;
-        card.dividerContext = card.dividerCanvas.getContext('2d');
+    // Use canvas pool for better management
+    const { canvas, context } = canvasPool.getOrCreate('divider', card.width, card.height);
+    card.dividerCanvas = canvas;
+    card.dividerContext = context;
+    
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (dividerEnabled) {
+        const { colorsToUse, colorCount } = getDividerColors();
+        drawDividerBar(colorsToUse, colorCount);
     }
     
-    card.dividerContext.clearRect(0, 0, card.dividerCanvas.width, card.dividerCanvas.height);
-    
-    // Determine colors and draw divider
-    const { colorsToUse, colorCount } = getDividerColors();
-    drawDividerBar(colorsToUse, colorCount);
-    
-    // Draw P/T symbols if enabled
-    drawPTSymbols();
+    if (ptEnabled) {
+        drawPTSymbols();
+    }
 }
 
 function getDividerColors() {
@@ -490,9 +572,8 @@ function drawColoredSymbol(symbol, textObj, color, symbolSize, offsetX) {
     const x = textObj.x * card.width + offsetX;
     const y = textObj.y * card.height - (symbolSize - textObj.size * card.height) / 2;
     
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = symbolSize;
-    tempCanvas.height = symbolSize;
+    // Use canvas pool for temp canvas
+    const tempCanvas = canvasPool.getTempCanvas(symbolSize, symbolSize);
     const tempCtx = tempCanvas.getContext('2d');
     
     tempCtx.drawImage(symbol, 0, 0, symbolSize, symbolSize);
@@ -516,6 +597,72 @@ function createMinimalistUI() {
     newHTML.innerHTML = getUIHTML();
     
     document.querySelector('#creator-menu-sections').appendChild(newHTML);
+    
+    // Set up all events after UI is created
+    setupMinimalistEvents();
+}
+
+function setupMinimalistEvents() {
+    // Define all event mappings
+    const eventMappings = [
+        // Background gradient events
+        { id: 'minimalist-bg-gradient-enabled', event: 'change', handler: updateMinimalistGradient },
+        { id: 'minimalist-max-opacity', event: 'input', handler: updateMinimalistGradient },
+        { id: 'minimalist-fade-bottom-offset', event: 'input', handler: updateMinimalistGradient },
+        { id: 'minimalist-fade-top-offset', event: 'input', handler: updateMinimalistGradient },
+        { id: 'minimalist-bg-color-count', event: 'change', handler: updateMinimalistGradient },
+        { id: 'minimalist-bg-color-1', event: 'input', handler: updateMinimalistGradient },
+        { id: 'minimalist-bg-color-2', event: 'input', handler: updateMinimalistGradient },
+        { id: 'minimalist-bg-color-3', event: 'input', handler: updateMinimalistGradient },
+        
+        // Divider events
+        { id: 'minimalist-divider-enabled', event: 'change', handler: updateDividerColors },
+        { id: 'minimalist-color-count', event: 'change', handler: updateDividerColors },
+        { id: 'minimalist-color-1', event: 'input', handler: updateDividerColors },
+        { id: 'minimalist-color-2', event: 'input', handler: updateDividerColors },
+        { id: 'minimalist-color-3', event: 'input', handler: updateDividerColors },
+        
+        // P/T Symbol events
+        { id: 'minimalist-pt-symbols-enabled', event: 'change', handler: updatePTSymbols },
+        { id: 'minimalist-pt-color-mode', event: 'change', handler: updatePTSymbols },
+        { id: 'minimalist-pt-color-1', event: 'input', handler: updatePTSymbols },
+        { id: 'minimalist-pt-color-2', event: 'input', handler: updatePTSymbols },
+        
+        // Reset button
+        { id: 'reset-minimalist-gradient', event: 'click', handler: resetMinimalistGradient }
+    ];
+    
+    // Add all events using the event manager
+    eventMappings.forEach(({ id, event, handler }) => {
+        const success = eventManager.add(id, event, handler);
+        if (!success) {
+            console.warn(`Failed to add event listener for: ${id}`);
+        }
+    });
+    
+    // Add text editor event with special handling
+    setupTextEditorEvents();
+}
+
+function setupTextEditorEvents() {
+    const textEditor = document.querySelector('#text-editor');
+    if (textEditor) {
+        // Use a more sophisticated approach for text input
+        const handleTextInput = function() {
+            const text = this.value;
+            const delay = text.length > 500 ? 250 : 0;
+            
+            updater.debounce('textInput', () => {
+                if (card.version === 'Minimalist') {
+                    setupTextHandling({ rules: text });
+                }
+            }, delay);
+        };
+        
+        // Store the handler for cleanup
+        eventManager.textEditorHandler = handleTextInput;
+        textEditor.addEventListener('input', handleTextInput);
+    }
 }
 
 function getUIHTML() {
@@ -526,23 +673,23 @@ function getUIHTML() {
 
     <h5 class='input-description margin-bottom'>Enable Background Gradient</h5>
     <label class='checkbox-container input margin-bottom'>Toggle Background Gradient
-        <input id='minimalist-bg-gradient-enabled' type='checkbox' class='input' onchange='updateMinimalistGradient();' checked>
+        <input id='minimalist-bg-gradient-enabled' type='checkbox' class='input' checked>
         <span class='checkmark'></span>
     </label>
 
     <h5 class='padding input-description'>Maximum Opacity (0-1):</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
+        <input id='minimalist-max-opacity' type='number' class='input' min='0' max='1' step='0.01' value='0.95'>
     </div>
     
     <h5 class='padding input-description'>Fade Start Position:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
+        <input id='minimalist-fade-bottom-offset' type='number' class='input' min='-0.2' max='0.2' step='0.01' value='-0.05'>
     </div>
     
     <h5 class='padding input-description'>Fade End Position:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-fade-top-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.5' max='0' step='0.01' value='-0.15'>
+        <input id='minimalist-fade-top-offset' type='number' class='input' min='-0.5' max='0' step='0.01' value='-0.15'>
     </div>
     
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
@@ -551,7 +698,7 @@ function getUIHTML() {
 
     <h5 class='padding input-description'>Background Colors:</h5>
     <div class='padding input-grid margin-bottom'>
-        <select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient();'>
+        <select id='minimalist-bg-color-count' class='input'>
             <option value='1' selected>1 Color</option>
             <option value='mana-auto'>Auto (Mana Colors)</option>
             <option value='2'>2 Colors</option>
@@ -561,17 +708,17 @@ function getUIHTML() {
     
     <h5 class='padding input-description'>Background Color 1:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-bg-color-1' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+        <input id='minimalist-bg-color-1' type='color' class='input' value='#000000'>
     </div>
 
     <h5 class='padding input-description'>Background Color 2:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-bg-color-2' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+        <input id='minimalist-bg-color-2' type='color' class='input' value='#000000'>
     </div>
 
     <h5 class='padding input-description'>Background Color 3:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+        <input id='minimalist-bg-color-3' type='color' class='input' value='#000000'>
     </div>
 
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
@@ -580,13 +727,13 @@ function getUIHTML() {
 
     <h5 class='input-description margin-bottom'>Enable Divider Bar</h5>
     <label class='checkbox-container input margin-bottom'>Toggle Divider Bar
-        <input id='minimalist-divider-enabled' type='checkbox' class='input' onchange='updateDividerColors();' checked>
+        <input id='minimalist-divider-enabled' type='checkbox' class='input' checked>
         <span class='checkmark'></span>
     </label>
 
     <h5 class='padding input-description'>Divider Colors:</h5>
     <div class='padding input-grid margin-bottom'>
-        <select id='minimalist-color-count' class='input' onchange='updateDividerColors();'>
+        <select id='minimalist-color-count' class='input'>
             <option value='auto'>Auto (from mana cost)</option>
             <option value='1'>1 Color</option>
             <option value='2'>2 Colors</option>
@@ -596,17 +743,17 @@ function getUIHTML() {
     
     <h5 class='padding input-description'>Color 1:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-color-1' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+        <input id='minimalist-color-1' type='color' class='input' value='#FFFFFF'>
     </div>
     
     <h5 class='padding input-description'>Color 2:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-color-2' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+        <input id='minimalist-color-2' type='color' class='input' value='#FFFFFF'>
     </div>
     
     <h5 class='padding input-description'>Color 3:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+        <input id='minimalist-color-3' type='color' class='input' value='#FFFFFF'>
     </div>
 
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 10px 0;"></div>
@@ -615,13 +762,13 @@ function getUIHTML() {
 
     <h5 class='input-description margin-bottom'>Enable P/T Symbols</h5>
     <label class='checkbox-container input margin-bottom'>Toggle P/T Symbols
-        <input id='minimalist-pt-symbols-enabled' type='checkbox' class='input' onchange='updatePTSymbols();' checked>
+        <input id='minimalist-pt-symbols-enabled' type='checkbox' class='input' checked>
         <span class='checkmark'></span>
     </label>
 
     <h5 class='padding input-description'>Symbol Colors:</h5>
     <div class='padding input-grid margin-bottom'>
-        <select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols();'>
+        <select id='minimalist-pt-color-mode' class='input'>
             <option value='auto'>Auto (from mana cost)</option>
             <option value='1'>1 Color</option>
             <option value='2'>2 Colors</option>
@@ -630,19 +777,19 @@ function getUIHTML() {
 
     <h5 class='padding input-description'>Color 1:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+        <input id='minimalist-pt-color-1' type='color' class='input' value='#FFFFFF'>
     </div>
 
     <h5 class='padding input-description'>Color 2:</h5>
     <div class='padding input-grid margin-bottom'>
-        <input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+        <input id='minimalist-pt-color-2' type='color' class='input' value='#FFFFFF'>
     </div>
 
     <div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
     
     <h5 class='padding input-description'>Reset Settings</h5>
     <div class='padding input-grid margin-bottom'>
-        <button id='reset-minimalist-gradient' class='input' onclick='resetMinimalistGradient();'>Reset All Settings</button>
+        <button id='reset-minimalist-gradient' class='input'>Reset All Settings</button>
     </div>
 </div>`;
 }
@@ -652,56 +799,62 @@ function getUIHTML() {
 //============================================================================
 
 function updateMinimalistGradient() {
-    if (card.version === 'Minimalist' && card.gradientOptions) {
-        const maxOpacity = parseFloat(document.getElementById('minimalist-max-opacity').value);
-        const fadeBottomOffset = parseFloat(document.getElementById('minimalist-fade-bottom-offset').value);
-        const fadeTopOffset = parseFloat(document.getElementById('minimalist-fade-top-offset').value);
-        const bgColor1 = document.getElementById('minimalist-bg-color-1').value;
-        const bgColor2 = document.getElementById('minimalist-bg-color-2').value;
-        const bgColor3 = document.getElementById('minimalist-bg-color-3').value;
-        const bgColorCount = document.getElementById('minimalist-bg-color-count').value;
-        
-        updateCardSettings('settings', {
-            maxOpacity,
-            fadeBottomOffset,
-            fadeTopOffset,
-            solidEnd: 1,
-            bgColor1,
-            bgColor2,
-            bgColor3,
-            bgColorCount
-        });
-        
-        if (card.text.rules) {
-            updateTextPositions(card.minimalist.currentHeight);
+    updater.debounce('gradientUpdate', () => {
+        if (card.version === 'Minimalist' && card.gradientOptions) {
+            const maxOpacity = parseFloat(document.getElementById('minimalist-max-opacity').value);
+            const fadeBottomOffset = parseFloat(document.getElementById('minimalist-fade-bottom-offset').value);
+            const fadeTopOffset = parseFloat(document.getElementById('minimalist-fade-top-offset').value);
+            const bgColor1 = document.getElementById('minimalist-bg-color-1').value;
+            const bgColor2 = document.getElementById('minimalist-bg-color-2').value;
+            const bgColor3 = document.getElementById('minimalist-bg-color-3').value;
+            const bgColorCount = document.getElementById('minimalist-bg-color-count').value;
+            
+            updateCardSettings('settings', {
+                maxOpacity,
+                fadeBottomOffset,
+                fadeTopOffset,
+                solidEnd: 1,
+                bgColor1,
+                bgColor2,
+                bgColor3,
+                bgColorCount
+            });
+            
+            if (card.text.rules) {
+                updateTextPositions(card.minimalist.currentHeight);
+            }
         }
-    }
+    }, 100);
 }
 
 function updateDividerColors() {
-    if (card.version === 'Minimalist') {
-        const color1 = document.getElementById('minimalist-color-1').value;
-        const color2 = document.getElementById('minimalist-color-2').value;
-        const color3 = document.getElementById('minimalist-color-3').value;
-        const colorCount = document.getElementById('minimalist-color-count').value;
-        
-        updateCardSettings('dividerSettings', { color1, color2, color3, colorCount });
-        drawDividerGradient();
-        drawCard();
-    }
+    updater.debounce('dividerUpdate', () => {
+        if (card.version === 'Minimalist') {
+            const color1 = document.getElementById('minimalist-color-1').value;
+            const color2 = document.getElementById('minimalist-color-2').value;
+            const color3 = document.getElementById('minimalist-color-3').value;
+            const colorCount = document.getElementById('minimalist-color-count').value;
+            
+            updateCardSettings('dividerSettings', { color1, color2, color3, colorCount });
+            drawDividerGradient();
+            drawCard();
+        }
+    }, 50);
 }
 
 function updatePTSymbols() {
-    if (card.version === 'Minimalist') {
-        const enabled = document.getElementById('minimalist-pt-symbols-enabled').checked;
-        const colorMode = document.getElementById('minimalist-pt-color-mode').value;
-        const color1 = document.getElementById('minimalist-pt-color-1').value;
-        const color2 = document.getElementById('minimalist-pt-color-2').value;
-        
-        updateCardSettings('ptSettings', { enabled, colorMode, color1, color2 });
-        drawDividerGradient();
-        drawCard();
-    }
+    updater.debounce('ptUpdate', () => {
+        if (card.version === 'Minimalist') {
+            const enabled = document.getElementById('minimalist-pt-symbols-enabled').checked;
+            const colorMode = document.getElementById('minimalist-pt-color-mode').value;
+            const color1 = document.getElementById('minimalist-pt-color-1').value;
+            const color2 = document.getElementById('minimalist-pt-color-2').value;
+            
+            updateCardSettings('ptSettings', { enabled, colorMode, color1, color2 });
+            drawDividerGradient();
+            drawCard();
+        }
+    }, 50);
 }
 
 function syncDividerColorsWithMana() {
@@ -770,6 +923,89 @@ function resetMinimalistGradient() {
 }
 
 //============================================================================
+// CLEAN UP AND STATE MANAGEMENT
+//============================================================================
+
+class CanvasPool {
+    constructor() {
+        this.canvases = new Map();
+        this.tempCanvases = [];
+    }
+    
+    getOrCreate(name, width, height) {
+        const key = `${name}_${width}_${height}`;
+        
+        if (!this.canvases.has(key)) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext('2d');
+            
+            this.canvases.set(key, { canvas, context });
+        }
+        
+        return this.canvases.get(key);
+    }
+    
+    getTempCanvas(width, height) {
+        // Reuse temp canvases for symbol drawing
+        let tempCanvas = this.tempCanvases.find(c => c.width >= width && c.height >= height);
+        
+        if (!tempCanvas) {
+            tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            this.tempCanvases.push(tempCanvas);
+        } else {
+            // Clear the canvas for reuse
+            const ctx = tempCanvas.getContext('2d');
+            ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        }
+        
+        return tempCanvas;
+    }
+    
+    clear() {
+        this.canvases.clear();
+        this.tempCanvases = [];
+    }
+}
+
+const canvasPool = new CanvasPool();
+
+function cleanupMinimalistResources() {
+    // Clear caches
+    MEASUREMENT_CACHE.clear();
+    if (card.minimalist?.textCache) {
+        card.minimalist.textCache = {};
+    }
+    
+    // Clear canvas pool
+    canvasPool.clear();
+    
+    // Clear debounced operations
+    updater.clear();
+    
+    // Clean up ALL event listeners
+    eventManager.removeAll();
+    
+    // Clean up text editor event specifically
+    const textEditor = document.querySelector('#text-editor');
+    if (textEditor && eventManager.textEditorHandler) {
+        textEditor.removeEventListener('input', eventManager.textEditorHandler);
+        delete eventManager.textEditorHandler;
+    }
+    
+    // Clean up global overrides
+    if (window.originalTextEdited) {
+        window.textEdited = window.originalTextEdited;
+        delete window.originalTextEdited;
+    }
+    
+    console.log('Minimalist resources and events cleaned up');
+}
+
+//============================================================================
 // INITIALIZATION AND TEXT HANDLING
 //============================================================================
 
@@ -808,48 +1044,52 @@ function initializeMinimalistVersion(savedText) {
     setupTextHandling(savedText);
 }
 
+// Replace the setupTextHandling function
 function setupTextHandling(savedText) {
-    const debouncedScale = debounce((text) => {
-        if (card.text.rules && card.version === 'Minimalist') {
-            if (card.minimalist.lastProcessedText === text) return;
-            
-            card.minimalist.lastProcessedText = text;
+    // Use the new debounced updater
+    const debouncedScale = (text) => {
+        updater.debounce('textScale', () => {
+            if (card.text.rules && card.version === 'Minimalist') {
+                if (card.minimalist.lastProcessedText === text) return;
+                
+                card.minimalist.lastProcessedText = text;
 
-            card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
-            card.minimalist.ctx.font = `${card.text.rules.size * card.height}px "${card.text.rules.font}"`;
-            
-            const actualTextHeight = measureTextHeight(
-                text,
-                card.minimalist.ctx,
-                card.text.rules.width * card.width,
-                card.text.rules.size * card.height
-            );
-                    
-            const newHeight = Math.min(
-                card.minimalist.maxHeight,
-                Math.max(
-                    card.minimalist.minHeight,
-                    (actualTextHeight / card.height)
-                )
-            );
+                card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
+                card.minimalist.ctx.font = `${card.text.rules.size * card.height}px "${card.text.rules.font}"`;
+                
+                const actualTextHeight = measureTextHeight(
+                    text,
+                    card.minimalist.ctx,
+                    card.text.rules.width * card.width,
+                    card.text.rules.size * card.height
+                );
+                        
+                const newHeight = Math.min(
+                    card.minimalist.maxHeight,
+                    Math.max(
+                        card.minimalist.minHeight,
+                        (actualTextHeight / card.height)
+                    )
+                );
 
-            const now = Date.now();
-            const textLengthChanged = Math.abs((card.minimalist.lastTextLength || 0) - text.length) > 10;
-            const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
-            
-            if (textLengthChanged || timeElapsed) {
-                requestAnimationFrame(() => {
-                    card.minimalist.currentHeight = newHeight;
-                    updateTextPositions(newHeight);
-                    drawTextBuffer();
-                    drawCard();
-                    
-                    card.minimalist.lastTextLength = text.length;
-                    card.minimalist.lastFullUpdate = now;
-                });
+                const now = Date.now();
+                const textLengthChanged = Math.abs((card.minimalist.lastTextLength || 0) - text.length) > 10;
+                const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
+                
+                if (textLengthChanged || timeElapsed) {
+                    requestAnimationFrame(() => {
+                        card.minimalist.currentHeight = newHeight;
+                        updateTextPositions(newHeight);
+                        drawTextBuffer();
+                        drawCard();
+                        
+                        card.minimalist.lastTextLength = text.length;
+                        card.minimalist.lastFullUpdate = now;
+                    });
+                }
             }
-        }
-    }, 200);
+        }, text.length > 500 ? 300 : 150);
+    };
     
     // Restore saved text
     let hasRulesText = false;
@@ -870,23 +1110,23 @@ function setupTextHandling(savedText) {
         updateTextPositions(card.minimalist.currentHeight);
     }
 
-    // Set up input listener
-    const textEditor = document.querySelector('#text-editor');
-    if (textEditor) {
-        textEditor.addEventListener('input', function() {
-            const text = this.value;
-            const delay = text.length > 500 ? 250 : 0;
-            setTimeout(() => debouncedScale(text), delay);
-        });
+    // Override textEdited function (save original for cleanup)
+    if (!window.originalTextEdited) {
+        window.originalTextEdited = window.textEdited;
     }
-
-    // Override textEdited function
-    const originalTextEdited = window.textEdited;
+    
     window.textEdited = function() {
-        if (originalTextEdited) originalTextEdited();
+        if (window.originalTextEdited) window.originalTextEdited();
         
         if (card.version === 'Minimalist') {
             syncDividerColorsWithMana();
+            
+            updater.debounce('ptUpdate', () => {
+                if (card.version === 'Minimalist') {
+                    drawDividerGradient();
+                    drawCard();
+                }
+            }, 100);
             
             if (card.text.rules && card.text.rules.text) {
                 setTimeout(() => {
@@ -934,6 +1174,10 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     window.resetMinimalistGradient = resetMinimalistGradient;
     window.measureTextHeight = measureTextHeight;
     window.clearMinimalistTextCache = () => { card.minimalist.textCache = {}; };
-    window.debounce = debounce;
+    window.debouncedUpdater = updater; // <-- CHANGED: Use the updater instance
     window.initializeMinimalistVersion = initializeMinimalistVersion;
+    window.cleanupMinimalistResources = cleanupMinimalistResources; // <-- ADD THIS
+    
+    // Add cleanup on page unload
+    window.addEventListener('beforeunload', cleanupMinimalistResources);
 }
