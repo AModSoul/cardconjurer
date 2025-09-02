@@ -2142,6 +2142,8 @@ function makeM15EighthUBFrameByLetter(letter, mask = false, maskToRightHalf = fa
 function makeBorderlessFrameByLetter(letter, mask = false, maskToRightHalf = false, style, universesBeyond = false) {
 	letter = letter.toUpperCase();
 
+	var isVehicle = letter == 'V';
+
 	if (letter == 'V') {
 		letter = 'A';
 	}
@@ -2248,7 +2250,7 @@ function makeBorderlessFrameByLetter(letter, mask = false, maskToRightHalf = fal
 	if (mask == 'PT') {
 		return {
 			'name': frameName + ' Power/Toughness',
-			'src': '/img/frames/m15/borderless/pt/' + letter.toLowerCase() + '.png',
+			'src': '/img/frames/m15/borderless/pt/' + (isVehicle ? 'v' : letter.toLowerCase())+ '.png',
 			'masks': [],
 			'bounds': {
 				'height': 0.066666666666,
