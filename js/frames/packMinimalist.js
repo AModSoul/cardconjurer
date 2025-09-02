@@ -29,7 +29,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	await loadScript('/js/frames/manaSymbolsOutlineBright.js');
 
     // Add a small delay and check if functions are available
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50));
 	
     card.minimalist = {
         baseY: 0.935,
@@ -73,7 +73,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.022, color: 'white'},
 			rules: {
 				name: 'Rules Text', text: '', x: 0.086, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.831, height: card.minimalist.currentHeight,
-				size: 0.029, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
+				size: 0.028, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
             power: {
                 name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.05, height: 0.049, size: 0.04,
                 font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'},
@@ -95,7 +95,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		} else {
 			await loadBottomInfo({
 				topLeft: {text:'{savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.090, y:0.9134, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-				midLeft: {text:'{kerning3}{elemidinfo-number}{kerning0}', x:0.090, y:0.9334, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+				midLeft: {text:'{elemidinfo-rarity} {kerning3}{elemidinfo-number}{kerning0}', x:0.090, y:0.9334, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
 				bottomLeft: {text:'NOT FOR SALE', x:0.090, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
 				wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.090, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
 				bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.090, y:0.9334, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
