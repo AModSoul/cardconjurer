@@ -11,6 +11,7 @@ loadFramePacks([
 	{name:'Seventh Edition Snow Lands', value:'SeventhSnowLands'},
 	{name:'Floating Old Border', value:'OldFloating'},
 	{name:'Floating Old Border (Short)', value:'OldFloatingShort'},
+	{name:'Burning Revelation (SLD)', value:'BurningRevelation'},
 
 	{name:'Modern M15 Eighth Edition Style', value:'disabled'},
 	{name:'Regular', value:'M15Eighth'},
@@ -69,6 +70,7 @@ loadFramePacks([
 	{name:'StoneCutter Case', value:'StoneCutterDeluxeCase'},
 	{name:'StoneCutter MDFC Addons', value:'StoneCutterDeluxeDFC'},
 	{name:'StoneCutter Transform Addons', value:'StoneCutterDeluxeTransformAddons'},
+	{name:'StoneCutter V1', value:'StoneCutter'},
 
 	{name:'Showcase Frame Varients', value:'disabled'},
 	{name:'Short Neon (NEO)', value:'NEONeonShort'},
