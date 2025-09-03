@@ -152,9 +152,9 @@ function updateCardSettings(settingsKey, newSettings) {
     card.minimalist[settingsKey] = { ...card.minimalist[settingsKey], ...newSettings };
 }
 
-function drawSymbolIfReady(symbol, isLoaded, textObj, color, symbolSize, offsetX) {
+function drawSymbolIfReady(symbol, isLoaded, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY) {
     if (textObj.text && textObj.text.length > 0 && isLoaded && symbol.complete) {
-        drawColoredSymbol(symbol, textObj, color, symbolSize, offsetX);
+        drawColoredSymbol(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY);
     }
 }
 
@@ -377,13 +377,7 @@ function drawDividerGradient() {
     }
     
     const dividerEnabled = getMinimalistSetting('divider-enabled');
-    if (!dividerEnabled) {
-        if (card.dividerCanvas) {
-            card.dividerContext.clearRect(0, 0, card.dividerCanvas.width, card.dividerCanvas.height);
-        }
-        return;
-    }
-
+    
     // Initialize divider canvas
     if (!card.dividerCanvas) {
         card.dividerCanvas = document.createElement('canvas');
@@ -394,11 +388,13 @@ function drawDividerGradient() {
     
     card.dividerContext.clearRect(0, 0, card.dividerCanvas.width, card.dividerCanvas.height);
     
-    // Determine colors and draw divider
-    const { colorsToUse, colorCount } = getDividerColors();
-    drawDividerBar(colorsToUse, colorCount);
+    // Draw divider bar only if enabled
+    if (dividerEnabled) {
+        const { colorsToUse, colorCount } = getDividerColors();
+        drawDividerBar(colorsToUse, colorCount);
+    }
     
-    // Draw P/T symbols if enabled
+    // Always draw P/T symbols regardless of divider state
     drawPTSymbols();
 }
 
@@ -453,11 +449,21 @@ function drawPTSymbols() {
     if (!hasPower && !hasToughness) return;
 
     const { powerColor, toughnessColor } = getPTColors();
-    const symbolSize = card.text.power.size * card.height * 1.05;
-    const offsetX = -symbolSize * 0.81;
+    
+    // Separate pixel sizes for Power and Toughness symbols
+    const powerSymbolWidth = 99;   // Fixed width for power symbol in pixels
+    const powerSymbolHeight = 175;  // Fixed height for power symbol in pixels
+    const toughnessSymbolWidth = 101;   // Fixed width for toughness symbol in pixels
+    const toughnessSymbolHeight = 175;  // Fixed height for toughness symbol in pixels
+    
+    // Position offsets relative to the P/T text
+    const powerOffsetX = -powerSymbolWidth - 4; // 4 pixels left of the power symbol width
+    const powerOffsetY = 0; // Vertically centered with text
+    const toughnessOffsetX = -toughnessSymbolWidth - 4; // 4 pixels left of the toughness symbol width
+    const toughnessOffsetY = 0; // Vertically centered with text
 
-    drawSymbolIfReady(powerSymbol, powerSymbolLoaded, card.text.power, powerColor, symbolSize, offsetX);
-    drawSymbolIfReady(toughnessSymbol, toughnessSymbolLoaded, card.text.toughness, toughnessColor, symbolSize, offsetX);
+    drawSymbolIfReady(powerSymbol, powerSymbolLoaded, card.text.power, powerColor, powerSymbolWidth, powerSymbolHeight, powerOffsetX, powerOffsetY);
+    drawSymbolIfReady(toughnessSymbol, toughnessSymbolLoaded, card.text.toughness, toughnessColor, toughnessSymbolWidth, toughnessSymbolHeight, toughnessOffsetX, toughnessOffsetY);
 }
 
 function getPTColors() {
@@ -486,19 +492,19 @@ function getPTColors() {
     return { powerColor, toughnessColor };
 }
 
-function drawColoredSymbol(symbol, textObj, color, symbolSize, offsetX) {
+function drawColoredSymbol(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY) {
     const x = textObj.x * card.width + offsetX;
-    const y = textObj.y * card.height - (symbolSize - textObj.size * card.height) / 2;
+    const y = textObj.y * card.height + offsetY - (symbolHeight / 2) + (textObj.size * card.height / 2);
     
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = symbolSize;
-    tempCanvas.height = symbolSize;
+    tempCanvas.width = symbolWidth;
+    tempCanvas.height = symbolHeight;
     const tempCtx = tempCanvas.getContext('2d');
     
-    tempCtx.drawImage(symbol, 0, 0, symbolSize, symbolSize);
+    tempCtx.drawImage(symbol, 0, 0, symbolWidth, symbolHeight);
     tempCtx.globalCompositeOperation = 'source-in';
     tempCtx.fillStyle = color;
-    tempCtx.fillRect(0, 0, symbolSize, symbolSize);
+    tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
     
     card.dividerContext.drawImage(tempCanvas, x, y);
 }
@@ -686,6 +692,8 @@ function updateDividerColors() {
         const colorCount = document.getElementById('minimalist-color-count').value;
         
         updateCardSettings('dividerSettings', { color1, color2, color3, colorCount });
+        
+        // Redraw both divider and P/T symbols
         drawDividerGradient();
         drawCard();
     }
@@ -699,6 +707,16 @@ function updatePTSymbols() {
         const color2 = document.getElementById('minimalist-pt-color-2').value;
         
         updateCardSettings('ptSettings', { enabled, colorMode, color1, color2 });
+        
+        // Redraw both divider and P/T symbols
+        drawDividerGradient();
+        drawCard();
+    }
+}
+
+function handlePTChange() {
+    if (card.version === 'Minimalist') {
+        // Force redraw P/T symbols whenever power or toughness changes
         drawDividerGradient();
         drawCard();
     }
@@ -887,6 +905,9 @@ function setupTextHandling(savedText) {
         
         if (card.version === 'Minimalist') {
             syncDividerColorsWithMana();
+            
+            // Always redraw both divider and P/T symbols when any text changes
+            drawDividerGradient();
             
             if (card.text.rules && card.text.rules.text) {
                 setTimeout(() => {
