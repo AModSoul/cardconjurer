@@ -1,6 +1,71 @@
 //checks to see if it needs to run
 
 //============================================================================
+// PERFORMANCE OPTIMIZATIONS
+//============================================================================
+
+// Cache frequently accessed DOM elements
+const DOM_CACHE = {
+    textEditor: null,
+    uiElements: new Map(),
+    initialized: false
+};
+
+function initDOMCache() {
+    if (DOM_CACHE.initialized) return;
+    
+    DOM_CACHE.textEditor = document.querySelector('#text-editor');
+    
+    // Cache UI elements that are accessed frequently
+    const elementIds = [
+        'minimalist-bg-gradient-enabled', 'minimalist-divider-enabled',
+        'minimalist-max-opacity', 'minimalist-fade-bottom-offset',
+        'minimalist-fade-top-offset', 'minimalist-bg-color-count',
+        'minimalist-color-count', 'minimalist-pt-symbols-enabled',
+        'minimalist-pt-color-mode', 'minimalist-bg-color-1',
+        'minimalist-bg-color-2', 'minimalist-bg-color-3',
+        'minimalist-color-1', 'minimalist-color-2', 'minimalist-color-3',
+        'minimalist-pt-color-1', 'minimalist-pt-color-2'
+    ];
+    
+    elementIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) DOM_CACHE.uiElements.set(id, element);
+    });
+    
+    DOM_CACHE.initialized = true;
+}
+
+function getCachedElement(id) {
+    if (!DOM_CACHE.initialized) initDOMCache();
+    return DOM_CACHE.uiElements.get(id) || document.getElementById(id);
+}
+
+// Optimize frequent calculations
+const CALC_CACHE = {
+    cardDimensions: null,
+    lastWidth: 0,
+    lastHeight: 0
+};
+
+function getCardDimensions() {
+    if (CALC_CACHE.lastWidth !== card.width || CALC_CACHE.lastHeight !== card.height) {
+        CALC_CACHE.cardDimensions = {
+            width: card.width,
+            height: card.height,
+            halfWidth: card.width / 2,
+            halfHeight: card.height / 2
+        };
+        CALC_CACHE.lastWidth = card.width;
+        CALC_CACHE.lastHeight = card.height;
+    }
+    return CALC_CACHE.cardDimensions;
+}
+
+// Cache color calculations
+const COLOR_CACHE = new Map();
+
+//============================================================================
 // CONSTANTS AND CONFIGURATION
 //============================================================================
 
@@ -66,22 +131,12 @@ let toughnessSymbolLoaded = false;
 
 powerSymbol.onload = () => {
     powerSymbolLoaded = true;
-    console.log('Power symbol loaded successfully');
     drawCard();
-};
-
-powerSymbol.onerror = () => {
-    console.error('Failed to load power symbol');
 };
 
 toughnessSymbol.onload = () => {
     toughnessSymbolLoaded = true;
-    console.log('Toughness symbol loaded successfully');
     drawCard();
-};
-
-toughnessSymbol.onerror = () => {
-    console.error('Failed to load toughness symbol');
 };
 
 //============================================================================
@@ -89,8 +144,22 @@ toughnessSymbol.onerror = () => {
 //============================================================================
 
 function hexToRgba(hex, alpha) {
+    const cacheKey = `${hex}_${alpha}`;
+    if (COLOR_CACHE.has(cacheKey)) {
+        return COLOR_CACHE.get(cacheKey);
+    }
+    
     const rgb = hexToRgb(hex);
-    return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    const result = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    
+    // Limit cache size
+    if (COLOR_CACHE.size > 100) {
+        const firstKey = COLOR_CACHE.keys().next().value;
+        COLOR_CACHE.delete(firstKey);
+    }
+    
+    COLOR_CACHE.set(cacheKey, result);
+    return result;
 }
 
 function getColorHex(colorName) {
@@ -107,33 +176,48 @@ function blendColors(hex1, hex2, ratio = 0.5) {
     
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
-
 function getManaColorsFromText() {
     if (!card.text.mana || !card.text.mana.text) {
         return [];
     }
     
     const manaText = card.text.mana.text;
+    
+    // Use cached result if text hasn't changed
+    if (card.minimalist._lastManaText === manaText && card.minimalist._cachedManaColors) {
+        return card.minimalist._cachedManaColors;
+    }
+    
     const colors = [];
-    const manaMatches = manaText.match(/\{[^}]+\}/g) || [];
+    const manaMatches = manaText.match(/\{[^}]+\}/g);
+    
+    if (!manaMatches) {
+        card.minimalist._cachedManaColors = colors;
+        card.minimalist._lastManaText = manaText;
+        return colors;
+    }
+    
+    const seenColors = new Set();
     
     for (const match of manaMatches) {
         const symbol = match.toLowerCase().replace(/[{}]/g, '');
         
-        if (MANA_COLOR_MAP[symbol]) {
-            if (!colors.includes(MANA_COLOR_MAP[symbol])) {
-                colors.push(MANA_COLOR_MAP[symbol]);
-            }
+        if (MANA_COLOR_MAP[symbol] && !seenColors.has(MANA_COLOR_MAP[symbol])) {
+            colors.push(MANA_COLOR_MAP[symbol]);
+            seenColors.add(MANA_COLOR_MAP[symbol]);
         } else if (symbol.includes('/')) {
             const hybridColors = symbol.split('/');
             for (const hybridColor of hybridColors) {
-                if (MANA_COLOR_MAP[hybridColor] && !colors.includes(MANA_COLOR_MAP[hybridColor])) {
+                if (MANA_COLOR_MAP[hybridColor] && !seenColors.has(MANA_COLOR_MAP[hybridColor])) {
                     colors.push(MANA_COLOR_MAP[hybridColor]);
+                    seenColors.add(MANA_COLOR_MAP[hybridColor]);
                 }
             }
         }
     }
     
+    card.minimalist._cachedManaColors = colors;
+    card.minimalist._lastManaText = manaText;
     return colors;
 }
 
@@ -142,7 +226,8 @@ function getManaHexColors() {
 }
 
 function getMinimalistSetting(settingName, defaultValue = true) {
-    return document.getElementById(`minimalist-${settingName}`)?.checked ?? defaultValue;
+    const element = getCachedElement(`minimalist-${settingName}`);
+    return element?.checked ?? defaultValue;
 }
 
 function updateCardSettings(settingsKey, newSettings) {
@@ -183,15 +268,17 @@ function setUIDefaults() {
     });
 }
 
-function debounce(func, wait) {
+function debounce(func, wait, immediate = false) {
     let timeout;
     return function executedFunction(...args) {
         const later = () => {
             clearTimeout(timeout);
-            func(...args);
+            if (!immediate) func(...args);
         };
+        const callNow = immediate && !timeout;
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
+        if (callNow) func(...args);
     };
 }
 
@@ -202,15 +289,30 @@ function debounce(func, wait) {
 function measureTextHeight(text, ctx, width, fontSize) {
     if (!text) return 0;
     
-    const cacheKey = `${text.length}_${width}_${fontSize}`;
+    // Create more specific cache key
+    const textHash = text.length > 100 ? 
+        `${text.substring(0, 50)}_${text.substring(text.length - 50)}_${text.length}` : 
+        text;
+    const cacheKey = `${textHash}_${width}_${fontSize}`;
+    
     if (card.minimalist.textCache && card.minimalist.textCache[cacheKey]) {
         return card.minimalist.textCache[cacheKey];
     }
     
+    // Pre-calculate line height
+    const lineHeight = fontSize * 1.2;
     const paragraphs = text.split('\n');
     let totalLines = 0;
     
+    // Reuse measurement context properties
+    ctx.font = `${fontSize}px "${card.text.rules?.font || 'Arial'}"`;
+    
     for (const paragraph of paragraphs) {
+        if (!paragraph.trim()) {
+            totalLines++;
+            continue;
+        }
+        
         const words = paragraph.split(' ');
         let currentLine = words[0] || '';
         
@@ -226,11 +328,17 @@ function measureTextHeight(text, ctx, width, fontSize) {
         totalLines++;
     }
     
-    const result = totalLines * fontSize * 1.2;
+    const result = totalLines * lineHeight;
     
+    // Limit cache size and manage memory
     if (!card.minimalist.textCache) card.minimalist.textCache = {};
-    card.minimalist.textCache[cacheKey] = result;
+    if (Object.keys(card.minimalist.textCache).length > 50) {
+        // Remove oldest entries
+        const keys = Object.keys(card.minimalist.textCache);
+        keys.slice(0, 25).forEach(key => delete card.minimalist.textCache[key]);
+    }
     
+    card.minimalist.textCache[cacheKey] = result;
     return result;
 }
 
@@ -376,25 +484,32 @@ function drawDividerGradient() {
         return;
     }
     
-    const dividerEnabled = getMinimalistSetting('divider-enabled');
-    
-    // Initialize divider canvas
+    // Initialize canvas only once with optimizations
     if (!card.dividerCanvas) {
+        const dims = getCardDimensions();
         card.dividerCanvas = document.createElement('canvas');
-        card.dividerCanvas.width = card.width;
-        card.dividerCanvas.height = card.height;
+        card.dividerCanvas.width = dims.width;
+        card.dividerCanvas.height = dims.height;
         card.dividerContext = card.dividerCanvas.getContext('2d');
+        
+        // Set context properties once for better performance
+        card.dividerContext.imageSmoothingEnabled = true;
+        card.dividerContext.imageSmoothingQuality = 'high';
     }
     
-    card.dividerContext.clearRect(0, 0, card.dividerCanvas.width, card.dividerCanvas.height);
+    // Clear and draw in one operation
+    const ctx = card.dividerContext;
+    const dims = getCardDimensions();
+    ctx.clearRect(0, 0, dims.width, dims.height);
     
-    // Draw divider bar only if enabled
+    const dividerEnabled = getMinimalistSetting('divider-enabled');
+    
+    // Batch drawing operations
     if (dividerEnabled) {
         const { colorsToUse, colorCount } = getDividerColors();
         drawDividerBar(colorsToUse, colorCount);
     }
     
-    // Always draw P/T symbols regardless of divider state
     drawPTSymbols();
 }
 
@@ -493,18 +608,31 @@ function getPTColors() {
 }
 
 function drawColoredSymbol(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY) {
-    const x = textObj.x * card.width + offsetX;
-    const y = textObj.y * card.height + offsetY - (symbolHeight / 2) + (textObj.size * card.height / 2);
+    const dims = getCardDimensions();
+    const x = textObj.x * dims.width + offsetX;
+    const y = textObj.y * dims.height + offsetY - (symbolHeight / 2) + (textObj.size * dims.height / 2);
     
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = symbolWidth;
-    tempCanvas.height = symbolHeight;
-    const tempCtx = tempCanvas.getContext('2d');
+    // Reuse temp canvas if possible
+    if (!card.minimalist._tempCanvas) {
+        card.minimalist._tempCanvas = document.createElement('canvas');
+        card.minimalist._tempCtx = card.minimalist._tempCanvas.getContext('2d');
+    }
     
+    const tempCanvas = card.minimalist._tempCanvas;
+    const tempCtx = card.minimalist._tempCtx;
+    
+    // Only resize if necessary
+    if (tempCanvas.width !== symbolWidth || tempCanvas.height !== symbolHeight) {
+        tempCanvas.width = symbolWidth;
+        tempCanvas.height = symbolHeight;
+    }
+    
+    tempCtx.clearRect(0, 0, symbolWidth, symbolHeight);
     tempCtx.drawImage(symbol, 0, 0, symbolWidth, symbolHeight);
     tempCtx.globalCompositeOperation = 'source-in';
     tempCtx.fillStyle = color;
     tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
+    tempCtx.globalCompositeOperation = 'source-over'; // Reset
     
     card.dividerContext.drawImage(tempCanvas, x, y);
 }
@@ -659,13 +787,13 @@ function getUIHTML() {
 
 function updateMinimalistGradient() {
     if (card.version === 'Minimalist' && card.gradientOptions) {
-        const maxOpacity = parseFloat(document.getElementById('minimalist-max-opacity').value);
-        const fadeBottomOffset = parseFloat(document.getElementById('minimalist-fade-bottom-offset').value);
-        const fadeTopOffset = parseFloat(document.getElementById('minimalist-fade-top-offset').value);
-        const bgColor1 = document.getElementById('minimalist-bg-color-1').value;
-        const bgColor2 = document.getElementById('minimalist-bg-color-2').value;
-        const bgColor3 = document.getElementById('minimalist-bg-color-3').value;
-        const bgColorCount = document.getElementById('minimalist-bg-color-count').value;
+        const maxOpacity = parseFloat(getCachedElement('minimalist-max-opacity').value);
+        const fadeBottomOffset = parseFloat(getCachedElement('minimalist-fade-bottom-offset').value);
+        const fadeTopOffset = parseFloat(getCachedElement('minimalist-fade-top-offset').value);
+        const bgColor1 = getCachedElement('minimalist-bg-color-1').value;
+        const bgColor2 = getCachedElement('minimalist-bg-color-2').value;
+        const bgColor3 = getCachedElement('minimalist-bg-color-3').value;
+        const bgColorCount = getCachedElement('minimalist-bg-color-count').value;
         
         updateCardSettings('settings', {
             maxOpacity,
@@ -686,31 +814,35 @@ function updateMinimalistGradient() {
 
 function updateDividerColors() {
     if (card.version === 'Minimalist') {
-        const color1 = document.getElementById('minimalist-color-1').value;
-        const color2 = document.getElementById('minimalist-color-2').value;
-        const color3 = document.getElementById('minimalist-color-3').value;
-        const colorCount = document.getElementById('minimalist-color-count').value;
+        const color1 = getCachedElement('minimalist-color-1').value;
+        const color2 = getCachedElement('minimalist-color-2').value;
+        const color3 = getCachedElement('minimalist-color-3').value;
+        const colorCount = getCachedElement('minimalist-color-count').value;
         
         updateCardSettings('dividerSettings', { color1, color2, color3, colorCount });
         
         // Redraw both divider and P/T symbols
-        drawDividerGradient();
-        drawCard();
+        requestAnimationFrame(() => {
+            drawDividerGradient();
+            drawCard();
+        });
     }
 }
 
 function updatePTSymbols() {
     if (card.version === 'Minimalist') {
-        const enabled = document.getElementById('minimalist-pt-symbols-enabled').checked;
-        const colorMode = document.getElementById('minimalist-pt-color-mode').value;
-        const color1 = document.getElementById('minimalist-pt-color-1').value;
-        const color2 = document.getElementById('minimalist-pt-color-2').value;
+        const enabled = getCachedElement('minimalist-pt-symbols-enabled').checked;
+        const colorMode = getCachedElement('minimalist-pt-color-mode').value;
+        const color1 = getCachedElement('minimalist-pt-color-1').value;
+        const color2 = getCachedElement('minimalist-pt-color-2').value;
         
         updateCardSettings('ptSettings', { enabled, colorMode, color1, color2 });
         
         // Redraw both divider and P/T symbols
-        drawDividerGradient();
-        drawCard();
+        requestAnimationFrame(() => {
+            drawDividerGradient();
+            drawCard();
+        });
     }
 }
 
@@ -828,44 +960,47 @@ function initializeMinimalistVersion(savedText) {
 
 function setupTextHandling(savedText) {
     const debouncedScale = debounce((text) => {
-        if (card.text.rules && card.version === 'Minimalist') {
-            if (card.minimalist.lastProcessedText === text) return;
-            
-            card.minimalist.lastProcessedText = text;
+        if (!card.text.rules || card.version !== 'Minimalist') return;
+        if (card.minimalist.lastProcessedText === text) return;
+        
+        card.minimalist.lastProcessedText = text;
 
-            card.minimalist.ctx.clearRect(0, 0, card.width, card.height);
-            card.minimalist.ctx.font = `${card.text.rules.size * card.height}px "${card.text.rules.font}"`;
-            
-            const actualTextHeight = measureTextHeight(
-                text,
-                card.minimalist.ctx,
-                card.text.rules.width * card.width,
-                card.text.rules.size * card.height
-            );
-                    
-            const newHeight = Math.min(
-                card.minimalist.maxHeight,
-                Math.max(
-                    card.minimalist.minHeight,
-                    (actualTextHeight / card.height)
-                )
-            );
+        const dims = getCardDimensions();
+        const ctx = card.minimalist.ctx;
+        
+        // Batch context operations
+        ctx.clearRect(0, 0, dims.width, dims.height);
+        ctx.font = `${card.text.rules.size * dims.height}px "${card.text.rules.font}"`;
+        
+        const actualTextHeight = measureTextHeight(
+            text,
+            ctx,
+            card.text.rules.width * dims.width,
+            card.text.rules.size * dims.height
+        );
+                
+        const newHeight = Math.min(
+            card.minimalist.maxHeight,
+            Math.max(
+                card.minimalist.minHeight,
+                (actualTextHeight / dims.height)
+            )
+        );
 
-            const now = Date.now();
-            const textLengthChanged = Math.abs((card.minimalist.lastTextLength || 0) - text.length) > 10;
-            const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
-            
-            if (textLengthChanged || timeElapsed) {
-                requestAnimationFrame(() => {
-                    card.minimalist.currentHeight = newHeight;
-                    updateTextPositions(newHeight);
-                    drawTextBuffer();
-                    drawCard();
-                    
-                    card.minimalist.lastTextLength = text.length;
-                    card.minimalist.lastFullUpdate = now;
-                });
-            }
+        const now = Date.now();
+        const textLengthChanged = Math.abs((card.minimalist.lastTextLength || 0) - text.length) > 10;
+        const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
+        
+        if (textLengthChanged || timeElapsed) {
+            requestAnimationFrame(() => {
+                card.minimalist.currentHeight = newHeight;
+                updateTextPositions(newHeight);
+                drawTextBuffer();
+                drawCard();
+                
+                card.minimalist.lastTextLength = text.length;
+                card.minimalist.lastFullUpdate = now;
+            });
         }
     }, 200);
     
@@ -889,13 +1024,15 @@ function setupTextHandling(savedText) {
     }
 
     // Set up input listener
-    const textEditor = document.querySelector('#text-editor');
-    if (textEditor) {
+    // Set up input listener with optimization
+    const textEditor = getCachedElement('text-editor') || DOM_CACHE.textEditor;
+    if (textEditor && !textEditor._minimalistListener) {
+        textEditor._minimalistListener = true; // Prevent duplicate listeners
         textEditor.addEventListener('input', function() {
             const text = this.value;
             const delay = text.length > 500 ? 250 : 0;
             setTimeout(() => debouncedScale(text), delay);
-        });
+        }, { passive: true });
     }
 
     // Override textEdited function
@@ -932,14 +1069,20 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
             textCache: {},
             lastTextLength: 0,
             lastProcessedText: '',
-            lastFullUpdate: 0
+            lastFullUpdate: 0,
+            _cachedManaColors: null,
+            _lastManaText: ''
         };
         
         // Create measurement canvas
+        const dims = getCardDimensions();
         const measureCanvas = document.createElement('canvas');
-        measureCanvas.width = card.width;
-        measureCanvas.height = card.height;
+        measureCanvas.width = dims.width;
+        measureCanvas.height = dims.height;
         card.minimalist.ctx = measureCanvas.getContext('2d');
+        
+        // Initialize performance optimizations
+        initDOMCache();
     }
     
     // Create UI
@@ -954,7 +1097,10 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
     window.syncDividerColorsWithMana = syncDividerColorsWithMana;
     window.resetMinimalistGradient = resetMinimalistGradient;
     window.measureTextHeight = measureTextHeight;
-    window.clearMinimalistTextCache = () => { card.minimalist.textCache = {}; };
+    window.clearMinimalistTextCache = () => { 
+        card.minimalist.textCache = {};
+        COLOR_CACHE.clear();
+    };
     window.debounce = debounce;
     window.initializeMinimalistVersion = initializeMinimalistVersion;
 }

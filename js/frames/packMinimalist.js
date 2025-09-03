@@ -27,9 +27,6 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     card.onload = '/js/frames/versionMinimalist.js';
     await loadScript('/js/frames/versionMinimalist.js');
 	await loadScript('/js/frames/manaSymbolsOutlineBright.js');
-
-    // Add a small delay and check if functions are available
-    await new Promise(resolve => setTimeout(resolve, 50));
 	
     card.minimalist = {
         baseY: 0.935,
@@ -73,7 +70,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.022, color: 'white'},
 			rules: {
 				name: 'Rules Text', text: '', x: 0.086, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.831, height: card.minimalist.currentHeight,
-				size: 0.028, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
+				size: 0.029, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
             power: {
                 name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.05, height: 0.049, size: 0.04,
                 font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'},
