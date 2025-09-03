@@ -113,11 +113,6 @@ async function resetCardIrregularities({canvas = [getStandardWidth(), getStandar
 	card.bottomInfoZoom = 1;
 	card.bottomInfoColor = 'white';
 	replacementMasks = {};
-	// Clear gradient unless maintaining it
-	if (!card.gradientOptions || resetOthers) {
-		clearGradient();
-		delete card.gradientOptions;
-	}
 	//rotation
 	if (card.landscape) {
 		// previewContext.scale(card.width/card.height, card.height/card.width);
@@ -191,7 +186,6 @@ sizeCanvas('card');
 sizeCanvas('frame');
 sizeCanvas('frameMasking');
 sizeCanvas('frameCompositing');
-sizeCanvas('gradient');
 sizeCanvas('text');
 sizeCanvas('paragraph');
 sizeCanvas('line');
@@ -388,176 +382,6 @@ function findManaSymbolIndex(string) {
 }
 function getManaSymbol(key) {
 	return mana.get(key);
-}
-function drawHorizontalGradient(options = {}) {
-    const {
-        startFromBottom = true,
-        maxOpacity = 1,
-        height = 0.3,
-        solidHeight = 0,
-        yPosition = null,
-        colors = ['#000000'],
-        fadeDirection = 'up'
-    } = options;
-
-    gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
-    
-    const canvasWidth = gradientCanvas.width;
-    const canvasHeight = gradientCanvas.height;
-    
-    // Consolidate color logic - determine final colors to use
-    function getFinalColors() {
-        if (colors.length === 0) return ['#808080']; // Grey for 0 colors
-        if (colors.length > 3) return ['#e3d193']; // Gold for 4+ colors
-        return colors;
-    }
-    
-    // Create gradient stops for any number of colors
-    function createGradientStops(gradient, colorsToUse, alpha) {
-        const colorCount = colorsToUse.length;
-        
-        if (colorCount === 1) {
-            const rgb = hexToRgb(colorsToUse[0]);
-            const color = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-            gradient.addColorStop(0, color);
-            gradient.addColorStop(1, color);
-        } else if (colorCount === 2) {
-            const [color1, color2] = colorsToUse;
-            const rgb1 = hexToRgb(color1);
-            const rgb2 = hexToRgb(color2);
-            const blended = blendColors(color1, color2);
-            const blendedRgb = hexToRgb(blended);
-            
-            gradient.addColorStop(0, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
-            gradient.addColorStop(0.45, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
-            gradient.addColorStop(0.5, `rgba(${blendedRgb.r}, ${blendedRgb.g}, ${blendedRgb.b}, ${alpha})`);
-            gradient.addColorStop(0.55, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
-            gradient.addColorStop(1, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
-        } else if (colorCount === 3) {
-            const [color1, color2, color3] = colorsToUse;
-            const positions = [0, 0.31, 0.333, 0.356, 0.644, 0.667, 0.69, 1];
-            const colorValues = [
-                hexToRgb(color1),
-                hexToRgb(color1),
-                hexToRgb(blendColors(color1, color2)),
-                hexToRgb(color2),
-                hexToRgb(color2),
-                hexToRgb(blendColors(color2, color3)),
-                hexToRgb(color3),
-                hexToRgb(color3)
-            ];
-            
-            positions.forEach((pos, i) => {
-                const rgb = colorValues[i];
-                gradient.addColorStop(pos, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
-            });
-        }
-        
-        return gradient;
-    }
-    
-    // Helper function to create multi-color horizontal gradient with proper opacity
-    function createHorizontalGradient(alpha = maxOpacity) {
-        const gradient = gradientContext.createLinearGradient(0, 0, canvasWidth, 0);
-        const colorsToUse = getFinalColors();
-        return createGradientStops(gradient, colorsToUse, alpha);
-    }
-    
-    // Calculate positioning (consolidated logic)
-    const { startY, fadeHeight, solidAreaHeight } = calculatePositioning();
-    
-    function calculatePositioning() {
-        let startY, fadeHeight, solidAreaHeight;
-        
-        if (yPosition !== null) {
-            startY = Math.round(yPosition * canvasHeight);
-            fadeHeight = Math.round(height * canvasHeight);
-            solidAreaHeight = Math.round(solidHeight * canvasHeight);
-        } else {
-            fadeHeight = Math.round(height * canvasHeight);
-            solidAreaHeight = Math.round(solidHeight * canvasHeight);
-            const totalHeight = fadeHeight + solidAreaHeight;
-            startY = startFromBottom ? canvasHeight - totalHeight : 0;
-        }
-        
-        return { startY, fadeHeight, solidAreaHeight };
-    }
-    
-    // Draw solid area with proper opacity
-    if (solidAreaHeight > 0) {
-        const solidY = fadeDirection === 'down' ? startY + fadeHeight : startY + fadeHeight;
-        gradientContext.fillStyle = createHorizontalGradient(maxOpacity);
-        gradientContext.fillRect(0, solidY, canvasWidth, solidAreaHeight);
-    }
-    
-    // Draw fade area (consolidated fade logic)
-    const colorsToUse = getFinalColors();
-    
-    if (colorsToUse.length === 1) {
-        drawSingleColorFade(colorsToUse[0], startY, fadeHeight);
-    } else {
-        drawMultiColorFade(startY, fadeHeight);
-    }
-    
-    function drawSingleColorFade(color, startY, fadeHeight) {
-        const fadeStartY = fadeDirection === 'down' ? startY : startY + fadeHeight;
-        const fadeEndY = fadeDirection === 'down' ? startY + fadeHeight : startY;
-        const fadeGradient = gradientContext.createLinearGradient(0, fadeStartY, 0, fadeEndY);
-        
-        const rgb = hexToRgb(color);
-        const transparentColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`;
-        const solidColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${maxOpacity})`;
-        
-        if (fadeDirection === 'down') {
-            fadeGradient.addColorStop(0, transparentColor);
-            fadeGradient.addColorStop(1, solidColor);
-        } else {
-            fadeGradient.addColorStop(0, solidColor);
-            fadeGradient.addColorStop(1, transparentColor);
-        }
-        
-        gradientContext.fillStyle = fadeGradient;
-        gradientContext.fillRect(0, startY, canvasWidth, fadeHeight);
-    }
-    
-    function drawMultiColorFade(startY, fadeHeight) {
-        const fadeStart = fadeDirection === 'down' ? startY : startY + fadeHeight;
-        const increment = fadeDirection === 'down' ? 1 : -1;
-        
-        for (let y = 0; y < fadeHeight; y++) {
-            const currentY = fadeStart + (y * increment);
-            const fadeProgress = y / fadeHeight;
-            const alpha = fadeDirection === 'down' ? fadeProgress * maxOpacity : (1 - fadeProgress) * maxOpacity;
-            
-            gradientContext.fillStyle = createHorizontalGradient(alpha);
-            gradientContext.fillRect(0, currentY, canvasWidth, 1);
-        }
-    }
-}
-
-// Helper function to blend two hex colors (if not already defined)
-function blendColors(hex1, hex2, ratio = 0.5) {
-    const rgb1 = hexToRgb(hex1);
-    const rgb2 = hexToRgb(hex2);
-    
-    const r = Math.round(rgb1.r * (1 - ratio) + rgb2.r * ratio);
-    const g = Math.round(rgb1.g * (1 - ratio) + rgb2.g * ratio);
-    const b = Math.round(rgb1.b * (1 - ratio) + rgb2.b * ratio);
-    
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-// Helper function to convert hex to RGB (if not already defined)
-function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : {r: 0, g: 0, b: 0};
-}
-function clearGradient() {
-	gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
 }
 //FRAME TAB
 function drawFrames() {
@@ -5186,21 +5010,22 @@ function drawCard() {
 	// reset
 	cardContext.globalCompositeOperation = 'source-over';
 	cardContext.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
-	// art
-	cardContext.save();
-	cardContext.translate(scaleX(card.artX), scaleY(card.artY));
-	cardContext.rotate(Math.PI / 180 * (card.artRotate || 0));
-	if (document.querySelector('#grayscale-art').checked) {
-		cardContext.filter='grayscale(1)';
-	}
-	cardContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
-	cardContext.restore();
-	// Add gradient here - after art but before frames
-	cardContext.drawImage(gradientCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	// Add divider gradient if it exists (for minimalist version)
-	if (card.dividerCanvas && card.version === 'Minimalist') {
-		cardContext.drawImage(card.dividerCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
-	}
+    // art
+    cardContext.save();
+    if (card.artRotate) {
+        // Calculate art center
+        const artCenterX = scaleX(card.artX) + (art.width * card.artZoom) / 2;
+        const artCenterY = scaleY(card.artY) + (art.height * card.artZoom) / 2;
+        // Rotate around center
+        cardContext.translate(artCenterX, artCenterY);
+        cardContext.rotate(Math.PI / 180 * card.artRotate);
+        cardContext.translate(-artCenterX, -artCenterY);
+    }
+    if (document.querySelector('#grayscale-art').checked) {
+        cardContext.filter = 'grayscale(1)';
+    }
+    cardContext.drawImage(art, scaleX(card.artX), scaleY(card.artY), art.width * card.artZoom, art.height * card.artZoom);
+    cardContext.restore();
 	// frame elements
 	if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
 		cardContext.drawImage(planeswalkerPreFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
@@ -6144,15 +5969,11 @@ function changeCardIndex() {
 		} else if (card.version == 'pokemon') {
 			card.text.middleStat.text = '{' + (cardToImport.power || '') + '}';
 			card.text.pt.text = '{' + (cardToImport.toughness || '') + '}';
-	
+
 			if (card.text.middleStat && card.text.middleStat.text == '{}') {card.text.middleStat.text = '';}
 		} else {
 			card.text.pt.text = cardToImport.power + '/' + cardToImport.toughness || '';
 		}
-	}
-	else if (card.version == 'Minimalist' && card.text.power && card.text.toughness) {
-		card.text.power.text = cardToImport.power || '';
-		card.text.toughness.text = cardToImport.toughness || '';
 	}
 	if (card.text.pt && card.text.pt.text == undefined + '/' + undefined) {card.text.pt.text = '';}
 	if (card.text.pt && card.text.pt.text == undefined + '\n' + undefined) {card.text.pt.text = '';}
