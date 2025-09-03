@@ -253,6 +253,9 @@
 									<h5>{right#}</h5><h5>Moves the text # pixels right</h5>
 									<h5>{shadow#}</h5><h5>Changes the shadow distance to # (use {shadow0} to remove the shadow)</h5>
 									<h5>{shadowcolor#}</h5><h5>Changes the shadow color to #</h5>
+									<h5>{outline#}</h5><h5>Changes the Outline Width to # (enables it if not already enabled)</h5>
+									<h5>{outlinecolor___}</h5><h5>Changes the Outline Color to ___ (ie '{outlinecolorblue}'</h5>
+									<h5>{bullet}</h5><h5>Does bullet point •</h5>
 									<h5>{indent}</h5><h5>Indents the rest of the paragraph to the current point</h5>
 									<h5>{/indent}</h5><h5>Removes paragraph indendation</h5>
 									<h5>{kerning#}</h5><h5>Changes the kerning (letter spacing) to #</h5>
@@ -401,6 +404,7 @@
 								<input id='setSymbol-x' type='number' class='input' oninput='setSymbolEdited();' value=0>
 								<input id='setSymbol-y' type='number' class='input' oninput='setSymbolEdited();' value=0>
 								<input id='setSymbol-zoom' type='number' class='input' oninput='setSymbolEdited();' value=100 step=0.1 min=0>
+								<input id='setSymbol-rotate' type='number' class='input' oninput='setSymbolEdited();' value=0 step=1>
 							</div>
 							<div class='input-grid'>
 								<button class='input' onclick='resetSetSymbol();'>Reset Set Symbol</button>
@@ -508,6 +512,11 @@
 								<option value="/img/watermarks/faction-league-of-dastardly-doom.svg">League of Dastardly Doom</option>
 								<option value="/img/watermarks/faction-goblin-explosioneers.svg">Goblin Explosioneers</option>
 								<option value="/img/watermarks/faction-crossbreed-labs.svg">Crossbreed Labs</option>
+								<option disabled>Avatar The Last Airbender (TLA)</option>
+								<option value="/img/watermarks/atla-water.svg">Water Nation</option>
+								<option value="/img/watermarks/atla-earth.svg">Earth Nation</option>
+								<option value="/img/watermarks/atla-fire.svg">Fire Nation</option>
+								<option value="/img/watermarks/atla-air.svg">Air Nation</option>
 								<option disabled>Custome</option>
 								<option value="/img/watermarks/purple.svg">Purple Mana</option>
 							</select>
@@ -561,6 +570,17 @@
 							<h5 class='margin-bottom padding input-description'>And enter an opacity</h5>
 							<div class='input-grid margin-bottom'>
 								<input id='watermark-opacity' type='number' class='input' oninput='watermarkEdited();' value=40 step=1 min=0 max=100>
+							</div>
+							<h5 class='input-description padding margin-bottom'>Watermark Display Options</h5>
+							<div class='input-grid margin-bottom'>
+								<label class='checkbox-container input margin-bottom'>Frame-only Cutout (preserves art, use 100% opacity for full effect)
+									<input id='watermark-frame-cutout' type='checkbox' onchange='watermarkEdited();'>
+									<span class='checkmark'></span>
+								</label>
+								<label class='checkbox-container input margin-bottom'>Cutout Everything (removes art)
+									<input id='watermark-cutout' type='checkbox' onchange='watermarkEdited();' disabled>
+									<span class='checkmark'></span>
+								</label>
 							</div>
 						</div>
 						<div class='readable-background padding margin-bottom'>
