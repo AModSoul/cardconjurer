@@ -1,20 +1,102 @@
 //checks to see if it needs to run
 
 //============================================================================
+// CONSTANTS AND CONFIGURATION
+//============================================================================
+
+// Check if constants already exist before declaring them
+if (typeof MINIMALIST_DEFAULTS === 'undefined') {
+	const MINIMALIST_DEFAULTS = {
+		baseY: 0.935,
+		spacing: 0.05,
+		minHeight: 0.1,
+		maxHeight: 0.25,
+		currentHeight: 0.1,
+		settings: {
+			maxOpacity: 0.95,
+			fadeBottomOffset: -0.05,
+			fadeTopOffset: -0.15,
+			solidEnd: 1,
+			bgColor1: '#000000',
+			bgColor2: '#000000',
+			bgColor3: '#000000',
+			bgColorCount: '1'
+		},
+		dividerSettings: {
+			color1: '#FFF7D8',
+			color2: '#26C7FE',
+			color3: '#B264FF',
+			colorCount: 'auto'
+		},
+		ptSettings: {
+			enabled: true,
+			colorMode: 'auto',
+			color1: '#FFFFFF',
+			color2: '#FFFFFF'
+		},
+		typeSettings: {
+			autoColor: true,
+			customColor: '#FFFFFF'
+		}
+	};
+	window.MINIMALIST_DEFAULTS = MINIMALIST_DEFAULTS;
+}
+
+if (typeof COLOR_MAP === 'undefined') {
+	const COLOR_MAP = {
+		'white': '#FFF7D8',
+		'blue': '#26C7FE',
+		'black': '#B264FF',
+		'red': '#F13F35',
+		'green': '#29EEA6'
+	};
+	window.COLOR_MAP = COLOR_MAP;
+}
+
+if (typeof MANA_COLOR_MAP === 'undefined') {
+	const MANA_COLOR_MAP = {
+		'w': 'white',
+		'u': 'blue',
+		'b': 'black',
+		'r': 'red',
+		'g': 'green'
+	};
+	window.MANA_COLOR_MAP = MANA_COLOR_MAP;
+}
+
+// Cache color calculations - use window object to avoid redeclaration
+if (typeof COLOR_CACHE === 'undefined') {
+	window.COLOR_CACHE = new Map();
+}
+
+//============================================================================
 // PERFORMANCE OPTIMIZATIONS
 //============================================================================
 
-// Cache frequently accessed DOM elements
-const DOM_CACHE = {
-	textEditor: null,
-	uiElements: new Map(),
-	initialized: false
-};
+// Check if DOM_CACHE already exists
+if (typeof DOM_CACHE === 'undefined') {
+	const DOM_CACHE = {
+		textEditor: null,
+		uiElements: new Map(),
+		initialized: false
+	};
+	window.DOM_CACHE = DOM_CACHE;
+}
+
+// Check if CALC_CACHE already exists
+if (typeof CALC_CACHE === 'undefined') {
+	const CALC_CACHE = {
+		cardDimensions: null,
+		lastWidth: 0,
+		lastHeight: 0
+	};
+	window.CALC_CACHE = CALC_CACHE;
+}
 
 function initDOMCache() {
-	if (DOM_CACHE.initialized) return;
+	if (window.DOM_CACHE.initialized) return;
 	
-	DOM_CACHE.textEditor = document.querySelector('#text-editor');
+	window.DOM_CACHE.textEditor = document.querySelector('#text-editor');
 	
 	// Cache UI elements that are accessed frequently
 	const elementIds = [
@@ -25,123 +107,80 @@ function initDOMCache() {
 		'minimalist-pt-color-mode', 'minimalist-bg-color-1',
 		'minimalist-bg-color-2', 'minimalist-bg-color-3',
 		'minimalist-color-1', 'minimalist-color-2', 'minimalist-color-3',
-		'minimalist-pt-color-1', 'minimalist-pt-color-2'
+		'minimalist-pt-color-1', 'minimalist-pt-color-2',
+		'minimalist-type-auto-color', 'minimalist-type-color'
 	];
 	
 	elementIds.forEach(id => {
 		const element = document.getElementById(id);
-		if (element) DOM_CACHE.uiElements.set(id, element);
+		if (element) window.DOM_CACHE.uiElements.set(id, element);
 	});
 	
-	DOM_CACHE.initialized = true;
+	window.DOM_CACHE.initialized = true;
 }
 
 function getCachedElement(id) {
-	if (!DOM_CACHE.initialized) initDOMCache();
-	return DOM_CACHE.uiElements.get(id) || document.getElementById(id);
+	if (!window.DOM_CACHE.initialized) initDOMCache();
+	return window.DOM_CACHE.uiElements.get(id) || document.getElementById(id);
 }
 
-// Optimize frequent calculations
-const CALC_CACHE = {
-	cardDimensions: null,
-	lastWidth: 0,
-	lastHeight: 0
-};
-
 function getCardDimensions() {
-	if (CALC_CACHE.lastWidth !== card.width || CALC_CACHE.lastHeight !== card.height) {
-		CALC_CACHE.cardDimensions = {
+	if (window.CALC_CACHE.lastWidth !== card.width || window.CALC_CACHE.lastHeight !== card.height) {
+		window.CALC_CACHE.cardDimensions = {
 			width: card.width,
 			height: card.height,
 			halfWidth: card.width / 2,
 			halfHeight: card.height / 2
 		};
-		CALC_CACHE.lastWidth = card.width;
-		CALC_CACHE.lastHeight = card.height;
+		window.CALC_CACHE.lastWidth = card.width;
+		window.CALC_CACHE.lastHeight = card.height;
 	}
-	return CALC_CACHE.cardDimensions;
+	return window.CALC_CACHE.cardDimensions;
 }
-
-// Cache color calculations
-const COLOR_CACHE = new Map();
-
-//============================================================================
-// CONSTANTS AND CONFIGURATION
-//============================================================================
-
-const MINIMALIST_DEFAULTS = {
-	baseY: 0.935,
-	spacing: 0.05,
-	minHeight: 0.1,
-	maxHeight: 0.25,
-	currentHeight: 0.1,
-	settings: {
-		maxOpacity: 0.95,
-		fadeBottomOffset: -0.05,
-		fadeTopOffset: -0.15,
-		solidEnd: 1,
-		bgColor1: '#000000',
-		bgColor2: '#000000',
-		bgColor3: '#000000',
-		bgColorCount: '1'
-	},
-	dividerSettings: {
-		color1: '#FFF7D8',
-		color2: '#26C7FE',
-		color3: '#B264FF',
-		colorCount: 'auto'
-	},
-	ptSettings: {
-		enabled: true,
-		colorMode: 'auto',
-		color1: '#FFFFFF',
-		color2: '#FFFFFF'
-	},
-	typeSettings: {
-		autoColor: true,
-		customColor: '#FFFFFF'
-	}
-};
-
-const COLOR_MAP = {
-	'white': '#FFF7D8',
-	'blue': '#26C7FE',
-	'black': '#B264FF',
-	'red': '#F13F35',
-	'green': '#29EEA6'
-};
-
-const MANA_COLOR_MAP = {
-	'w': 'white',
-	'u': 'blue',
-	'b': 'black',
-	'r': 'red',
-	'g': 'green'
-};
 
 //============================================================================
 // SYMBOL LOADING
 //============================================================================
 
-const powerSymbol = new Image();
-powerSymbol.crossOrigin = 'anonymous';
-powerSymbol.src = fixUri('/img/frames/minimalist/p.svg');
-let powerSymbolLoaded = false;
+// Check if variables already exist before declaring them
+if (typeof powerSymbol === 'undefined') {
+	const powerSymbol = new Image();
+	powerSymbol.crossOrigin = 'anonymous';
+	powerSymbol.src = fixUri('/img/frames/minimalist/p.svg');
+	window.powerSymbol = powerSymbol; // Make it globally accessible
+}
 
-const toughnessSymbol = new Image();
-toughnessSymbol.crossOrigin = 'anonymous';
-toughnessSymbol.src = fixUri('/img/frames/minimalist/t.svg');
-let toughnessSymbolLoaded = false;
+if (typeof powerSymbolLoaded === 'undefined') {
+	let powerSymbolLoaded = false;
+	window.powerSymbolLoaded = powerSymbolLoaded; // Make it globally accessible
+}
 
-powerSymbol.onload = () => {
-	powerSymbolLoaded = true;
-	drawCard();
-};
+if (typeof toughnessSymbol === 'undefined') {
+	const toughnessSymbol = new Image();
+	toughnessSymbol.crossOrigin = 'anonymous';
+	toughnessSymbol.src = fixUri('/img/frames/minimalist/t.svg');
+	window.toughnessSymbol = toughnessSymbol; // Make it globally accessible
+}
 
-toughnessSymbol.onload = () => {
-	toughnessSymbolLoaded = true;
-	drawCard();
-};
+if (typeof toughnessSymbolLoaded === 'undefined') {
+	let toughnessSymbolLoaded = false;
+	window.toughnessSymbolLoaded = toughnessSymbolLoaded; // Make it globally accessible
+}
+
+// Set up onload handlers only if not already set
+if (!window.powerSymbol.onload) {
+	window.powerSymbol.onload = () => {
+		window.powerSymbolLoaded = true;
+		drawCard();
+	};
+}
+
+if (!window.toughnessSymbol.onload) {
+	window.toughnessSymbol.onload = () => {
+		window.toughnessSymbolLoaded = true;
+		drawCard();
+	};
+}
 
 //============================================================================
 // UTILITY FUNCTIONS
@@ -149,25 +188,25 @@ toughnessSymbol.onload = () => {
 
 function hexToRgba(hex, alpha) {
 	const cacheKey = `${hex}_${alpha}`;
-	if (COLOR_CACHE.has(cacheKey)) {
-		return COLOR_CACHE.get(cacheKey);
+	if (window.COLOR_CACHE.has(cacheKey)) {
+		return window.COLOR_CACHE.get(cacheKey);
 	}
 	
 	const rgb = hexToRgb(hex);
 	const result = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 	
 	// Limit cache size
-	if (COLOR_CACHE.size > 100) {
-		const firstKey = COLOR_CACHE.keys().next().value;
-		COLOR_CACHE.delete(firstKey);
+	if (window.COLOR_CACHE.size > 100) {
+		const firstKey = window.COLOR_CACHE.keys().next().value;
+		window.COLOR_CACHE.delete(firstKey);
 	}
 	
-	COLOR_CACHE.set(cacheKey, result);
+	window.COLOR_CACHE.set(cacheKey, result);
 	return result;
 }
 
 function getColorHex(colorName) {
-	return COLOR_MAP[colorName] || '#FFFFFF';
+	return window.COLOR_MAP[colorName] || '#FFFFFF';
 }
 
 function blendColors(hex1, hex2, ratio = 0.5) {
@@ -249,15 +288,17 @@ function drawSymbolIfReady(symbol, isLoaded, textObj, color, symbolWidth, symbol
 
 function setUIDefaults() {
 	const settingsMap = {
-		'max-opacity': MINIMALIST_DEFAULTS.settings.maxOpacity,
-		'fade-bottom-offset': MINIMALIST_DEFAULTS.settings.fadeBottomOffset,
-		'fade-top-offset': MINIMALIST_DEFAULTS.settings.fadeTopOffset,
+		'max-opacity': window.MINIMALIST_DEFAULTS.settings.maxOpacity, // Use window version
+		'fade-bottom-offset': window.MINIMALIST_DEFAULTS.settings.fadeBottomOffset,
+		'fade-top-offset': window.MINIMALIST_DEFAULTS.settings.fadeTopOffset,
 		'bg-gradient-enabled': true,
 		'divider-enabled': true,
-		'pt-symbols-enabled': MINIMALIST_DEFAULTS.ptSettings.enabled,
-		'pt-color-mode': MINIMALIST_DEFAULTS.ptSettings.colorMode,
-		'pt-color-1': MINIMALIST_DEFAULTS.ptSettings.color1,
-		'pt-color-2': MINIMALIST_DEFAULTS.ptSettings.color2
+		'pt-symbols-enabled': window.MINIMALIST_DEFAULTS.ptSettings.enabled,
+		'pt-color-mode': window.MINIMALIST_DEFAULTS.ptSettings.colorMode,
+		'pt-color-1': window.MINIMALIST_DEFAULTS.ptSettings.color1,
+		'pt-color-2': window.MINIMALIST_DEFAULTS.ptSettings.color2,
+		'type-auto-color': window.MINIMALIST_DEFAULTS.typeSettings.autoColor,
+		'type-color': window.MINIMALIST_DEFAULTS.typeSettings.customColor 
 	};
 	
 	Object.entries(settingsMap).forEach(([key, value]) => {
@@ -350,8 +391,6 @@ function measureTextWidth(text, textObj) {
 	if (!text) return 0;
 	
 	const dims = getCardDimensions();
-	
-	// Use the actual text context instead of a temporary one for more accurate measurement
 	const ctx = textContext || card.minimalist.ctx;
 	
 	// Save current context state
@@ -418,51 +457,6 @@ function updateTextPositions(rulesHeight) {
 	return { rulesY, typeY, titleY, manaY, setSymbolY };
 }
 
-function updateBackgroundGradient(manaY, rulesY) {
-	if (!card.gradientOptions) return;
-	
-	const bgGradientEnabled = getMinimalistSetting('bg-gradient-enabled');
-	
-	if (bgGradientEnabled) {
-		const settings = card.minimalist.settings || MINIMALIST_DEFAULTS.settings;
-		
-		let backgroundColors = [];
-		if (settings.bgColorCount === 'mana-auto') {
-			backgroundColors = getManaHexColors();
-			if (backgroundColors.length === 0) {
-				backgroundColors = ['#808080'];
-			}
-		} else {
-			const colorCount = parseInt(settings.bgColorCount);
-			const customColors = [settings.bgColor1, settings.bgColor2, settings.bgColor3];
-			backgroundColors = customColors.slice(0, colorCount);
-		}
-		
-		const fadeTopY = manaY + settings.fadeTopOffset;
-		const fadeBottomY = rulesY + settings.fadeBottomOffset;
-		const solidStartY = fadeBottomY;
-		const solidEndY = settings.solidEnd;
-		
-		const fadeHeight = fadeBottomY - fadeTopY;
-		const solidHeight = solidEndY - solidStartY;
-		
-		card.gradientOptions = {
-			...card.gradientOptions,
-			yPosition: fadeTopY,
-			height: fadeHeight,
-			solidHeight: solidHeight,
-			maxOpacity: settings.maxOpacity,
-			startFromBottom: false,
-			fadeDirection: 'down',
-			endOpacity: settings.maxOpacity,
-			colors: backgroundColors
-		};
-		
-		drawHorizontalGradient(card.gradientOptions);
-	} else {
-		gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
-	}
-}
 
 //============================================================================
 // GRADIENT AND VISUAL EFFECTS
@@ -611,7 +605,7 @@ function drawPTSymbols() {
 	const toughnessSymbolToPowerTextSpacing = 145; // pixels between toughness symbol and power text
 	const powerTextToSymbolSpacing = -17; // pixels between power text and power symbol
 	
-	// Step 1: Keep toughness at pack's fixed position - DON'T CHANGE THIS
+	// Step 1: Keep toughness at pack's fixed position
 	const toughnessTextCenterX = card.text.toughness.x * dims.width;
 	const toughnessTextY = card.text.toughness.y * dims.height;
 	
@@ -632,25 +626,18 @@ function drawPTSymbols() {
 	const powerSymbolX = powerTextLeftEdge - powerTextToSymbolSpacing;
 	const powerSymbolY = toughnessTextY - (powerSymbolHeight / 2) + (card.text.power.size * dims.height / 2);
 	
-	// Debug logging to see what's happening
-	console.log(`Toughness: "${card.text.toughness.text}" width: ${toughnessTextWidth}`);
-	console.log(`Toughness center X: ${toughnessTextCenterX}, left edge: ${toughnessTextLeftEdge}, Symbol X: ${toughnessSymbolX}`);
-	console.log(`Power: "${card.text.power.text}" width: ${powerTextWidth}`);
-	console.log(`Power center X: ${powerTextCenterX}, left edge: ${powerTextLeftEdge}, Symbol X: ${powerSymbolX}`);
-	console.log(`Spacing - T-text to T-symbol: ${toughnessTextToSymbolSpacing}, T-symbol to P-text: ${toughnessSymbolToPowerTextSpacing}, P-text to P-symbol: ${powerTextToSymbolSpacing}`);
-	
-	// Update ONLY the power text position - leave toughness alone
+	// Update the power text position
 	if (hasPower) {
 		card.text.power.x = powerTextCenterX / dims.width;
 		card.text.power.y = card.text.toughness.y; // Use same Y as toughness
 	}
 	
 	// Draw symbols at calculated positions
-	if (hasPower && powerSymbolLoaded) {
-		drawColoredSymbolAtPosition(powerSymbol, powerColor, powerSymbolWidth, powerSymbolHeight, powerSymbolX, powerSymbolY);
+	if (hasPower && window.powerSymbolLoaded) {
+		drawColoredSymbolAtPosition(window.powerSymbol, powerColor, powerSymbolWidth, powerSymbolHeight, powerSymbolX, powerSymbolY);
 	}
-	if (hasToughness && toughnessSymbolLoaded) {
-		drawColoredSymbolAtPosition(toughnessSymbol, toughnessColor, toughnessSymbolWidth, toughnessSymbolHeight, toughnessSymbolX, toughnessSymbolY);
+	if (hasToughness && window.toughnessSymbolLoaded) {
+		drawColoredSymbolAtPosition(window.toughnessSymbol, toughnessColor, toughnessSymbolWidth, toughnessSymbolHeight, toughnessSymbolX, toughnessSymbolY);
 	}
 }
 
@@ -681,123 +668,95 @@ function getPTColors() {
 }
 
 function drawColoredSymbolAtPosition(symbol, color, symbolWidth, symbolHeight, x, y) {
-    // Reuse temp canvas if possible
-    if (!card.minimalist._tempCanvas) {
-        card.minimalist._tempCanvas = document.createElement('canvas');
-        card.minimalist._tempCtx = card.minimalist._tempCanvas.getContext('2d');
-    }
-    
-    const tempCanvas = card.minimalist._tempCanvas;
-    const tempCtx = card.minimalist._tempCtx;
-    
-    // Only resize if necessary
-    if (tempCanvas.width !== symbolWidth || tempCanvas.height !== symbolHeight) {
-        tempCanvas.width = symbolWidth;
-        tempCanvas.height = symbolHeight;
-    }
-    
-    tempCtx.clearRect(0, 0, symbolWidth, symbolHeight);
-    tempCtx.drawImage(symbol, 0, 0, symbolWidth, symbolHeight);
-    tempCtx.globalCompositeOperation = 'source-in';
-    tempCtx.fillStyle = color;
-    tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
-    tempCtx.globalCompositeOperation = 'source-over'; // Reset
-    
-    card.dividerContext.drawImage(tempCanvas, x, y);
+	// Reuse temp canvas if possible
+	if (!card.minimalist._tempCanvas) {
+		card.minimalist._tempCanvas = document.createElement('canvas');
+		card.minimalist._tempCtx = card.minimalist._tempCanvas.getContext('2d');
+	}
+	
+	const tempCanvas = card.minimalist._tempCanvas;
+	const tempCtx = card.minimalist._tempCtx;
+	
+	// Only resize if necessary
+	if (tempCanvas.width !== symbolWidth || tempCanvas.height !== symbolHeight) {
+		tempCanvas.width = symbolWidth;
+		tempCanvas.height = symbolHeight;
+	}
+	
+	tempCtx.clearRect(0, 0, symbolWidth, symbolHeight);
+	tempCtx.drawImage(symbol, 0, 0, symbolWidth, symbolHeight);
+	tempCtx.globalCompositeOperation = 'source-in';
+	tempCtx.fillStyle = color;
+	tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
+	tempCtx.globalCompositeOperation = 'source-over'; // Reset
+	
+	card.dividerContext.drawImage(tempCanvas, x, y);
 }
 
-function toggleBgColorVisibility() {
-    const colorCount = document.getElementById('minimalist-bg-color-count').value;
-    const color1Container = document.getElementById('bg-color-1-container');
-    const color2Container = document.getElementById('bg-color-2-container');
-    const color3Container = document.getElementById('bg-color-3-container');
-    
-    // Hide all color pickers first
-    color1Container.style.display = 'none';
-    color2Container.style.display = 'none';
-    color3Container.style.display = 'none';
-    
-    // Show appropriate color pickers based on selection
-    switch(colorCount) {
-        case '1':
-            color1Container.style.display = 'block';
-            break;
-        case '2':
-            color1Container.style.display = 'block';
-            color2Container.style.display = 'block';
-            break;
-        case '3':
-            color1Container.style.display = 'block';
-            color2Container.style.display = 'block';
-            color3Container.style.display = 'block';
-            break;
-        case 'mana-auto':
-            // Hide all color pickers for auto mode
-            break;
-    }
-}
+function toggleColorVisibility(type) {
+	const config = {
+		bg: {
+			countElement: 'minimalist-bg-color-count',
+			containers: ['bg-color-1-container', 'bg-color-2-container', 'bg-color-3-container'],
+			autoValue: 'mana-auto'
+		},
+		divider: {
+			countElement: 'minimalist-color-count',
+			containers: ['divider-color-1-container', 'divider-color-2-container', 'divider-color-3-container'],
+			autoValue: 'auto'
+		},
+		pt: {
+			countElement: 'minimalist-pt-color-mode',
+			containers: ['pt-color-1-container', 'pt-color-2-container'],
+			autoValue: 'auto'
+		},
+		type: {
+			checkboxElement: 'minimalist-type-auto-color',
+			containers: ['type-color-container']
+		}
+	};
 
-function toggleDividerColorVisibility() {
-    const colorCount = document.getElementById('minimalist-color-count').value;
-    const color1Container = document.getElementById('divider-color-1-container');
-    const color2Container = document.getElementById('divider-color-2-container');
-    const color3Container = document.getElementById('divider-color-3-container');
-    
-    // Hide all color pickers first
-    color1Container.style.display = 'none';
-    color2Container.style.display = 'none';
-    color3Container.style.display = 'none';
-    
-    // Show appropriate color pickers based on selection
-    switch(colorCount) {
-        case '1':
-            color1Container.style.display = 'block';
-            break;
-        case '2':
-            color1Container.style.display = 'block';
-            color2Container.style.display = 'block';
-            break;
-        case '3':
-            color1Container.style.display = 'block';
-            color2Container.style.display = 'block';
-            color3Container.style.display = 'block';
-            break;
-        case 'auto':
-            // Hide all color pickers for auto mode
-            break;
-    }
-}
+	const settings = config[type];
+	if (!settings) return;
 
-function togglePTColorVisibility() {
-    const colorMode = document.getElementById('minimalist-pt-color-mode').value;
-    const color1Container = document.getElementById('pt-color-1-container');
-    const color2Container = document.getElementById('pt-color-2-container');
-    
-    // Hide all color pickers first
-    color1Container.style.display = 'none';
-    color2Container.style.display = 'none';
-    
-    // Show appropriate color pickers based on selection
-    switch(colorMode) {
-        case '1':
-            color1Container.style.display = 'block';
-            break;
-        case '2':
-            color1Container.style.display = 'block';
-            color2Container.style.display = 'block';
-            break;
-        case 'auto':
-            // Hide all color pickers for auto mode
-            break;
-    }
-}
+	// Handle type color (checkbox-based) differently
+	if (type === 'type') {
+		const autoColorCheckbox = document.getElementById(settings.checkboxElement);
+		const container = document.getElementById(settings.containers[0]);
+		const colorInput = document.getElementById('minimalist-type-color');
+		
+		if (autoColorCheckbox && container) {
+			const isAutoChecked = autoColorCheckbox.checked;
+			container.style.display = isAutoChecked ? 'none' : 'block';
+			
+			// ALWAYS keep the input enabled, just hide/show the container
+			if (colorInput) {
+				colorInput.disabled = false;
+			}
+		}
+		return;
+	}
 
-function toggleTypeColorVisibility() {
-    const autoColor = document.getElementById('minimalist-type-auto-color').checked;
-    const typeColorContainer = document.getElementById('type-color-container');
-    
-    // Show/hide type color picker based on auto checkbox
-    typeColorContainer.style.display = autoColor ? 'none' : 'block';
+	// Handle dropdown-based visibility
+	const countElement = document.getElementById(settings.countElement);
+	const selectedValue = countElement.value;
+
+	// Hide all containers first
+	settings.containers.forEach(containerId => {
+		const container = document.getElementById(containerId);
+		if (container) container.style.display = 'none';
+	});
+
+	// Show appropriate containers based on selection
+	if (selectedValue === settings.autoValue) {
+		return;
+	}
+
+	const numColors = parseInt(selectedValue) || 0;
+	for (let i = 0; i < Math.min(numColors, settings.containers.length); i++) {
+		const container = document.getElementById(settings.containers[i]);
+		if (container) container.style.display = 'block';
+	}
 }
 
 //============================================================================
@@ -848,7 +807,7 @@ function createMinimalistUI() {
 
 	<h5 class='padding input-description'>Background Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient(); toggleBgColorVisibility();'>
+		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient(); toggleColorVisibility("bg");'>
 			<option value='1' selected>1 Color</option>
 			<option value='mana-auto'>Auto (Mana Colors)</option>
 			<option value='2'>2 Colors</option>
@@ -883,7 +842,7 @@ function createMinimalistUI() {
 
 	<h5 class='input-description margin-bottom'>Auto Type Line Color</h5>
 	<label class='checkbox-container input margin-bottom'>Auto Color (from mana cost)
-		<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleTypeColorVisibility();' checked>
+		<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
 		<span class='checkmark'></span>
 	</label>
 
@@ -906,7 +865,7 @@ function createMinimalistUI() {
 
 	<h5 class='padding input-description'>Divider Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleDividerColorVisibility();'>
+		<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleColorVisibility("divider");'>
 			<option value='auto'>Auto (from mana cost)</option>
 			<option value='1'>1 Color</option>
 			<option value='2'>2 Colors</option>
@@ -947,7 +906,7 @@ function createMinimalistUI() {
 
 	<h5 class='padding input-description'>Symbol Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); togglePTColorVisibility();'>
+		<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); toggleColorVisibility("pt");'>
 			<option value='auto'>Auto (from mana cost)</option>
 			<option value='1'>1 Color</option>
 			<option value='2'>2 Colors</option>
@@ -981,6 +940,38 @@ function createMinimalistUI() {
 // UPDATE FUNCTIONS
 //============================================================================
 
+function updateMinimalistVisuals(options = {}) {
+	if (card.version !== 'Minimalist') return;
+	
+	const {
+		includeTextPositions = false,
+		includeDivider = true,
+		includeText = true,
+		includeBackground = false
+	} = options;
+	
+	requestAnimationFrame(() => {
+		if (includeTextPositions) {
+			updateTextPositions(card.minimalist.currentHeight);
+		}
+		
+		if (includeBackground && card.text.rules) {
+			updateTextPositions(card.minimalist.currentHeight);
+		}
+		
+		if (includeDivider) {
+			drawDividerGradient(); // This includes P/T symbols
+		}
+		
+		if (includeText) {
+			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+			drawTextBuffer();
+		}
+		
+		drawCard();
+	});
+}
+
 function updateMinimalistGradient() {
 	if (card.version === 'Minimalist' && card.gradientOptions) {
 		const maxOpacity = parseFloat(getCachedElement('minimalist-max-opacity').value);
@@ -1002,9 +993,53 @@ function updateMinimalistGradient() {
 			bgColorCount
 		});
 		
-		if (card.text.rules) {
-			updateTextPositions(card.minimalist.currentHeight);
+		updateMinimalistVisuals({ includeBackground: true });
+	}
+}
+
+function updateBackgroundGradient(manaY, rulesY) {
+	if (!card.gradientOptions) return;
+	
+	const bgGradientEnabled = getMinimalistSetting('bg-gradient-enabled');
+	
+	if (bgGradientEnabled) {
+		const settings = card.minimalist.settings || MINIMALIST_DEFAULTS.settings;
+		
+		let backgroundColors = [];
+		if (settings.bgColorCount === 'mana-auto') {
+			backgroundColors = getManaHexColors();
+			if (backgroundColors.length === 0) {
+				backgroundColors = ['#808080'];
+			}
+		} else {
+			const colorCount = parseInt(settings.bgColorCount);
+			const customColors = [settings.bgColor1, settings.bgColor2, settings.bgColor3];
+			backgroundColors = customColors.slice(0, colorCount);
 		}
+		
+		const fadeTopY = manaY + settings.fadeTopOffset;
+		const fadeBottomY = rulesY + settings.fadeBottomOffset;
+		const solidStartY = fadeBottomY;
+		const solidEndY = settings.solidEnd;
+		
+		const fadeHeight = fadeBottomY - fadeTopY;
+		const solidHeight = solidEndY - solidStartY;
+		
+		card.gradientOptions = {
+			...card.gradientOptions,
+			yPosition: fadeTopY,
+			height: fadeHeight,
+			solidHeight: solidHeight,
+			maxOpacity: settings.maxOpacity,
+			startFromBottom: false,
+			fadeDirection: 'down',
+			endOpacity: settings.maxOpacity,
+			colors: backgroundColors
+		};
+		
+		drawHorizontalGradient(card.gradientOptions);
+	} else {
+		gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
 	}
 }
 
@@ -1016,12 +1051,7 @@ function updateDividerColors() {
 		const colorCount = getCachedElement('minimalist-color-count').value;
 		
 		updateCardSettings('dividerSettings', { color1, color2, color3, colorCount });
-		
-		// Redraw both divider and P/T symbols
-		requestAnimationFrame(() => {
-			drawDividerGradient();
-			drawCard();
-		});
+		updateMinimalistVisuals({ includeDivider: true, includeText: false });
 	}
 }
 
@@ -1033,41 +1063,35 @@ function updatePTSymbols() {
 		const color2 = getCachedElement('minimalist-pt-color-2').value;
 		
 		updateCardSettings('ptSettings', { enabled, colorMode, color1, color2 });
-		
-		// Redraw both divider and P/T symbols
-		requestAnimationFrame(() => {
-			drawDividerGradient();
-			drawCard();
-		});
+		updateMinimalistVisuals({ includeDivider: true, includeText: false });
 	}
 }
 
 function updateTypeLineColor() {
-	console.log('updateTypeLineColor called'); // Debug log
-	
 	if (card.version === 'Minimalist' && card.text.type) {
-		const autoColor = document.getElementById('minimalist-type-auto-color')?.checked ?? true;
-		const typeColorInput = document.getElementById('minimalist-type-color');
+		const autoColorElement = getCachedElement('minimalist-type-auto-color');
+		const typeColorInput = getCachedElement('minimalist-type-color');
 		
-		console.log('Auto color:', autoColor, 'Type color input:', typeColorInput); // Debug log
-		
-		if (!typeColorInput) {
-			console.error('Type color input not found');
+		if (!autoColorElement || !typeColorInput) {
+			console.log('Type line elements not found:', {
+				autoColor: !!autoColorElement,
+				typeColor: !!typeColorInput
+			});
 			return;
 		}
 		
+		const autoColor = autoColorElement.checked;
 		let newColor;
+		
+		typeColorInput.disabled = false; // Always enable the input
+		
 		if (autoColor) {
-			// Use mana color logic: single color gets that color, multiple colors get gold
 			const manaColors = getManaColorsFromText();
 			if (manaColors.length === 1) {
-				// Single color - use that mana color
 				newColor = getColorHex(manaColors[0]);
 			} else if (manaColors.length > 1) {
-				// Multicolor - use gold color
-				newColor = '#e3d193'; // Gold color for multicolor
+				newColor = '#e3d193'; // Gold for multicolor
 			} else {
-				// No mana colors - use white
 				newColor = '#FFFFFF';
 			}
 			typeColorInput.value = newColor;
@@ -1075,36 +1099,20 @@ function updateTypeLineColor() {
 			newColor = typeColorInput.value;
 		}
 		
-		console.log('Setting type color to:', newColor); // Debug log
-		
-		// Update the type line color
 		card.text.type.color = newColor;
 		
-		// Store the setting
 		updateCardSettings('typeSettings', { 
 			autoColor, 
 			customColor: typeColorInput.value 
 		});
 		
-		// Force redraw of the type text element specifically
-		requestAnimationFrame(() => {
-			// Clear and redraw the text canvas
-			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-			
-			// Redraw all text elements with updated colors
-			drawTextBuffer();
-			
-			// Force a complete card redraw
-			drawCard();
-		});
+		updateMinimalistVisuals({ includeText: true, includeDivider: false });
 	}
 }
 
 function handlePTChange() {
 	if (card.version === 'Minimalist') {
-		// Force redraw P/T symbols whenever power or toughness changes
-		drawDividerGradient();
-		drawCard();
+		updateMinimalistVisuals({ includeDivider: true, includeText: false });
 	}
 }
 
@@ -1116,8 +1124,7 @@ function syncDividerColorsWithMana() {
 		document.getElementById('minimalist-color-2').value = getColorHex(manaColors[1]) || '#26C7FE';
 		document.getElementById('minimalist-color-3').value = getColorHex(manaColors[2]) || '#B264FF';
 		
-		drawDividerGradient();
-		drawCard();
+		updateMinimalistVisuals({ includeDivider: true, includeText: false });
 	}
 }
 
@@ -1166,15 +1173,17 @@ function resetMinimalistGradient() {
 		color3: defaultColors.color3,
 		colorCount: defaultColors.colorCount
 	});
-	updateCardSettings('ptSettings', { ...MINIMALIST_DEFAULTS.ptSettings });
-	updateCardSettings('typeSettings', { ...MINIMALIST_DEFAULTS.typeSettings });
+	updateCardSettings('ptSettings', { ...window.MINIMALIST_DEFAULTS.ptSettings });
+	updateCardSettings('typeSettings', { ...window.MINIMALIST_DEFAULTS.typeSettings });
 
 	// Update visibility for all color pickers after resetting values
-	toggleBgColorVisibility();
-	toggleDividerColorVisibility();
-	togglePTColorVisibility();
-	toggleTypeColorVisibility();
+	toggleColorVisibility('bg');
+	toggleColorVisibility('divider');
+	toggleColorVisibility('pt');
+	toggleColorVisibility('type');
 	
+	updateTypeLineColor();
+
 	updateTextPositions(card.minimalist.currentHeight);
 	
 	// Visual feedback
@@ -1227,73 +1236,92 @@ function resetMinimalistGradient() {
 	});
 
 	// Initialize type line color settings
-	const typeSettings = card.minimalist.typeSettings || MINIMALIST_DEFAULTS.typeSettings;
+	const typeSettings = card.minimalist.typeSettings || window.MINIMALIST_DEFAULTS.typeSettings;
 	const typeAutoCheckbox = document.getElementById('minimalist-type-auto-color');
 	const typeColorInput = document.getElementById('minimalist-type-color');
 
 	if (typeAutoCheckbox) typeAutoCheckbox.checked = typeSettings.autoColor;
 	if (typeColorInput) {
 		typeColorInput.value = typeSettings.customColor;
-		typeColorInput.disabled = typeSettings.autoColor;
 	}
 
 	// Set initial visibility for background color pickers
 	setTimeout(() => {
-		toggleBgColorVisibility();
-		toggleDividerColorVisibility();
-		togglePTColorVisibility();
-		toggleTypeColorVisibility();
+		toggleColorVisibility('bg');
+		toggleColorVisibility('divider');
+		toggleColorVisibility('pt');
+		toggleColorVisibility('type');
 		updateTypeLineColor();
 	}, 100);
 
 	setupTextHandling(savedText);
-	}
+}
 
-function setupTextHandling(savedText) {
-	const debouncedScale = debounce((text) => {
-		if (!card.text.rules || card.version !== 'Minimalist') return;
-		if (card.minimalist.lastProcessedText === text) return;
-		
-		card.minimalist.lastProcessedText = text;
-
-		const dims = getCardDimensions();
-		const ctx = card.minimalist.ctx;
-		
-		// Batch context operations
-		ctx.clearRect(0, 0, dims.width, dims.height);
-		ctx.font = `${card.text.rules.size * dims.height}px "${card.text.rules.font}"`;
-		
-		const actualTextHeight = measureTextHeight(
-			text,
-			ctx,
-			card.text.rules.width * dims.width,
-			card.text.rules.size * dims.height
-		);
-				
-		const newHeight = Math.min(
-			card.minimalist.maxHeight,
-			Math.max(
-				card.minimalist.minHeight,
-				(actualTextHeight / dims.height)
-			)
-		);
-
-		const now = Date.now();
-		const textLengthChanged = Math.abs((card.minimalist.lastTextLength || 0) - text.length) > 10;
-		const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
-		
-		if (textLengthChanged || timeElapsed) {
-			requestAnimationFrame(() => {
-				card.minimalist.currentHeight = newHeight;
-				updateTextPositions(newHeight);
-				drawTextBuffer();
-				drawCard();
-				
-				card.minimalist.lastTextLength = text.length;
-				card.minimalist.lastFullUpdate = now;
-			});
-		}
-	}, 200);
+	function setupTextHandling(savedText) {
+		const debouncedScale = debounce((text) => {
+			if (!card.text.rules || card.version !== 'Minimalist') return;
+			if (card.minimalist.lastProcessedText === text) return;
+			
+			card.minimalist.lastProcessedText = text;
+	
+			const dims = getCardDimensions();
+			const ctx = card.minimalist.ctx;
+			
+			// Check if we're at max height and text is getting longer
+			const currentHeight = card.minimalist.currentHeight;
+			const isAtMaxHeight = currentHeight >= card.minimalist.maxHeight;
+			const textLength = text.length;
+			const lastLength = card.minimalist.lastTextLength || 0;
+			const textGettingLonger = textLength > lastLength;
+			
+			// Skip calculation if at max height and text is getting longer
+			if (isAtMaxHeight && textGettingLonger) {
+				card.minimalist.lastTextLength = textLength;
+				return;
+			}
+			
+			// Only calculate height if we need to (not at max, or text is getting shorter)
+			// Batch context operations
+			ctx.clearRect(0, 0, dims.width, dims.height);
+			ctx.font = `${card.text.rules.size * dims.height}px "${card.text.rules.font}"`;
+			
+			const actualTextHeight = measureTextHeight(
+				text,
+				ctx,
+				card.text.rules.width * dims.width,
+				card.text.rules.size * dims.height
+			);
+					
+			const newHeight = Math.min(
+				card.minimalist.maxHeight,
+				Math.max(
+					card.minimalist.minHeight,
+					(actualTextHeight / dims.height)
+				)
+			);
+	
+			// Only update if height actually changed
+			if (Math.abs(newHeight - currentHeight) < 0.001) {
+				card.minimalist.lastTextLength = textLength;
+				return;
+			}
+	
+			const now = Date.now();
+			const textLengthChanged = Math.abs(lastLength - textLength) > 10;
+			const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
+			
+			if (textLengthChanged || timeElapsed) {
+				requestAnimationFrame(() => {
+					card.minimalist.currentHeight = newHeight;
+					updateTextPositions(newHeight);
+					drawTextBuffer();
+					drawCard();
+					
+					card.minimalist.lastTextLength = textLength;
+					card.minimalist.lastFullUpdate = now;
+				});
+			}
+		}, 200);
 	
 	// Restore saved text
 	let hasRulesText = false;
@@ -1331,21 +1359,9 @@ function setupTextHandling(savedText) {
 		if (originalTextEdited) originalTextEdited();
 		
 		if (card.version === 'Minimalist') {
-			// Update type line color first (this also triggers auto-color updates based on mana)
+			// Update all visual elements in one coordinated call
 			updateTypeLineColor();
-			
-			// Then update other elements
 			syncDividerColorsWithMana();
-			
-			// Always redraw both divider and P/T symbols when any text changes
-			requestAnimationFrame(() => {
-				drawDividerGradient(); // This includes P/T symbols
-				
-				// Force text redraw with new colors
-				textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-				drawTextBuffer();
-				drawCard();
-			});
 			
 			if (card.text.rules && card.text.rules.text) {
 				setTimeout(() => {
@@ -1394,10 +1410,7 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	window.updateDividerColors = updateDividerColors;
 	window.updatePTSymbols = updatePTSymbols;
 	window.updateTypeLineColor = updateTypeLineColor;
-	window.toggleBgColorVisibility = toggleBgColorVisibility;
-	window.toggleDividerColorVisibility = toggleDividerColorVisibility;
-	window.togglePTColorVisibility = togglePTColorVisibility;
-	window.toggleTypeColorVisibility = toggleTypeColorVisibility;
+	window.toggleColorVisibility = toggleColorVisibility;
 	window.updateTextPositions = updateTextPositions;
 	window.drawDividerGradient = drawDividerGradient;
 	window.syncDividerColorsWithMana = syncDividerColorsWithMana;
