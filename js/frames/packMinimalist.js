@@ -79,7 +79,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.0765, height: 0.049, size: 0.04,
 				font: 'belerenbsc', oneLine: true, align: 'center', color: 'white', shadowX:0.0014, shadowY:0.001},
 			toughness: {
-				name: 'Toughness', text: '', x: 0.8700, y: 0.896, width: 0.0765, height: 0.049, size: 0.04,
+				name: 'Toughness', text: '', x: 0.8118, y: 0.9050, width: 0.0765, height: 0.049, size: 0.04,
 				font: 'belerenbsc', oneLine: true, align: 'center', color: 'white', shadowX:0.0014, shadowY:0.001}
 		}, true);
 
