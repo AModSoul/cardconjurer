@@ -759,6 +759,8 @@ function toggleColorVisibility(type) {
 		if (container) container.style.display = 'block';
 	}
 
+}
+
 //============================================================================
 // UI CREATION AND EVENT HANDLERS
 //============================================================================
