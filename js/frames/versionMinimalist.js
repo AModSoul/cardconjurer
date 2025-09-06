@@ -325,6 +325,7 @@ function debounce(func, wait, immediate = false) {
 		timeout = setTimeout(later, wait);
 		if (callNow) func(...args);
 	};
+
 }
 
 //============================================================================
@@ -456,6 +457,7 @@ function updateTextPositions(rulesHeight) {
 	drawCard();
 	return { rulesY, typeY, titleY, manaY, setSymbolY };
 }
+
 
 
 //============================================================================
@@ -757,6 +759,7 @@ function toggleColorVisibility(type) {
 		const container = document.getElementById(settings.containers[i]);
 		if (container) container.style.display = 'block';
 	}
+
 }
 
 //============================================================================
@@ -935,6 +938,7 @@ function createMinimalistUI() {
 	</div>
 	</div>`;
 	}
+
 
 //============================================================================
 // UPDATE FUNCTIONS

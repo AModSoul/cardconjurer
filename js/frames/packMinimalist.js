@@ -3,6 +3,7 @@ var bounds = {x:0, y:0, width:1, height:1};
 //defines available frames
 availableFrames = [
 	{name:'Border Crop', src:'/img/frames/minimalist/borderCrop.png', bounds:bounds}
+
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
@@ -80,6 +81,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 			toughness: {
 				name: 'Toughness', text: '', x: 0.8700, y: 0.896, width: 0.0765, height: 0.049, size: 0.04,
 				font: 'belerenbsc', oneLine: true, align: 'center', color: 'white'}
+
 		}, true);
 
 		//bottom info
@@ -103,6 +105,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		}
 	// Let the version script handle everything else
 	window.initializeMinimalistVersion(savedText);
+
 };
 
 //loads available frames
