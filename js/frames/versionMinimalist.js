@@ -325,7 +325,6 @@ function debounce(func, wait, immediate = false) {
 		timeout = setTimeout(later, wait);
 		if (callNow) func(...args);
 	};
-
 }
 
 //============================================================================
@@ -760,8 +759,6 @@ function toggleColorVisibility(type) {
 		if (container) container.style.display = 'block';
 	}
 
-}
-
 //============================================================================
 // UI CREATION AND EVENT HANDLERS
 //============================================================================
@@ -938,7 +935,6 @@ function createMinimalistUI() {
 	</div>
 	</div>`;
 	}
-
 
 //============================================================================
 // UPDATE FUNCTIONS
@@ -1486,6 +1482,7 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	window.measureTextHeight = measureTextHeight;
 	window.preserveMinimalistBottomInfo = preserveMinimalistBottomInfo;
 	window.restoreMinimalistBottomInfo = restoreMinimalistBottomInfo;
+
 	window.clearMinimalistTextCache = () => { 
 		card.minimalist.textCache = {};
 		COLOR_CACHE.clear();

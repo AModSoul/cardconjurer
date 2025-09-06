@@ -102,9 +102,10 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.090, y:0.9334, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
 			});
 		}
-		
+
 		window.initializeMinimalistVersion(savedText);
 	};
+
 
 //loads available frames
 loadFramePack();
