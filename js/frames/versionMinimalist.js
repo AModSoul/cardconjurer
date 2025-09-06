@@ -457,8 +457,6 @@ function updateTextPositions(rulesHeight) {
 	return { rulesY, typeY, titleY, manaY, setSymbolY };
 }
 
-
-
 //============================================================================
 // GRADIENT AND VISUAL EFFECTS
 //============================================================================
@@ -758,6 +756,7 @@ function toggleColorVisibility(type) {
 		const container = document.getElementById(settings.containers[i]);
 		if (container) container.style.display = 'block';
 	}
+}
 
 //============================================================================
 // UI CREATION AND EVENT HANDLERS
@@ -1254,42 +1253,6 @@ function resetMinimalistGradient() {
 		updateTypeLineColor();
 	}, 100);
 
-	    // Store original setBottomInfoStyle function and override it
-		if (!window.originalSetBottomInfoStyle) {
-			window.originalSetBottomInfoStyle = window.setBottomInfoStyle;
-			
-			// Override the global setBottomInfoStyle function
-			window.setBottomInfoStyle = async function() {
-				if (card.version === 'Minimalist') {
-					// Handle minimalist version specifically
-					if (document.querySelector('#enableNewCollectorStyle').checked) {
-						await loadBottomInfo({
-							midLeft: {text:'{elemidinfo-set} \u2022 {elemidinfo-language}  {savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.0647, y:0.9434, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							topLeft: {text:'{elemidinfo-rarity} {kerning3}{elemidinfo-number}{kerning0}', x:0.0647, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							note: {text:'{loadx}{elemidinfo-note}', x:0.0647, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							bottomLeft: {text:'NOT FOR SALE', x:0.0647, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
-							wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.0647, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
-							bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.0647, y:0.9434, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
-						});
-					} else {
-						// Use the old style (pack default)
-						await loadBottomInfo({
-							topLeft: {text:'{savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.090, y:0.9134, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							midLeft: {text:'{kerning3}{elemidinfo-number}{kerning0}', x:0.090, y:0.9334, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							bottomLeft: {text:'NOT FOR SALE', x:0.090, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
-							wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.090, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
-							bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.090, y:0.9334, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
-						});
-					}
-					// Store the current layout for future use
-					preserveMinimalistBottomInfo();
-				} else {
-					// For non-minimalist versions, use the original function
-					await window.originalSetBottomInfoStyle();
-				}
-			};
-		}
-
 	setupTextHandling(savedText);
 }
 
@@ -1406,34 +1369,6 @@ function resetMinimalistGradient() {
 			}
 		}
 	};
-	
-	// Override bottomInfoEdited to preserve minimalist styling
-	const originalBottomInfoEdited = window.bottomInfoEdited;
-	window.bottomInfoEdited = async function() {
-		if (originalBottomInfoEdited) {
-			await originalBottomInfoEdited();
-		}
-		
-		// Store the current state if we're in minimalist mode
-		if (card.version === 'Minimalist') {
-			preserveMinimalistBottomInfo();
-		}
-	};
-}
-
-// functions to preserve and restore minimalist bottom info
-function preserveMinimalistBottomInfo() {
-    if (card.version === 'Minimalist' && card.bottomInfo) {
-        window.minimalistBottomInfo = JSON.parse(JSON.stringify(card.bottomInfo));
-    }
-}
-
-function restoreMinimalistBottomInfo() {
-    if (card.version === 'Minimalist' && window.minimalistBottomInfo) {
-        card.bottomInfo = JSON.parse(JSON.stringify(window.minimalistBottomInfo));
-        return true;
-    }
-    return false;
 }
 
 //============================================================================
@@ -1480,9 +1415,6 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	window.syncDividerColorsWithMana = syncDividerColorsWithMana;
 	window.resetMinimalistGradient = resetMinimalistGradient;
 	window.measureTextHeight = measureTextHeight;
-	window.preserveMinimalistBottomInfo = preserveMinimalistBottomInfo;
-	window.restoreMinimalistBottomInfo = restoreMinimalistBottomInfo;
-
 	window.clearMinimalistTextCache = () => { 
 		card.minimalist.textCache = {};
 		COLOR_CACHE.clear();
