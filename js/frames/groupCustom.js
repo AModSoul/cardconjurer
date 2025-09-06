@@ -1,6 +1,6 @@
 loadFramePacks([
 	{name:'Misc. Custom Frames', value:'MiscCustom'},
-	{name:'Minimalist', value:'Minimalist'},
+	{name:'Mods\' Minimalist', value:'Minimalist'},
 	{name:'Deck Covers', value:'CustomDeckCover'},
 	{name:'Simple Inventions', value:'SimpleInventions'},
 	{name:'Tapped (Horizontal M15)', value:'Tapped'},
@@ -85,7 +85,7 @@ loadFramePacks([
 	{name:'Brawl Legend Crowns', value:'Brawl'},
 
 	{name:'Custom Community Frames', value:'disabled'},
-	{name:'Mods\' Minimalist (Inspired by Trix)', value:'Minimalist'},
+	{name:'Mods\' Minimalist', value:'Minimalist'},
 	{name:'Cartoony - Sheepwave', value:'Cartoony'},
 	{name:'Neon - Elry', value:'CustomNeon'},
 	{name:'Ixalan - @feuer_ameise', value:'FeuerAmeiseIxalan'},
