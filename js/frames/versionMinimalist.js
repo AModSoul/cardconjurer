@@ -243,7 +243,7 @@ function updateCardSettings(settingsKey, newSettings) {
 
 function drawSymbolIfReady(symbol, isLoaded, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY) {
 	if (textObj.text && textObj.text.length > 0 && isLoaded && symbol.complete) {
-		drawColoredSymbol(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY);
+		drawColoredSymbolAtPosition(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY);
 	}
 }
 
@@ -344,6 +344,36 @@ function measureTextHeight(text, ctx, width, fontSize) {
 	
 	card.minimalist.textCache[cacheKey] = result;
 	return result;
+}
+
+function measureTextWidth(text, textObj) {
+	if (!text) return 0;
+	
+	const dims = getCardDimensions();
+	
+	// Use the actual text context instead of a temporary one for more accurate measurement
+	const ctx = textContext || card.minimalist.ctx;
+	
+	// Save current context state
+	ctx.save();
+	
+	// Set font properties to match the text object exactly
+	const fontSize = textObj.size * dims.height;
+	const fontFamily = textObj.font || 'Arial';
+	ctx.font = `${fontSize}px "${fontFamily}"`;
+	
+	// Apply any text styling that might affect width
+	ctx.textBaseline = 'middle';
+	ctx.textAlign = 'left';
+	
+	// Measure the text
+	const metrics = ctx.measureText(text);
+	const width = metrics.width;
+	
+	// Restore context state
+	ctx.restore();
+	
+	return width;
 }
 
 function updateTextPositions(rulesHeight) {
@@ -568,21 +598,60 @@ function drawPTSymbols() {
 	if (!hasPower && !hasToughness) return;
 
 	const { powerColor, toughnessColor } = getPTColors();
+	const dims = getCardDimensions();
 	
-	// Separate pixel sizes for Power and Toughness symbols
-	const powerSymbolWidth = 99;   // Fixed width for power symbol in pixels
-	const powerSymbolHeight = 175;  // Fixed height for power symbol in pixels
-	const toughnessSymbolWidth = 101;   // Fixed width for toughness symbol in pixels
-	const toughnessSymbolHeight = 175;  // Fixed height for toughness symbol in pixels
+	// Symbol sizes
+	const powerSymbolWidth = 99;
+	const powerSymbolHeight = 175;
+	const toughnessSymbolWidth = 101;
+	const toughnessSymbolHeight = 175;
 	
-	// Position offsets relative to the P/T text
-	const powerOffsetX = -powerSymbolWidth - 4; // 4 pixels left of the power symbol width
-	const powerOffsetY = 0; // Vertically centered with text
-	const toughnessOffsetX = -toughnessSymbolWidth - 4; // 4 pixels left of the toughness symbol width
-	const toughnessOffsetY = 0; // Vertically centered with text
-
-	drawSymbolIfReady(powerSymbol, powerSymbolLoaded, card.text.power, powerColor, powerSymbolWidth, powerSymbolHeight, powerOffsetX, powerOffsetY);
-	drawSymbolIfReady(toughnessSymbol, toughnessSymbolLoaded, card.text.toughness, toughnessColor, toughnessSymbolWidth, toughnessSymbolHeight, toughnessOffsetX, toughnessOffsetY);
+	// Separate spacing controls for each gap
+	const toughnessTextToSymbolSpacing = -17; // pixels between toughness text and toughness symbol
+	const toughnessSymbolToPowerTextSpacing = 145; // pixels between toughness symbol and power text
+	const powerTextToSymbolSpacing = -17; // pixels between power text and power symbol
+	
+	// Step 1: Keep toughness at pack's fixed position - DON'T CHANGE THIS
+	const toughnessTextCenterX = card.text.toughness.x * dims.width;
+	const toughnessTextY = card.text.toughness.y * dims.height;
+	
+	// Step 2: Calculate the actual left edge of toughness text (since it's centered)
+	const toughnessTextWidth = measureTextWidth(card.text.toughness.text, card.text.toughness);
+	const toughnessTextLeftEdge = toughnessTextCenterX - (toughnessTextWidth / 2);
+	
+	// Position toughness symbol with its own spacing
+	const toughnessSymbolX = toughnessTextLeftEdge - toughnessTextToSymbolSpacing;
+	const toughnessSymbolY = toughnessTextY - (toughnessSymbolHeight / 2) + (card.text.toughness.size * dims.height / 2);
+	
+	// Step 3: Position power text with its own spacing from toughness symbol
+	const powerTextWidth = measureTextWidth(card.text.power.text, card.text.power);
+	const powerTextCenterX = toughnessSymbolX - toughnessSymbolToPowerTextSpacing - (powerTextWidth / 2);
+	
+	// Step 4: Position power symbol with its own spacing from power text
+	const powerTextLeftEdge = powerTextCenterX - (powerTextWidth / 2);
+	const powerSymbolX = powerTextLeftEdge - powerTextToSymbolSpacing;
+	const powerSymbolY = toughnessTextY - (powerSymbolHeight / 2) + (card.text.power.size * dims.height / 2);
+	
+	// Debug logging to see what's happening
+	console.log(`Toughness: "${card.text.toughness.text}" width: ${toughnessTextWidth}`);
+	console.log(`Toughness center X: ${toughnessTextCenterX}, left edge: ${toughnessTextLeftEdge}, Symbol X: ${toughnessSymbolX}`);
+	console.log(`Power: "${card.text.power.text}" width: ${powerTextWidth}`);
+	console.log(`Power center X: ${powerTextCenterX}, left edge: ${powerTextLeftEdge}, Symbol X: ${powerSymbolX}`);
+	console.log(`Spacing - T-text to T-symbol: ${toughnessTextToSymbolSpacing}, T-symbol to P-text: ${toughnessSymbolToPowerTextSpacing}, P-text to P-symbol: ${powerTextToSymbolSpacing}`);
+	
+	// Update ONLY the power text position - leave toughness alone
+	if (hasPower) {
+		card.text.power.x = powerTextCenterX / dims.width;
+		card.text.power.y = card.text.toughness.y; // Use same Y as toughness
+	}
+	
+	// Draw symbols at calculated positions
+	if (hasPower && powerSymbolLoaded) {
+		drawColoredSymbolAtPosition(powerSymbol, powerColor, powerSymbolWidth, powerSymbolHeight, powerSymbolX, powerSymbolY);
+	}
+	if (hasToughness && toughnessSymbolLoaded) {
+		drawColoredSymbolAtPosition(toughnessSymbol, toughnessColor, toughnessSymbolWidth, toughnessSymbolHeight, toughnessSymbolX, toughnessSymbolY);
+	}
 }
 
 function getPTColors() {
@@ -611,34 +680,30 @@ function getPTColors() {
 	return { powerColor, toughnessColor };
 }
 
-function drawColoredSymbol(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY) {
-	const dims = getCardDimensions();
-	const x = textObj.x * dims.width + offsetX;
-	const y = textObj.y * dims.height + offsetY - (symbolHeight / 2) + (textObj.size * dims.height / 2);
-	
-	// Reuse temp canvas if possible
-	if (!card.minimalist._tempCanvas) {
-		card.minimalist._tempCanvas = document.createElement('canvas');
-		card.minimalist._tempCtx = card.minimalist._tempCanvas.getContext('2d');
-	}
-	
-	const tempCanvas = card.minimalist._tempCanvas;
-	const tempCtx = card.minimalist._tempCtx;
-	
-	// Only resize if necessary
-	if (tempCanvas.width !== symbolWidth || tempCanvas.height !== symbolHeight) {
-		tempCanvas.width = symbolWidth;
-		tempCanvas.height = symbolHeight;
-	}
-	
-	tempCtx.clearRect(0, 0, symbolWidth, symbolHeight);
-	tempCtx.drawImage(symbol, 0, 0, symbolWidth, symbolHeight);
-	tempCtx.globalCompositeOperation = 'source-in';
-	tempCtx.fillStyle = color;
-	tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
-	tempCtx.globalCompositeOperation = 'source-over'; // Reset
-	
-	card.dividerContext.drawImage(tempCanvas, x, y);
+function drawColoredSymbolAtPosition(symbol, color, symbolWidth, symbolHeight, x, y) {
+    // Reuse temp canvas if possible
+    if (!card.minimalist._tempCanvas) {
+        card.minimalist._tempCanvas = document.createElement('canvas');
+        card.minimalist._tempCtx = card.minimalist._tempCanvas.getContext('2d');
+    }
+    
+    const tempCanvas = card.minimalist._tempCanvas;
+    const tempCtx = card.minimalist._tempCtx;
+    
+    // Only resize if necessary
+    if (tempCanvas.width !== symbolWidth || tempCanvas.height !== symbolHeight) {
+        tempCanvas.width = symbolWidth;
+        tempCanvas.height = symbolHeight;
+    }
+    
+    tempCtx.clearRect(0, 0, symbolWidth, symbolHeight);
+    tempCtx.drawImage(symbol, 0, 0, symbolWidth, symbolHeight);
+    tempCtx.globalCompositeOperation = 'source-in';
+    tempCtx.fillStyle = color;
+    tempCtx.fillRect(0, 0, symbolWidth, symbolHeight);
+    tempCtx.globalCompositeOperation = 'source-over'; // Reset
+    
+    card.dividerContext.drawImage(tempCanvas, x, y);
 }
 
 function toggleBgColorVisibility() {
@@ -1273,10 +1338,10 @@ function setupTextHandling(savedText) {
 			syncDividerColorsWithMana();
 			
 			// Always redraw both divider and P/T symbols when any text changes
-			drawDividerGradient();
-			
-			// Force text redraw with new colors
 			requestAnimationFrame(() => {
+				drawDividerGradient(); // This includes P/T symbols
+				
+				// Force text redraw with new colors
 				textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
 				drawTextBuffer();
 				drawCard();
