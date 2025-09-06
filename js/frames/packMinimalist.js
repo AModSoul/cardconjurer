@@ -2,7 +2,7 @@
 var bounds = {x:0, y:0, width:1, height:1};
 //defines available frames
 availableFrames = [
-	{name:'Black Extension', src:'/img/frames/margins/blackBorderExtension.png', bounds:bounds}
+	{name:'Border Crop', src:'/img/frames/minimalist/borderCrop.png', bounds:bounds}
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
@@ -29,7 +29,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	await loadScript('/js/frames/manaSymbolsOutlineBright.js');
 	
 	// Notify user about included margin
-	notify('Note: This Minimalist frame pack already includes margins - no additional margin frame needed.');
+	notify('Note: This Minimalist frame pack already includes margins - no additional margin frame needed.', 5);
 
 	card.minimalist = {
 		baseY: 0.935,
@@ -72,7 +72,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				name: 'Type', text: '', x: 0.0854, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.04, width: 0.71,
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.022, color: 'white'},
 			rules: {
-				name: 'Rules Text', text: '', x: 0.086, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.831, height: card.minimalist.currentHeight,
+				name: 'Rules Text', text: '', x: 0.1139, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.7720, height: card.minimalist.currentHeight,
 				size: 0.029, font: 'Plantin MT Pro', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright'},
 			power: {
 				name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.05, height: 0.049, size: 0.04,

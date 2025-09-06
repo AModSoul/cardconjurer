@@ -96,6 +96,10 @@ const MINIMALIST_DEFAULTS = {
 		colorMode: 'auto',
 		color1: '#FFFFFF',
 		color2: '#FFFFFF'
+	},
+	typeSettings: {
+		autoColor: true,
+		customColor: '#FFFFFF'
 	}
 };
 
@@ -534,8 +538,8 @@ function getDividerColors() {
 }
 
 function drawDividerBar(colorsToUse, colorCount) {
-	const rulesX = card.text.rules.x;
-	const rulesWidth = card.text.rules.width;
+	const rulesX = 0.086;
+	const rulesWidth = 0.831;
 	const typeY = card.text.type.y;
 	const dividerOffset = 0.050;
 	const dividerY = typeY + dividerOffset;
@@ -637,6 +641,100 @@ function drawColoredSymbol(symbol, textObj, color, symbolWidth, symbolHeight, of
 	card.dividerContext.drawImage(tempCanvas, x, y);
 }
 
+function toggleBgColorVisibility() {
+    const colorCount = document.getElementById('minimalist-bg-color-count').value;
+    const color1Container = document.getElementById('bg-color-1-container');
+    const color2Container = document.getElementById('bg-color-2-container');
+    const color3Container = document.getElementById('bg-color-3-container');
+    
+    // Hide all color pickers first
+    color1Container.style.display = 'none';
+    color2Container.style.display = 'none';
+    color3Container.style.display = 'none';
+    
+    // Show appropriate color pickers based on selection
+    switch(colorCount) {
+        case '1':
+            color1Container.style.display = 'block';
+            break;
+        case '2':
+            color1Container.style.display = 'block';
+            color2Container.style.display = 'block';
+            break;
+        case '3':
+            color1Container.style.display = 'block';
+            color2Container.style.display = 'block';
+            color3Container.style.display = 'block';
+            break;
+        case 'mana-auto':
+            // Hide all color pickers for auto mode
+            break;
+    }
+}
+
+function toggleDividerColorVisibility() {
+    const colorCount = document.getElementById('minimalist-color-count').value;
+    const color1Container = document.getElementById('divider-color-1-container');
+    const color2Container = document.getElementById('divider-color-2-container');
+    const color3Container = document.getElementById('divider-color-3-container');
+    
+    // Hide all color pickers first
+    color1Container.style.display = 'none';
+    color2Container.style.display = 'none';
+    color3Container.style.display = 'none';
+    
+    // Show appropriate color pickers based on selection
+    switch(colorCount) {
+        case '1':
+            color1Container.style.display = 'block';
+            break;
+        case '2':
+            color1Container.style.display = 'block';
+            color2Container.style.display = 'block';
+            break;
+        case '3':
+            color1Container.style.display = 'block';
+            color2Container.style.display = 'block';
+            color3Container.style.display = 'block';
+            break;
+        case 'auto':
+            // Hide all color pickers for auto mode
+            break;
+    }
+}
+
+function togglePTColorVisibility() {
+    const colorMode = document.getElementById('minimalist-pt-color-mode').value;
+    const color1Container = document.getElementById('pt-color-1-container');
+    const color2Container = document.getElementById('pt-color-2-container');
+    
+    // Hide all color pickers first
+    color1Container.style.display = 'none';
+    color2Container.style.display = 'none';
+    
+    // Show appropriate color pickers based on selection
+    switch(colorMode) {
+        case '1':
+            color1Container.style.display = 'block';
+            break;
+        case '2':
+            color1Container.style.display = 'block';
+            color2Container.style.display = 'block';
+            break;
+        case 'auto':
+            // Hide all color pickers for auto mode
+            break;
+    }
+}
+
+function toggleTypeColorVisibility() {
+    const autoColor = document.getElementById('minimalist-type-auto-color').checked;
+    const typeColorContainer = document.getElementById('type-color-container');
+    
+    // Show/hide type color picker based on auto checkbox
+    typeColorContainer.style.display = autoColor ? 'none' : 'block';
+}
+
 //============================================================================
 // UI CREATION AND EVENT HANDLERS
 //============================================================================
@@ -652,9 +750,9 @@ function createMinimalistUI() {
 	document.querySelector('#creator-menu-sections').appendChild(newHTML);
 }
 
-function getUIHTML() {
+	function getUIHTML() {
 	return `
-<div class='readable-background padding'>
+	<div class='readable-background padding'>
 	<h5 class='padding margin-bottom input-description' style="font-size: 2em; font-weight: bold;">Gradient Settings</h5>
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 10px 0;"></div>
 
@@ -668,44 +766,67 @@ function getUIHTML() {
 	<div class='padding input-grid margin-bottom'>
 		<input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
 	</div>
-	
+
 	<h5 class='padding input-description'>Fade Start Position:</h5>
 	<div class='padding input-grid margin-bottom'>
 		<input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
 	</div>
-	
+
 	<h5 class='padding input-description'>Fade End Position:</h5>
 	<div class='padding input-grid margin-bottom'>
 		<input id='minimalist-fade-top-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.5' max='0' step='0.01' value='-0.15'>
 	</div>
-	
+
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
 
 	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Background Gradient Colors</h5>
 
 	<h5 class='padding input-description'>Background Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient();'>
+		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient(); toggleBgColorVisibility();'>
 			<option value='1' selected>1 Color</option>
 			<option value='mana-auto'>Auto (Mana Colors)</option>
 			<option value='2'>2 Colors</option>
 			<option value='3'>3 Colors</option>
 		</select>
 	</div> 
-	
-	<h5 class='padding input-description'>Background Color 1:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-bg-color-1' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+
+	<div id='bg-color-1-container'>
+		<h5 class='padding input-description'>Background Color 1:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-bg-color-1' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+		</div>
 	</div>
 
-	<h5 class='padding input-description'>Background Color 2:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-bg-color-2' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+	<div id='bg-color-2-container' style='display: none;'>
+		<h5 class='padding input-description'>Background Color 2:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-bg-color-2' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+		</div>
 	</div>
 
-	<h5 class='padding input-description'>Background Color 3:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+	<div id='bg-color-3-container' style='display: none;'>
+		<h5 class='padding input-description'>Background Color 3:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+		</div>
+	</div>
+
+	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
+
+	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Type Line Color</h5>
+
+	<h5 class='input-description margin-bottom'>Auto Type Line Color</h5>
+	<label class='checkbox-container input margin-bottom'>Auto Color (from mana cost)
+		<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleTypeColorVisibility();' checked>
+		<span class='checkmark'></span>
+	</label>
+
+	<div id='type-color-container' style='display: none;'>
+		<h5 class='padding input-description'>Type Line Color:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-type-color' type='color' class='input' oninput='window.updateTypeLineColor();' value='#FFFFFF'>
+		</div>
 	</div>
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
@@ -720,31 +841,37 @@ function getUIHTML() {
 
 	<h5 class='padding input-description'>Divider Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-color-count' class='input' onchange='updateDividerColors();'>
+		<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleDividerColorVisibility();'>
 			<option value='auto'>Auto (from mana cost)</option>
 			<option value='1'>1 Color</option>
 			<option value='2'>2 Colors</option>
 			<option value='3'>3 Colors</option>
 		</select>
 	</div>
-	
-	<h5 class='padding input-description'>Color 1:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-color-1' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+
+	<div id='divider-color-1-container' style='display: none;'>
+		<h5 class='padding input-description'>Color 1:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-color-1' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+		</div>
 	</div>
-	
-	<h5 class='padding input-description'>Color 2:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-color-2' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+
+	<div id='divider-color-2-container' style='display: none;'>
+		<h5 class='padding input-description'>Color 2:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-color-2' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+		</div>
 	</div>
-	
-	<h5 class='padding input-description'>Color 3:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+
+	<div id='divider-color-3-container' style='display: none;'>
+		<h5 class='padding input-description'>Color 3:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+		</div>
 	</div>
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 10px 0;"></div>
-	
+
 	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">P/T Symbols</h5>
 
 	<h5 class='input-description margin-bottom'>Enable P/T Symbols</h5>
@@ -755,31 +882,35 @@ function getUIHTML() {
 
 	<h5 class='padding input-description'>Symbol Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols();'>
+		<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); togglePTColorVisibility();'>
 			<option value='auto'>Auto (from mana cost)</option>
 			<option value='1'>1 Color</option>
 			<option value='2'>2 Colors</option>
 		</select>
 	</div>
 
-	<h5 class='padding input-description'>Color 1:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+	<div id='pt-color-1-container' style='display: none;'>
+		<h5 class='padding input-description'>Color 1:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+		</div>
 	</div>
 
-	<h5 class='padding input-description'>Color 2:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+	<div id='pt-color-2-container' style='display: none;'>
+		<h5 class='padding input-description'>Color 2:</h5>
+		<div class='padding input-grid margin-bottom'>
+			<input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+		</div>
 	</div>
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-	
+
 	<h5 class='padding input-description'>Reset Settings</h5>
 	<div class='padding input-grid margin-bottom'>
 		<button id='reset-minimalist-gradient' class='input' onclick='resetMinimalistGradient();'>Reset All Settings</button>
 	</div>
-</div>`;
-}
+	</div>`;
+	}
 
 //============================================================================
 // UPDATE FUNCTIONS
@@ -883,7 +1014,7 @@ function resetMinimalistGradient() {
 	// Set all UI defaults
 	setUIDefaults();
 	
-	// Update color inputs with mana colors - FIXED
+	// Update color inputs with mana colors
 	document.getElementById('minimalist-color-1').value = defaultColors.color1;
 	document.getElementById('minimalist-color-2').value = defaultColors.color2;
 	document.getElementById('minimalist-color-3').value = defaultColors.color3;
@@ -895,6 +1026,15 @@ function resetMinimalistGradient() {
 	document.getElementById('minimalist-bg-color-3').value = defaultColors.bgColor3;
 	document.getElementById('minimalist-bg-color-count').value = defaultColors.bgColorCount;
 	
+	// Update type line settings
+	document.getElementById('minimalist-type-auto-color').checked = true;
+	document.getElementById('minimalist-type-color').value = '#FFFFFF';
+	
+	// Update P/T settings
+	document.getElementById('minimalist-pt-color-mode').value = 'auto';
+	document.getElementById('minimalist-pt-color-1').value = '#FFFFFF';
+	document.getElementById('minimalist-pt-color-2').value = '#FFFFFF';
+	
 	// Update card settings
 	updateCardSettings('settings', { ...MINIMALIST_DEFAULTS.settings, ...defaultColors });
 	updateCardSettings('dividerSettings', { 
@@ -904,7 +1044,14 @@ function resetMinimalistGradient() {
 		colorCount: defaultColors.colorCount
 	});
 	updateCardSettings('ptSettings', { ...MINIMALIST_DEFAULTS.ptSettings });
+	updateCardSettings('typeSettings', { ...MINIMALIST_DEFAULTS.typeSettings });
 
+	// Update visibility for all color pickers after resetting values
+	toggleBgColorVisibility();
+	toggleDividerColorVisibility();
+	togglePTColorVisibility();
+	toggleTypeColorVisibility();
+	
 	updateTextPositions(card.minimalist.currentHeight);
 	
 	// Visual feedback
@@ -919,15 +1066,64 @@ function resetMinimalistGradient() {
 	}, 1500);
 }
 
+function updateTypeLineColor() {
+	console.log('updateTypeLineColor called'); // Debug log
+	
+	if (card.version === 'Minimalist' && card.text.type) {
+		const autoColor = document.getElementById('minimalist-type-auto-color')?.checked ?? true;
+		const typeColorInput = document.getElementById('minimalist-type-color');
+		
+		console.log('Auto color:', autoColor, 'Type color input:', typeColorInput); // Debug log
+		
+		if (!typeColorInput) {
+			console.error('Type color input not found');
+			return;
+		}
+		
+		let newColor;
+		if (autoColor) {
+			// Use first mana color, fallback to white
+			const manaColors = getManaColorsFromText();
+			newColor = getColorHex(manaColors[0]) || '#FFFFFF';
+			typeColorInput.value = newColor;
+		} else {
+			newColor = typeColorInput.value;
+		}
+		
+		console.log('Setting type color to:', newColor); // Debug log
+		
+		// Update the type line color
+		card.text.type.color = newColor;
+		
+		// Store the setting
+		updateCardSettings('typeSettings', { 
+			autoColor, 
+			customColor: typeColorInput.value 
+		});
+		
+		// Force redraw of the type text element specifically
+		requestAnimationFrame(() => {
+			// Clear and redraw the text canvas
+			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+			
+			// Redraw all text elements with updated colors
+			drawTextBuffer();
+			
+			// Force a complete card redraw
+			drawCard();
+		});
+	}
+}
+
 //============================================================================
 // INITIALIZATION AND TEXT HANDLING
 //============================================================================
 
-function initializeMinimalistVersion(savedText) {
+	function initializeMinimalistVersion(savedText) {
 	if (!card.minimalist.settings) {
 		card.minimalist.settings = { ...MINIMALIST_DEFAULTS.settings };
 	}
-	
+
 	if (!card.gradientOptions) {
 		card.gradientOptions = {
 			yPosition: 0.5,
@@ -940,7 +1136,7 @@ function initializeMinimalistVersion(savedText) {
 			colors: ['#000000']
 		};
 	}
-	
+
 	// Set UI values from stored settings
 	const settings = card.minimalist.settings;
 	document.getElementById('minimalist-bg-gradient-enabled').checked = settings.bgGradientEnabled ?? true;
@@ -948,15 +1144,35 @@ function initializeMinimalistVersion(savedText) {
 	document.getElementById('minimalist-max-opacity').value = settings.maxOpacity;
 	document.getElementById('minimalist-fade-bottom-offset').value = settings.fadeBottomOffset;
 	document.getElementById('minimalist-fade-top-offset').value = settings.fadeTopOffset;
-	
+
 	// Set background color UI values
 	['bgColor1', 'bgColor2', 'bgColor3', 'bgColorCount'].forEach(key => {
 		const element = document.getElementById(`minimalist-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`);
 		if (element) element.value = settings[key] || MINIMALIST_DEFAULTS.settings[key];
 	});
 
+	// Initialize type line color settings
+	const typeSettings = card.minimalist.typeSettings || MINIMALIST_DEFAULTS.typeSettings;
+	const typeAutoCheckbox = document.getElementById('minimalist-type-auto-color');
+	const typeColorInput = document.getElementById('minimalist-type-color');
+
+	if (typeAutoCheckbox) typeAutoCheckbox.checked = typeSettings.autoColor;
+	if (typeColorInput) {
+		typeColorInput.value = typeSettings.customColor;
+		typeColorInput.disabled = typeSettings.autoColor;
+	}
+
+	// Set initial visibility for background color pickers
+	setTimeout(() => {
+		toggleBgColorVisibility();
+		toggleDividerColorVisibility();
+		togglePTColorVisibility();
+		toggleTypeColorVisibility();
+		updateTypeLineColor();
+	}, 100);
+
 	setupTextHandling(savedText);
-}
+	}
 
 function setupTextHandling(savedText) {
 	const debouncedScale = debounce((text) => {
@@ -1024,7 +1240,6 @@ function setupTextHandling(savedText) {
 	}
 
 	// Set up input listener
-	// Set up input listener with optimization
 	const textEditor = getCachedElement('text-editor') || DOM_CACHE.textEditor;
 	if (textEditor && !textEditor._minimalistListener) {
 		textEditor._minimalistListener = true; // Prevent duplicate listeners
@@ -1041,10 +1256,21 @@ function setupTextHandling(savedText) {
 		if (originalTextEdited) originalTextEdited();
 		
 		if (card.version === 'Minimalist') {
+			// Update type line color first (this also triggers auto-color updates based on mana)
+			updateTypeLineColor();
+			
+			// Then update other elements
 			syncDividerColorsWithMana();
 			
 			// Always redraw both divider and P/T symbols when any text changes
 			drawDividerGradient();
+			
+			// Force text redraw with new colors
+			requestAnimationFrame(() => {
+				textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+				drawTextBuffer();
+				drawCard();
+			});
 			
 			if (card.text.rules && card.text.rules.text) {
 				setTimeout(() => {
@@ -1092,6 +1318,11 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	window.updateMinimalistGradient = updateMinimalistGradient;
 	window.updateDividerColors = updateDividerColors;
 	window.updatePTSymbols = updatePTSymbols;
+	window.updateTypeLineColor = updateTypeLineColor;
+	window.toggleBgColorVisibility = toggleBgColorVisibility;
+	window.toggleDividerColorVisibility = toggleDividerColorVisibility;
+	window.togglePTColorVisibility = togglePTColorVisibility;
+	window.toggleTypeColorVisibility = toggleTypeColorVisibility;
 	window.updateTextPositions = updateTextPositions;
 	window.drawDividerGradient = drawDividerGradient;
 	window.syncDividerColorsWithMana = syncDividerColorsWithMana;
