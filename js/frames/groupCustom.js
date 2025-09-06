@@ -85,7 +85,7 @@ loadFramePacks([
 	{name:'Brawl Legend Crowns', value:'Brawl'},
 
 	{name:'Custom Community Frames', value:'disabled'},
-	{name:'Minimalist', value:'Minimalist'},
+	{name:'Mods\' Minimalist (Inspired by Trix)', value:'Minimalist'},
 	{name:'Cartoony - Sheepwave', value:'Cartoony'},
 	{name:'Neon - Elry', value:'CustomNeon'},
 	{name:'Ixalan - @feuer_ameise', value:'FeuerAmeiseIxalan'},

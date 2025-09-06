@@ -6586,7 +6586,7 @@ function loadScript(scriptPath) {
 	script.setAttribute('src', scriptPath);
 	document.querySelectorAll('head')[0].appendChild(script);
 	});
-	}
+}
 // Stretchable SVGs
 function stretchSVG(frameObject) {
 	xhr = new XMLHttpRequest();
