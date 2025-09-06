@@ -977,6 +977,64 @@ function updatePTSymbols() {
 	}
 }
 
+function updateTypeLineColor() {
+	console.log('updateTypeLineColor called'); // Debug log
+	
+	if (card.version === 'Minimalist' && card.text.type) {
+		const autoColor = document.getElementById('minimalist-type-auto-color')?.checked ?? true;
+		const typeColorInput = document.getElementById('minimalist-type-color');
+		
+		console.log('Auto color:', autoColor, 'Type color input:', typeColorInput); // Debug log
+		
+		if (!typeColorInput) {
+			console.error('Type color input not found');
+			return;
+		}
+		
+		let newColor;
+		if (autoColor) {
+			// Use mana color logic: single color gets that color, multiple colors get gold
+			const manaColors = getManaColorsFromText();
+			if (manaColors.length === 1) {
+				// Single color - use that mana color
+				newColor = getColorHex(manaColors[0]);
+			} else if (manaColors.length > 1) {
+				// Multicolor - use gold color
+				newColor = '#e3d193'; // Gold color for multicolor
+			} else {
+				// No mana colors - use white
+				newColor = '#FFFFFF';
+			}
+			typeColorInput.value = newColor;
+		} else {
+			newColor = typeColorInput.value;
+		}
+		
+		console.log('Setting type color to:', newColor); // Debug log
+		
+		// Update the type line color
+		card.text.type.color = newColor;
+		
+		// Store the setting
+		updateCardSettings('typeSettings', { 
+			autoColor, 
+			customColor: typeColorInput.value 
+		});
+		
+		// Force redraw of the type text element specifically
+		requestAnimationFrame(() => {
+			// Clear and redraw the text canvas
+			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+			
+			// Redraw all text elements with updated colors
+			drawTextBuffer();
+			
+			// Force a complete card redraw
+			drawCard();
+		});
+	}
+}
+
 function handlePTChange() {
 	if (card.version === 'Minimalist') {
 		// Force redraw P/T symbols whenever power or toughness changes
@@ -1066,54 +1124,6 @@ function resetMinimalistGradient() {
 	}, 1500);
 }
 
-function updateTypeLineColor() {
-	console.log('updateTypeLineColor called'); // Debug log
-	
-	if (card.version === 'Minimalist' && card.text.type) {
-		const autoColor = document.getElementById('minimalist-type-auto-color')?.checked ?? true;
-		const typeColorInput = document.getElementById('minimalist-type-color');
-		
-		console.log('Auto color:', autoColor, 'Type color input:', typeColorInput); // Debug log
-		
-		if (!typeColorInput) {
-			console.error('Type color input not found');
-			return;
-		}
-		
-		let newColor;
-		if (autoColor) {
-			// Use first mana color, fallback to white
-			const manaColors = getManaColorsFromText();
-			newColor = getColorHex(manaColors[0]) || '#FFFFFF';
-			typeColorInput.value = newColor;
-		} else {
-			newColor = typeColorInput.value;
-		}
-		
-		console.log('Setting type color to:', newColor); // Debug log
-		
-		// Update the type line color
-		card.text.type.color = newColor;
-		
-		// Store the setting
-		updateCardSettings('typeSettings', { 
-			autoColor, 
-			customColor: typeColorInput.value 
-		});
-		
-		// Force redraw of the type text element specifically
-		requestAnimationFrame(() => {
-			// Clear and redraw the text canvas
-			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-			
-			// Redraw all text elements with updated colors
-			drawTextBuffer();
-			
-			// Force a complete card redraw
-			drawCard();
-		});
-	}
-}
 
 //============================================================================
 // INITIALIZATION AND TEXT HANDLING
