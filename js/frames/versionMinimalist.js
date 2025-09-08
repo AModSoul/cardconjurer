@@ -489,9 +489,9 @@ function updateTextPositions(rulesHeight) {
 	const dividerSpacing = 0.02;
 	
 	const rulesY = card.minimalist.baseY - rulesHeight - dividerOffset;
-	const typeY = rulesY - (card.minimalist.spacing * 0.40) - dividerSpacing;
+	const typeY = rulesY - (card.minimalist.spacing * 0.54) - dividerSpacing;
 	const titleY = typeY - (card.minimalist.spacing * 0.65);
-	const manaY = titleY - (card.minimalist.spacing * 0.6);
+	const manaY = titleY - (card.minimalist.spacing * 0.56);
 	
 	const dividerOffset2 = 0.050;
 	const dividerY = typeY + dividerOffset2;
