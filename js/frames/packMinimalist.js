@@ -64,10 +64,10 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 
 	loadTextOptions({
 		mana: {
-			name: 'Mana Cost', text: '', x: 0.090, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.12, width: 0.9190, height: 71/2100,
+			name: 'Mana Cost', text: '', x: 0.0854, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.12, width: 0.9190, height: 71/2100,
 			oneLine: true, size: 71/1638, align: 'left', manaCost: true, manaSpacing: 0, manaPrefix: 'outlineBright'},
 			title: {
-				name: 'Title', text: '', x: 0.090, y: card.minimalist.baseY - card.minimalist.currentHeight -  card.minimalist.spacing - 0.08,width: 0.8292,
+				name: 'Title', text: '', x: 0.0854, y: card.minimalist.baseY - card.minimalist.currentHeight -  card.minimalist.spacing - 0.08,width: 0.8292,
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.0381, color: 'white', align: 'left'},
 			type: {
 				name: 'Type', text: '', x: 0.0854, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.04, width: 0.71,

@@ -489,13 +489,13 @@ function updateTextPositions(rulesHeight) {
 	const dividerSpacing = 0.02;
 	
 	const rulesY = card.minimalist.baseY - rulesHeight - dividerOffset;
-	const typeY = rulesY - (card.minimalist.spacing * 0.9) - dividerSpacing;
+	const typeY = rulesY - (card.minimalist.spacing * 0.40) - dividerSpacing;
 	const titleY = typeY - (card.minimalist.spacing * 0.65);
 	const manaY = titleY - (card.minimalist.spacing * 0.6);
 	
 	const dividerOffset2 = 0.050;
 	const dividerY = typeY + dividerOffset2;
-	const setSymbolOffsetAboveDivider = 0.025;
+	const setSymbolOffsetAboveDivider = 0.035;
 	const setSymbolY = dividerY - setSymbolOffsetAboveDivider;
 
 	// Update text positions
@@ -633,7 +633,7 @@ function drawDividerBar(colorsToUse, colorCount) {
 	const rulesX = 0.086;
 	const rulesWidth = 0.831;
 	const typeY = card.text.type.y;
-	const dividerOffset = 0.050;
+	const dividerOffset = 0.041;
 	const dividerY = typeY + dividerOffset;
 	const dividerHeight = 0.002;
 	
@@ -669,9 +669,9 @@ function drawPTSymbols() {
 	const toughnessSymbolHeight = 175;
 	
 	// Separate spacing controls for each gap
-	const toughnessTextToSymbolSpacing = -17; // pixels between toughness text and toughness symbol
-	const toughnessSymbolToPowerTextSpacing = 145; // pixels between toughness symbol and power text
-	const powerTextToSymbolSpacing = -17; // pixels between power text and power symbol
+	const toughnessTextToSymbolSpacing = -20; // pixels between toughness text and toughness symbol
+	const toughnessSymbolToPowerTextSpacing = 150; // pixels between toughness symbol and power text
+	const powerTextToSymbolSpacing = -22; // pixels between power text and power symbol
 	
 	// Step 1: Keep toughness at pack's fixed position
 	const toughnessTextCenterX = card.text.toughness.x * dims.width;
