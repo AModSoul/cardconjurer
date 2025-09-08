@@ -176,8 +176,10 @@ function batchUpdateSettings() {
 	};
 }
 
-// Initialize the batch updater
-const batchUpdater = batchUpdateSettings();
+// Initialize the batch updater only if it doesn't exist
+if (!window.batchUpdater) {
+	window.batchUpdater = batchUpdateSettings();
+}
 
 function getCachedElement(id) {
 	if (!window.DOM_CACHE.initialized) initDOMCache();
