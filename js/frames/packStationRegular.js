@@ -40,7 +40,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
             // Default colors when no mana cost
             default: {
                 square1: '#4a4a4a',
-                square2: '#4a4a4a'
+                square2: '#3a3a3a'
             },
             // Single mana colors
             w: {
