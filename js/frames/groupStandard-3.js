@@ -14,6 +14,7 @@ loadFramePacks([
 	{name:'"The List" Stamp', value:'TheList'},
 	{name:'Other Frames', value:'disabled'},
 	{name:'Lands', value:'M15Lands'},
+	{name:'Stations', value:'StationRegular'},
 	{name:'Omens (Tarkir Dragonstorm)', value:'Omen'},
 	{name:'Rooms (Duskmourn)', value:'Room'},
 	{name:'Spree (Outlaws of Thunder Junction)', value:'Spree'},
