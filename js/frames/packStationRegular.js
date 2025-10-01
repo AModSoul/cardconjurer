@@ -101,19 +101,19 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
     
     loadScript('/js/frames/versionStation.js');
     //art bounds
-    card.artBounds = {x:0.068, y:0.101, width:0.864, height:0.8143};
+    card.artBounds = {x:0.068, y:0.027, width:0.864, height:0.9000};
     autoFitArt();
-    //set symbol bounds
-    card.setSymbolBounds = {x:0.9227, y:0.5891, width:0.12, height:0.0381, vertical:'center', horizontal: 'right'};
-    resetSetSymbol();
-    //watermark bounds
-    card.watermarkBounds = {x:0.5, y:0.7762, width:0.75, height:0.2305};
-    resetWatermark();
+	//set symbol bounds
+	card.setSymbolBounds = {x:0.9213, y:0.5910, width:0.12, height:0.0410, vertical:'center', horizontal: 'right'};
+	resetSetSymbol();
+	//watermark bounds
+	card.watermarkBounds = {x:0.5, y:0.7762, width:0.75, height:0.2305};
+	resetWatermark();
     //text
     loadTextOptions({
-        mana: {name:'Mana Cost', text:'', y:0.0481, width:0.9292, height:71/2100, oneLine:true, size:71/1638, align:'right', shadowX:-0.001, shadowY:0.0029, manaCost:true, manaSpacing:0},
-        title: {name:'Title', text:'', x:0.0867, y:0.0372, width:0.8267, height:0.0548, oneLine:true, font:'belerenb', size:0.0381},
-        type: {name:'Type', text:'', x:0.0867, y:0.5625, width:0.8267, height:0.0548, oneLine:true, font:'belerenb', size:0.0324},
+		mana: {name:'Mana Cost', text:'', y:0.0613, width:0.9292, height:71/2100, oneLine:true, size:71/1638, align:'right', shadowX:-0.001, shadowY:0.0029, manaCost:true, manaSpacing:0},
+		title: {name:'Title', text:'', x:0.0854, y:0.0522, width:0.8292, height:0.0543, oneLine:true, font:'belerenb', size:0.0381},
+		type: {name:'Type', text:'', x:0.0854, y:0.5664, width:0.8292, height:0.0543, oneLine:true, font:'belerenb', size:0.0324},
         ability0: {name:'Ability 1', text:'', x:175/2010, y:1775/2814, width:1660/2010, height:280/2814, size:0.0353},
         ability1: {name:'Ability 2', text:'', x:175/2010, y:0.7, width:0.7467, height:0.0972, size:0.0353},
         ability2: {name:'Ability 3', text:'', x:0.18, y:0.83, width:0.7467, height:0.0972, size:0.0353},
