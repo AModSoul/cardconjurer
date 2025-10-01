@@ -28,7 +28,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
         abilityCount: 3,
         x: 0.1167,
         width: 0.8094,
-        badgeX: existingStation.badgeX || 0.028,
+        badgeX: existingStation.badgeX || 0.066,
         badgeValues: existingStation.badgeValues || ['', '', ''],
         disableFirstAbility: existingStation.disableFirstAbility || false,
         colorModes: existingStation.colorModes || {
@@ -36,7 +36,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
             2: 'auto'
         },
         badgeSettings: existingStation.badgeSettings || {
-            fontSize: 0.0250,
+            fontSize: 0.0240,
             width: 162,
             height: 162
         },

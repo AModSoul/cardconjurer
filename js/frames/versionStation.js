@@ -50,6 +50,18 @@ setTimeout(setupManaListenerWithRetry, 100);
         <h5 class='padding margin-bottom input-description'>Badge Settings:</h5>
         <div class='padding input-grid margin-bottom'>
             <div><h6 class='padding margin-bottom input-description'>Badge X Position (0.0 to 1.0):</h6><input id='station-badge-x' type='number' class='input' oninput='stationEdited();' min='0' max='1' step='0.001' placeholder='Badge X Position'></div>
+            <div><h6 class='padding margin-bottom input-description'>Badge Color Mode:</h6>
+                <select id='station-badge-color-mode' class='input' onchange='updateBadgeColorMode();'>
+                    <option value='auto'>Auto (Based on Mana Cost)</option>
+                    <option value='white'>White</option>
+                    <option value='blue'>Blue</option>
+                    <option value='black'>Black</option>
+                    <option value='red'>Red</option>
+                    <option value='green'>Green</option>
+                    <option value='multi'>Multicolored</option>
+                    <option value='colorless'>Colorless</option>
+                </select>
+            </div>
             <div><h6 class='padding margin-bottom input-description'>Second Ability Badge Value:</h6><input id='station-badge-value-1' type='text' class='input' oninput='stationEdited();' placeholder='Badge Text'></div>
             <div><h6 class='padding margin-bottom input-description'>Third Ability Badge Value:</h6><input id='station-badge-value-2' type='text' class='input' oninput='stationEdited();' placeholder='Badge Text'></div>
         </div>
@@ -117,7 +129,7 @@ setTimeout(setupManaListenerWithRetry, 100);
             abilityCount: 3,
             x: 0.1167,
             width: 0.8094,
-            badgeX: 0.028,
+            badgeX: 0.066,
             badgeValues: ['', '', ''],
             disableFirstAbility: false,
             badgeSettings: {
@@ -140,7 +152,7 @@ setTimeout(setupManaListenerWithRetry, 100);
     }
     if (!card.station.badgeSettings) {
         card.station.badgeSettings = {
-            fontSize: 0.0250,
+            fontSize: 0.0240,
             width: 162,
             height: 162
         };
@@ -150,6 +162,9 @@ setTimeout(setupManaListenerWithRetry, 100);
             1: 'auto',
             2: 'auto'
         };
+    }
+    if (!card.station.badgeColorMode) {
+        card.station.badgeColorMode = 'auto';
     }
     if (!card.station.colorSettings) {
         card.station.colorSettings = {
@@ -334,7 +349,7 @@ function stationEdited() {
     // Check if the disable first ability checkbox state changed
     const previousDisableState = card.station.disableFirstAbility;
     
-    if (badgeXInput) card.station.badgeX = parseFloat(badgeXInput.value) || 0.028;
+    if (badgeXInput) card.station.badgeX = parseFloat(badgeXInput.value) || 0.015;
     if (badgeValue1Input) card.station.badgeValues[1] = badgeValue1Input.value;
     if (badgeValue2Input) card.station.badgeValues[2] = badgeValue2Input.value;
     if (disableFirstAbilityInput) {
@@ -456,9 +471,11 @@ function drawBadgeForAbility(index, abilityName, badgeImage) {
         const squareHeight = square.height;
         
         // Use fixed pixel dimensions for badges
-        const badgeWidth = card.station.badgeSettings.width;   // 243 pixels
-        const badgeHeight = card.station.badgeSettings.height; // 243 pixels
-        const badgeX = squareX - (badgeWidth / 2); // Center badge on left edge
+        const badgeWidth = card.station.badgeSettings.width;   // 162 pixels
+        const badgeHeight = card.station.badgeSettings.height; // 162 pixels
+        
+        // Use badgeX to position the badge horizontally (0.0 = far left, 1.0 = far right)
+        const badgeX = (card.station.badgeX * card.width) - (badgeWidth / 2); // Convert proportion to pixels and center badge
         const badgeY = squareY + (squareHeight / 2); // Center badge vertically on square
         
         // Check if badge image is loaded and draw it
@@ -466,9 +483,13 @@ function drawBadgeForAbility(index, abilityName, badgeImage) {
             stationPostFrameContext.drawImage(badgeImage, badgeX, badgeY - (badgeHeight / 2), badgeWidth, badgeHeight);
         }
         
-        // Draw badge text centered on the badge
-        const textX = badgeX + (badgeWidth / 2); // Center horizontally on badge
-        const textY = badgeY; // Center vertically on badge (badgeY is already the center)
+        // Draw badge text with slight offset to the right for better centering
+        const textXOffset = 3; // Adjust this value to move text left (-) or right (+)
+        const textYOffset = 0; // Adjust this value to move text up (-) or down (+)
+        
+        const textX = badgeX + (badgeWidth / 2) + textXOffset; // Center horizontally on badge with offset
+        const textY = badgeY + textYOffset; // Center vertically on badge with offset
+        
         stationPostFrameContext.fillText(badgeValue, textX, textY);
     }
 }
@@ -523,6 +544,11 @@ function setupManaListener() {
 }
 
 function updateBadgeImageFromMana() {
+    // Only update badge if it's in auto mode
+    if (card.station.badgeColorMode !== 'auto') {
+        return;
+    }
+    
     if (!card.text || !card.text.mana) return;
     
     const manaText = card.text.mana.text || '';
@@ -665,6 +691,12 @@ function fixStationInputs(callback) {
     
     var badgeValue2Input = document.querySelector('#station-badge-value-2');
     if (badgeValue2Input) badgeValue2Input.value = card.station.badgeValues[2] || '';
+    
+    // Set badge color mode dropdown
+    const badgeColorMode = document.querySelector('#station-badge-color-mode');
+    if (badgeColorMode) {
+        badgeColorMode.value = card.station.badgeColorMode || 'auto';
+    }
     
     // Set color mode dropdowns and show/hide color pickers
     const colorMode1 = document.querySelector('#station-square-color-mode-1');
@@ -822,4 +854,54 @@ function handleDisableFirstAbilityChange() {
         // If it's in auto mode, trigger the mana-based update
         updateSquareColorsFromMana();
     }
+}
+
+function updateBadgeColorMode() {
+    const modeSelect = document.querySelector('#station-badge-color-mode');
+    
+    if (modeSelect) {
+        const mode = modeSelect.value;
+        card.station.badgeColorMode = mode;
+        
+        // Apply the selected badge color
+        applyBadgeColor(mode);
+        
+        stationEdited();
+    }
+}
+
+function applyBadgeColor(mode) {
+    let badgeImagePath = '/img/frames/station/badges/a.png'; // default
+    
+    switch(mode) {
+        case 'auto':
+            // This will be handled by updateBadgeImageFromMana
+            updateBadgeImageFromMana();
+            return;
+        case 'white':
+            badgeImagePath = '/img/frames/station/badges/w.png';
+            break;
+        case 'blue':
+            badgeImagePath = '/img/frames/station/badges/u.png';
+            break;
+        case 'black':
+            badgeImagePath = '/img/frames/station/badges/b.png';
+            break;
+        case 'red':
+            badgeImagePath = '/img/frames/station/badges/r.png';
+            break;
+        case 'green':
+            badgeImagePath = '/img/frames/station/badges/g.png';
+            break;
+        case 'multi':
+            badgeImagePath = '/img/frames/station/badges/m.png';
+            break;
+        case 'colorless':
+            badgeImagePath = '/img/frames/station/badges/a.png';
+            break;
+    }
+    
+    // Update the badge image
+    console.log('Updating badge image to:', badgeImagePath);
+    setImageUrl(stationBadgeImage, badgeImagePath);
 }
