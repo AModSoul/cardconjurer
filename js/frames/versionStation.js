@@ -67,7 +67,20 @@ setTimeout(setupManaListenerWithRetry, 100);
             <div><h6 class='padding margin-bottom input-description'>Square Y Offset:</h6><input id='station-square-y-1' type='number' class='input' oninput='stationEdited();' placeholder='Square Y Offset'></div>
         </div>
         <div class='padding input-grid margin-bottom'>
-            <div><h6 class='padding margin-bottom input-description'>Square Color:</h6><input id='station-square-color-1' type='color' class='input' value='#4a4a4a' onchange='stationEdited();'></div>
+            <div><h6 class='padding margin-bottom input-description'>Square Color Mode:</h6>
+                <select id='station-square-color-mode-1' class='input' onchange='toggleSquareColorPicker(1);'>
+                    <option value='auto'>Auto (Based on Mana Cost)</option>
+                    <option value='white'>White</option>
+                    <option value='blue'>Blue</option>
+                    <option value='black'>Black</option>
+                    <option value='red'>Red</option>
+                    <option value='green'>Green</option>
+                    <option value='multi'>Multicolored</option>
+                    <option value='colorless'>Colorless</option>
+                    <option value='custom'>Custom</option>
+                </select>
+            </div>
+            <div id='station-square-color-picker-1' class='hidden'><h6 class='padding margin-bottom input-description'>Square Color:</h6><input id='station-square-color-1' type='color' class='input' value='#4a4a4a' onchange='stationEdited();'></div>
             <div><h6 class='padding margin-bottom input-description'>Square Opacity:</h6><input id='station-square-opacity-1' type='range' class='input' min='0' max='1' step='0.1' value='0.7' oninput='stationEdited();'></div>
         </div>
         
@@ -80,7 +93,20 @@ setTimeout(setupManaListenerWithRetry, 100);
             <div><h6 class='padding margin-bottom input-description'>Square Y Offset:</h6><input id='station-square-y-2' type='number' class='input' oninput='stationEdited();' placeholder='Square Y Offset'></div>
         </div>
         <div class='padding input-grid margin-bottom'>
-            <div><h6 class='padding margin-bottom input-description'>Square Color:</h6><input id='station-square-color-2' type='color' class='input' value='#4a4a4a' onchange='stationEdited();'></div>
+            <div><h6 class='padding margin-bottom input-description'>Square Color Mode:</h6>
+                <select id='station-square-color-mode-2' class='input' onchange='toggleSquareColorPicker(2);'>
+                    <option value='auto'>Auto (Based on Mana Cost)</option>
+                    <option value='white'>White</option>
+                    <option value='blue'>Blue</option>
+                    <option value='black'>Black</option>
+                    <option value='red'>Red</option>
+                    <option value='green'>Green</option>
+                    <option value='multi'>Multicolored</option>
+                    <option value='colorless'>Colorless</option>
+                    <option value='custom'>Custom</option>
+                </select>
+            </div>
+            <div id='station-square-color-picker-2' class='hidden'><h6 class='padding margin-bottom input-description'>Square Color:</h6><input id='station-square-color-2' type='color' class='input' value='#4a4a4a' onchange='stationEdited();'></div>
             <div><h6 class='padding margin-bottom input-description'>Square Opacity:</h6><input id='station-square-opacity-2' type='range' class='input' min='0' max='1' step='0.1' value='0.7' oninput='stationEdited();'></div>
         </div>
     </div>`;
@@ -100,8 +126,8 @@ setTimeout(setupManaListenerWithRetry, 100);
                 height: 162    // Badge height in pixels
             },
             squares: {
-                1: { width: 1707, height: 300, x: -210, y: 2050, enabled: true, color: '#4a4a4a', opacity: 0.7 },
-                2: { width: 1707, height: 241, x: -210, y: 2350, enabled: true, color: '#4a4a4a', opacity: 0.7 }
+                1: { width: 1713, height: 300, x: -214, y: 2050, enabled: true, color: '#4a4a4a', opacity: 0.7 },
+                2: { width: 1713, height: 246, x: -214, y: 2350, enabled: true, color: '#4a4a4a', opacity: 0.7 }
             },
             baseTextPositions: {
                 ability1: {x: 0.18, y: 0.7},
@@ -119,7 +145,12 @@ setTimeout(setupManaListenerWithRetry, 100);
             height: 162
         };
     }
-    
+    if (!card.station.colorModes) {
+        card.station.colorModes = {
+            1: 'auto',
+            2: 'auto'
+        };
+    }
     if (!card.station.colorSettings) {
         card.station.colorSettings = {
             // Default colors when no mana cost
@@ -178,19 +209,27 @@ setTimeout(setupManaListenerWithRetry, 100);
 function updateStationTextPositions() {
     if (!card.station || !card.station.baseTextPositions) return;
     
+    let positionsChanged = false;
+    
     // Update ability1 text position and size based on its square OR use pack defaults if disabled
     if (card.text && card.text.ability1) {
         if (card.station.disableFirstAbility) {
             // Reset to pack defaults when first square is disabled
-            card.text.ability1.x = 175/2010;        // ability0's pack default x
-            card.text.ability1.width = 1660/2010;   // ability0's pack default width
+            const newX = 175/2010;
+            const newWidth = 1660/2010;
             
-            console.log('Set ability1 to pack defaults:', {
-                x: card.text.ability1.x,
-                y: card.text.ability1.y,
-                width: card.text.ability1.width,
-                height: card.text.ability1.height
-            });
+            if (card.text.ability1.x !== newX || card.text.ability1.width !== newWidth) {
+                card.text.ability1.x = newX;
+                card.text.ability1.width = newWidth;
+                positionsChanged = true;
+                
+                console.log('Set ability1 to pack defaults:', {
+                    x: card.text.ability1.x,
+                    y: card.text.ability1.y,
+                    width: card.text.ability1.width,
+                    height: card.text.ability1.height
+                });
+            }
         } else if (card.station.squares[1]) {
             // Use square-based positioning when enabled
             const square = card.station.squares[1];
@@ -206,18 +245,23 @@ function updateStationTextPositions() {
             const textX = (squareX + (square.width * 0.05)) / card.width;
             const textY = (squareY + (square.height * 0.05)) / card.height;
             
-            // Update text box properties
-            card.text.ability1.x = textX;
-            card.text.ability1.y = textY;
-            card.text.ability1.width = textWidth;
-            card.text.ability1.height = textHeight;
-            
-            console.log('Set ability1 to square-based positioning:', {
-                x: card.text.ability1.x,
-                y: card.text.ability1.y,
-                width: card.text.ability1.width,
-                height: card.text.ability1.height
-            });
+            // Only update if values actually changed
+            if (card.text.ability1.x !== textX || card.text.ability1.y !== textY || 
+                card.text.ability1.width !== textWidth || card.text.ability1.height !== textHeight) {
+                
+                card.text.ability1.x = textX;
+                card.text.ability1.y = textY;
+                card.text.ability1.width = textWidth;
+                card.text.ability1.height = textHeight;
+                positionsChanged = true;
+                
+                console.log('Set ability1 to square-based positioning:', {
+                    x: card.text.ability1.x,
+                    y: card.text.ability1.y,
+                    width: card.text.ability1.width,
+                    height: card.text.ability1.height
+                });
+            }
         }
     }
     
@@ -236,25 +280,33 @@ function updateStationTextPositions() {
         const textX = (squareX + (square.width * 0.05)) / card.width;
         const textY = (squareY + (square.height * 0.05)) / card.height;
         
-        // Update text box properties
-        card.text.ability2.x = textX;
-        card.text.ability2.y = textY;
-        card.text.ability2.width = textWidth;
-        card.text.ability2.height = textHeight;
+        // Only update if values actually changed
+        if (card.text.ability2.x !== textX || card.text.ability2.y !== textY || 
+            card.text.ability2.width !== textWidth || card.text.ability2.height !== textHeight) {
+            
+            card.text.ability2.x = textX;
+            card.text.ability2.y = textY;
+            card.text.ability2.width = textWidth;
+            card.text.ability2.height = textHeight;
+            positionsChanged = true;
+        }
     }
     
-    // Force text layout updates for all text areas to show changes immediately
-    if (typeof textEdited === 'function') {
-        setTimeout(() => {
-            textEdited();
-        }, 10);
-    }
-    
-    // Also force a full card redraw
-    if (typeof drawCard === 'function') {
-        setTimeout(() => {
-            drawCard();
-        }, 20);
+    // Only trigger redraws if positions actually changed
+    if (positionsChanged) {
+        // Force text layout updates for all text areas to show changes immediately
+        if (typeof textEdited === 'function') {
+            setTimeout(() => {
+                textEdited();
+            }, 10);
+        }
+        
+        // Also force a full card redraw
+        if (typeof drawCard === 'function') {
+            setTimeout(() => {
+                drawCard();
+            }, 20);
+        }
     }
 }
 
@@ -279,10 +331,20 @@ function stationEdited() {
     var badgeValue2Input = document.querySelector('#station-badge-value-2');
     var disableFirstAbilityInput = document.querySelector('#station-disable-first-ability');
     
+    // Check if the disable first ability checkbox state changed
+    const previousDisableState = card.station.disableFirstAbility;
+    
     if (badgeXInput) card.station.badgeX = parseFloat(badgeXInput.value) || 0.028;
     if (badgeValue1Input) card.station.badgeValues[1] = badgeValue1Input.value;
     if (badgeValue2Input) card.station.badgeValues[2] = badgeValue2Input.value;
-    if (disableFirstAbilityInput) card.station.disableFirstAbility = disableFirstAbilityInput.checked;
+    if (disableFirstAbilityInput) {
+        card.station.disableFirstAbility = disableFirstAbilityInput.checked;
+        
+        // If the checkbox state changed, update colors accordingly
+        if (previousDisableState !== card.station.disableFirstAbility) {
+            handleDisableFirstAbilityChange();
+        }
+    }
     
     // Update square properties from inputs
     updateSquareFromInputs(1);
@@ -303,12 +365,6 @@ function stationEdited() {
     drawStationSquare(2);
     
     stationPreFrameContext.globalAlpha = 1;
-    
-    // Ensure mana listener is still active
-    setupManaListener();
-    
-    // Update colors based on current mana cost and checkbox state
-    updateBadgeImageFromMana();
     
     // Draw badges
     drawStationBadges();
@@ -417,10 +473,9 @@ function drawBadgeForAbility(index, abilityName, badgeImage) {
     }
 }
 
-// Add this after the existing badge image setup
 function setupManaListener() {
-    // Check if mana text exists
-    if (card.text && card.text.mana) {
+    // Check if mana text exists and if we've already set up the listener
+    if (card.text && card.text.mana && !card.text.mana._stationListenerSet) {
         // Store the original onchange function
         const originalOnChange = card.text.mana.onChange;
         
@@ -453,7 +508,13 @@ function setupManaListener() {
             configurable: true
         });
         
+        // Mark that we've set up the listener to prevent duplicates
+        card.text.mana._stationListenerSet = true;
+        
         console.log('Mana listener set up successfully');
+        return true;
+    } else if (card.text && card.text.mana && card.text.mana._stationListenerSet) {
+        console.log('Mana listener already set up');
         return true;
     } else {
         console.log('Mana text not available yet');
@@ -497,6 +558,14 @@ function updateBadgeImageFromMana() {
 function updateSquareColorsFromMana() {
     if (!card.text || !card.text.mana || !card.station.colorSettings) return;
     
+    // Only update squares that are set to 'auto' mode
+    const mode1 = card.station.colorModes[1];
+    const mode2 = card.station.colorModes[2];
+    
+    if (mode1 !== 'auto' && mode2 !== 'auto') {
+        return; // No squares are in auto mode, skip mana-based updates
+    }
+    
     const manaText = card.text.mana.text || '';
     const manaSymbols = extractManaSymbols(manaText);
     
@@ -518,25 +587,24 @@ function updateSquareColorsFromMana() {
         // Check if first ability is disabled
         const disableFirstAbility = card.station.disableFirstAbility;
         
-        if (disableFirstAbility) {
-            // When first ability (square 1) is disabled:
-            // Square 2 should use square 1's color (the lighter color)
-            card.station.squares[1].color = colorSet.square1; // Keep square 1 color (won't be drawn anyway)
-            card.station.squares[2].color = colorSet.square1; // Square 2 uses square 1's lighter color
-        } else {
-            // Normal behavior:
-            // Square 1 = square1 color (lighter)
-            // Square 2 = square2 color (darker)
+        // Only update square 1 if it's in auto mode
+        if (mode1 === 'auto') {
             card.station.squares[1].color = colorSet.square1;
-            card.station.squares[2].color = colorSet.square2;
+            const colorInput1 = document.querySelector('#station-square-color-1');
+            if (colorInput1) colorInput1.value = card.station.squares[1].color;
         }
         
-        // Update UI color pickers to reflect the changes
-        const colorInput1 = document.querySelector('#station-square-color-1');
-        const colorInput2 = document.querySelector('#station-square-color-2');
-        
-        if (colorInput1) colorInput1.value = card.station.squares[1].color;
-        if (colorInput2) colorInput2.value = card.station.squares[2].color;
+        // Only update square 2 if it's in auto mode
+        if (mode2 === 'auto') {
+            if (disableFirstAbility) {
+                // When first ability is disabled, square 2 uses square 1's color
+                card.station.squares[2].color = colorSet.square1;
+            } else {
+                card.station.squares[2].color = colorSet.square2;
+            }
+            const colorInput2 = document.querySelector('#station-square-color-2');
+            if (colorInput2) colorInput2.value = card.station.squares[2].color;
+        }
         
         console.log(`Updated square colors for mana type: ${colorKey}, first ability disabled: ${disableFirstAbility}`);
         console.log(`Square 1 color: ${card.station.squares[1].color}, Square 2 color: ${card.station.squares[2].color}`);
@@ -598,6 +666,34 @@ function fixStationInputs(callback) {
     var badgeValue2Input = document.querySelector('#station-badge-value-2');
     if (badgeValue2Input) badgeValue2Input.value = card.station.badgeValues[2] || '';
     
+    // Set color mode dropdowns and show/hide color pickers
+    const colorMode1 = document.querySelector('#station-square-color-mode-1');
+    const colorMode2 = document.querySelector('#station-square-color-mode-2');
+    const colorPicker1 = document.querySelector('#station-square-color-picker-1');
+    const colorPicker2 = document.querySelector('#station-square-color-picker-2');
+    
+    if (colorMode1) {
+        colorMode1.value = card.station.colorModes[1] || 'auto';
+        if (colorPicker1) {
+            if (card.station.colorModes[1] === 'custom') {
+                colorPicker1.classList.remove('hidden');
+            } else {
+                colorPicker1.classList.add('hidden');
+            }
+        }
+    }
+    
+    if (colorMode2) {
+        colorMode2.value = card.station.colorModes[2] || 'auto';
+        if (colorPicker2) {
+            if (card.station.colorModes[2] === 'custom') {
+                colorPicker2.classList.remove('hidden');
+            } else {
+                colorPicker2.classList.add('hidden');
+            }
+        }
+    }
+    
     var inputs = [
         { id: '#station-square-width-1', value: card.station.squares[1].width },
         { id: '#station-square-height-1', value: card.station.squares[1].height },
@@ -620,5 +716,110 @@ function fixStationInputs(callback) {
     
     if (callback) {
         callback();
+    }
+}
+
+function toggleSquareColorPicker(index) {
+    const modeSelect = document.querySelector(`#station-square-color-mode-${index}`);
+    const colorPickerDiv = document.querySelector(`#station-square-color-picker-${index}`);
+    
+    if (modeSelect && colorPickerDiv) {
+        const mode = modeSelect.value;
+        card.station.colorModes[index] = mode;
+        
+        if (mode === 'custom') {
+            colorPickerDiv.classList.remove('hidden');
+        } else {
+            colorPickerDiv.classList.add('hidden');
+            
+            // Apply the selected preset color
+            applyPresetColor(index, mode);
+        }
+        
+        stationEdited();
+    }
+}
+
+function applyPresetColor(index, mode) {
+    const colorSettings = card.station.colorSettings;
+    let color = '#4a4a4a'; // default
+    
+    // Check if first ability is disabled - affects square 2 color selection
+    const disableFirstAbility = card.station.disableFirstAbility;
+    
+    switch(mode) {
+        case 'auto':
+            // This will be handled by updateSquareColorsFromMana
+            updateSquareColorsFromMana();
+            return;
+        case 'white':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.w.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.w.square1 : colorSettings.w.square2;
+            }
+            break;
+        case 'blue':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.u.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.u.square1 : colorSettings.u.square2;
+            }
+            break;
+        case 'black':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.b.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.b.square1 : colorSettings.b.square2;
+            }
+            break;
+        case 'red':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.r.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.r.square1 : colorSettings.r.square2;
+            }
+            break;
+        case 'green':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.g.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.g.square1 : colorSettings.g.square2;
+            }
+            break;
+        case 'multi':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.m.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.m.square1 : colorSettings.m.square2;
+            }
+            break;
+        case 'colorless':
+            if (index === 2 && disableFirstAbility) {
+                color = colorSettings.default.square1; // Use square1 color for square2 when first is disabled
+            } else {
+                color = index === 1 ? colorSettings.default.square1 : colorSettings.default.square2;
+            }
+            break;
+    }
+    
+    // Apply the color
+    card.station.squares[index].color = color;
+    
+    // Update the color picker to show the applied color
+    const colorInput = document.querySelector(`#station-square-color-${index}`);
+    if (colorInput) colorInput.value = color;
+}
+
+function handleDisableFirstAbilityChange() {
+    // When the checkbox changes, we need to update square 2's color if it's not in custom mode
+    const mode2 = card.station.colorModes[2];
+    
+    if (mode2 !== 'custom' && mode2 !== 'auto') {
+        // Square 2 is using a manual color mode, so we need to update it
+        applyPresetColor(2, mode2);
+    } else if (mode2 === 'auto') {
+        // If it's in auto mode, trigger the mana-based update
+        updateSquareColorsFromMana();
     }
 }

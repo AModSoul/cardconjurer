@@ -2,13 +2,13 @@
 var masks = [{src:'/img/frames/planeswalker/regular/planeswalkerMaskPinline.png', name:'Pinline'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskTitle.png', name:'Title'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskType.png', name:'Type'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskFrame.png', name:'Frame'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskBorder.png', name:'Border'}, {src:'/img/frames/planeswalker/maskLoyalty.png', name:'Loyalty'}];
 //defines available frames
 availableFrames = [
-    {name:'White Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameW.png', masks:masks},
-    {name:'Blue Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameU.png', masks:masks},
-    {name:'Black Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameB.png', masks:masks},
-    {name:'Red Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameR.png', masks:masks},
-    {name:'Green Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameG.png', masks:masks},
-    {name:'Multicolored Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameM.png', masks:masks},
-    {name:'Artifact Frame', src:'/img/frames/planeswalker/regular/planeswalkerFrameA.png', masks:masks}
+    {name:'White Frame', src:'/img/frames/station/w.png', masks:masks},
+    {name:'Blue Frame', src:'/img/frames/station/u.png', masks:masks},
+    {name:'Black Frame', src:'/img/frames/station/b.png', masks:masks},
+    {name:'Red Frame', src:'/img/frames/station/r.png', masks:masks},
+    {name:'Green Frame', src:'/img/frames/station/g.png', masks:masks},
+    {name:'Multicolored Frame', src:'/img/frames/station/m.png', masks:masks},
+    {name:'Artifact Frame', src:'/img/frames/station/a.png', masks:masks}
 ];
 //disables/enables the "Load Frame Version" button
 document.querySelector('#loadFrameVersion').disabled = false;
@@ -31,6 +31,10 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
         badgeX: existingStation.badgeX || 0.028,
         badgeValues: existingStation.badgeValues || ['', '', ''],
         disableFirstAbility: existingStation.disableFirstAbility || false,
+        colorModes: existingStation.colorModes || {
+            1: 'auto',
+            2: 'auto'
+        },
         badgeSettings: existingStation.badgeSettings || {
             fontSize: 0.0250,
             width: 162,
@@ -71,18 +75,18 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
         },
         squares: {
             1: { 
-                width: existingStation.squares?.[1]?.width || 1707, 
+                width: existingStation.squares?.[1]?.width || 1713, 
                 height: existingStation.squares?.[1]?.height || 300, 
-                x: existingStation.squares?.[1]?.x || -210, 
+                x: existingStation.squares?.[1]?.x || -214, 
                 y: existingStation.squares?.[1]?.y || 2050, 
                 enabled: true, 
                 color: existingStation.squares?.[1]?.color || '#4a4a4a', 
                 opacity: existingStation.squares?.[1]?.opacity || 0.7 
             },
             2: { 
-                width: existingStation.squares?.[2]?.width || 1707, 
-                height: existingStation.squares?.[2]?.height || 241, 
-                x: existingStation.squares?.[2]?.x || -210, 
+                width: existingStation.squares?.[2]?.width || 1713, 
+                height: existingStation.squares?.[2]?.height || 246, 
+                x: existingStation.squares?.[2]?.x || -214, 
                 y: existingStation.squares?.[2]?.y || 2350, 
                 enabled: true, 
                 color: existingStation.squares?.[2]?.color || '#4a4a4a', 
