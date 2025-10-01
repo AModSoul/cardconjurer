@@ -126,8 +126,8 @@ setTimeout(setupManaListenerWithRetry, 100);
                 height: 162    // Badge height in pixels
             },
             squares: {
-                1: { width: 1713, height: 300, x: -214, y: 2050, enabled: true, color: '#4a4a4a', opacity: 0.7 },
-                2: { width: 1713, height: 246, x: -214, y: 2350, enabled: true, color: '#4a4a4a', opacity: 0.7 }
+                1: { width: 1713, height: 300, x: -214, y: 2050, enabled: true, color: '#4a4a4a', opacity: 0.4 },
+                2: { width: 1713, height: 246, x: -214, y: 2350, enabled: true, color: '#4a4a4a', opacity: 0.6 }
             },
             baseTextPositions: {
                 ability1: {x: 0.18, y: 0.7},

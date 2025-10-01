@@ -1,5 +1,5 @@
 //Create objects for common properties across available frames
-var masks = [{src:'/img/frames/planeswalker/regular/planeswalkerMaskPinline.png', name:'Pinline'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskTitle.png', name:'Title'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskType.png', name:'Type'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskFrame.png', name:'Frame'}, {src:'/img/frames/planeswalker/regular/planeswalkerMaskBorder.png', name:'Border'}, {src:'/img/frames/planeswalker/maskLoyalty.png', name:'Loyalty'}];
+var masks = [{src:'/img/frames/m15/regular/m15MaskPinline.png', name:'Pinline'}, {src:'/img/frames/m15/regular/m15MaskTitle.png', name:'Title'}, {src:'/img/frames/m15/regular/m15MaskType.png', name:'Type'}, {src:'/img/frames/m15/regular/m15MaskRules.png', name:'Rules'}, {src:'/img/frames/m15/regular/m15MaskBorder.png', name:'Border'}];
 //defines available frames
 availableFrames = [
     {name:'White Frame', src:'/img/frames/station/w.png', masks:masks},
@@ -81,7 +81,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
                 y: existingStation.squares?.[1]?.y || 2050, 
                 enabled: true, 
                 color: existingStation.squares?.[1]?.color || '#4a4a4a', 
-                opacity: existingStation.squares?.[1]?.opacity || 0.7 
+                opacity: existingStation.squares?.[1]?.opacity || 0.4 
             },
             2: { 
                 width: existingStation.squares?.[2]?.width || 1713, 
@@ -90,7 +90,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
                 y: existingStation.squares?.[2]?.y || 2350, 
                 enabled: true, 
                 color: existingStation.squares?.[2]?.color || '#4a4a4a', 
-                opacity: existingStation.squares?.[2]?.opacity || 0.7 
+                opacity: existingStation.squares?.[2]?.opacity || 0.6 
             }
         },
         baseTextPositions: existingStation.baseTextPositions || {
