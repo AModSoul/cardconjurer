@@ -152,7 +152,7 @@ setTimeout(setupManaListenerWithRetry, 100);
     }
     if (!card.station.badgeSettings) {
         card.station.badgeSettings = {
-            fontSize: 0.0240,
+            fontSize: 0.0250,
             width: 162,
             height: 162
         };

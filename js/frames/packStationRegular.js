@@ -36,7 +36,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
             2: 'auto'
         },
         badgeSettings: existingStation.badgeSettings || {
-            fontSize: 0.0240,
+            fontSize: 0.0250,
             width: 162,
             height: 162
         },
