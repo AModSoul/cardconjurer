@@ -5685,6 +5685,34 @@ async function downloadCardAsPSD() {
 			frameGroup.children.push(createLayerBase('Planeswalker Pre-Frame', pwPreFrameCanvas));
 		}
 
+		// Add Minimalist gradient to frame group (if version is Minimalist)
+		if (card.version === 'Minimalist' && gradientCanvas && card.gradientOptions) {
+			const { canvas: minimalistGradientCanvas, ctx: minimalistGradientCtx } = createCanvas();
+			minimalistGradientCtx.drawImage(gradientCanvas, 0, 0, psdWidth, psdHeight);
+			frameGroup.children.push(createLayerBase('Minimalist Gradient', minimalistGradientCanvas));
+		}
+
+		// Add Minimalist divider to frame group (if version is Minimalist)
+		if (card.version === 'Minimalist' && card.dividerCanvas) {
+			// Create divider layer
+			if (window.drawDividerBar && window.getDividerColors) {
+				const { canvas: dividerCanvas, ctx: dividerCtx } = createCanvas();
+				
+				// Temporarily set card.dividerContext to our new context
+				const originalDividerContext = card.dividerContext;
+				card.dividerContext = dividerCtx;
+				
+				// Draw only divider bar
+				const { colorsToUse, colorCount } = window.getDividerColors();
+				window.drawDividerBar(colorsToUse, colorCount);
+				
+				// Restore original context
+				card.dividerContext = originalDividerContext;
+				
+				frameGroup.children.push(createLayerBase('Minimalist Divider', dividerCanvas));
+			}
+		}
+
 		// Helper function to create a PSD mask object from ImageData
 		const createPSDMask = (imageData) => ({
 			top: 0,
@@ -6032,10 +6060,32 @@ async function downloadCardAsPSD() {
 		const hasStationPT = card.version.toLowerCase().includes('station') && card.station && card.text?.pt?.text?.trim() && typeof stationPTImage !== "undefined";
 		
 		if (ptLayers.length > 0 || hasStationPT) {
+		// Add PT layers group second if there are any
+		if (ptLayers.length > 0 || (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness)) {
 			const ptChildren = [];
+			
+			// Add Minimalist P/T symbols to the PT group (if version is Minimalist)
+			if (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness) {
+				const { canvas: ptSymbolsCanvas, ctx: ptSymbolsCtx } = createCanvas();
+				
+				// Temporarily set card.dividerContext to our new context
+				const originalDividerContext = card.dividerContext;
+				card.dividerContext = ptSymbolsCtx;
+				
+				// Draw only P/T symbols
+				window.drawPTSymbols();
+				
+				// Restore original context
+				card.dividerContext = originalDividerContext;
+				
+				ptChildren.push(createLayerBase('Minimalist P/T Symbols', ptSymbolsCanvas));
+			}
+			
+			// Add regular PT layers
 			ptLayers.forEach(layer => {
 				addLayerWithColorOverlay(layer, ptChildren);
 			});
+			
 			
 			// Add station PT box directly to PT children if it exists
 			if (hasStationPT) {
