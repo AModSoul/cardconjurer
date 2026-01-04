@@ -2525,7 +2525,7 @@ function make8thEditionFrameByLetter(letter, mask = false, maskToRightHalf = fal
 		}
 	}
 
-	var stylePath = style == 'Nyx' ? '/nyx/' : '';
+	var stylePath = style == 'Nyx' ? 'nyx/' : '';
 
 	var frame = {
 		'name': frameName + ' Frame',
@@ -5977,11 +5977,16 @@ function parseStationCard(oracleText) {
 }
 
 function changeCardIndex() {
-	var cardToImport = scryfallCard[document.querySelector('#import-index').value];
+	let cardToImport = scryfallCard[document.querySelector('#import-index').value];
 	// Add debug logging for card Layout detection
 	console.log('Card layout:', cardToImport.layout);
 	console.log('Card version:', card.version);
 
+	if (cardToImport.set == "plst") {
+		var components = cardToImport.collector_number.split('-');
+		cardToImport.set = components[0];
+		cardToImport.collector_number = components[1];
+	}
     // Clear all existing text fields to prevent old data from persisting BUT preserve Multi Face reminder text if we're using a Multi Face frame
     var savedFuseReminderText = '';
 	var savedDescriptiveTexts = {};
