@@ -6056,15 +6056,11 @@ async function downloadCardAsPSD() {
 			}
 		}
 
-		// Add PT layers group second if there are any (or if it's a station card with PT)
-		const hasStationPT = card.version.toLowerCase().includes('station') && card.station && card.text?.pt?.text?.trim() && typeof stationPTImage !== "undefined";
-		
-		if (ptLayers.length > 0 || hasStationPT) {
-		// Add PT layers group second if there are any
-		if (ptLayers.length > 0 || (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness)) {
-			const ptChildren = [];
-			
-			// Add Minimalist P/T symbols to the PT group (if version is Minimalist)
+	// Add PT layers group second if there are any (or if it's a station card with PT)
+	const hasStationPT = card.version.toLowerCase().includes('station') && card.station && card.text?.pt?.text?.trim() && typeof stationPTImage !== "undefined";
+	
+	if (ptLayers.length > 0 || hasStationPT || (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness)) {
+		const ptChildren = [];			// Add Minimalist P/T symbols to the PT group (if version is Minimalist)
 			if (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness) {
 				const { canvas: ptSymbolsCanvas, ctx: ptSymbolsCtx } = createCanvas();
 				
@@ -6601,40 +6597,40 @@ async function downloadCardAsPSD() {
 	}
 
 	// Write PSD file
-		const buffer = agPsd.writePsd(psd, { 
-			generateThumbnail: true,
-			trimImageData: false,
-			logMissingFeatures: false
-		});
-		
-		if (!buffer || buffer.byteLength === 0) {
-			throw new Error('Failed to generate PSD buffer - buffer is empty');
-		}
-		
-		const endTime = performance.now();
-		const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
-		const fileSizeMB = (buffer.byteLength / (1024 * 1024)).toFixed(2);
-		console.log(`PSD generation completed in ${timeTaken}s, file size: ${fileSizeMB}MB`);
-		
-		// Download
-		const blob = new Blob([buffer], { type: 'application/octet-stream' });
-		const url = URL.createObjectURL(blob);
-		const downloadElement = document.createElement('a');
-		downloadElement.download = getCardName() + '.psd';
-		downloadElement.href = url;
-		document.body.appendChild(downloadElement);
-		downloadElement.click();
-		downloadElement.remove();
-		URL.revokeObjectURL(url);
-		
-		notify(`PSD exported successfully (${fileSizeMB}MB in ${timeTaken}s)`, 3);
-	} catch (error) {
-		// Provide more helpful error messages
-		const errorSuffix = error.message.includes('buffer') ? ': Failed to generate file buffer'
-			: error.message.includes('memory') ? ': Out of memory. Try closing other tabs.'
-			: error.message ? `: ${error.message}` : '';
-		notify(`PSD export failed${errorSuffix}`, 5);
+	const buffer = agPsd.writePsd(psd, { 
+		generateThumbnail: true,
+		trimImageData: false,
+		logMissingFeatures: false
+	});
+	
+	if (!buffer || buffer.byteLength === 0) {
+		throw new Error('Failed to generate PSD buffer - buffer is empty');
 	}
+	
+	const endTime = performance.now();
+	const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+	const fileSizeMB = (buffer.byteLength / (1024 * 1024)).toFixed(2);
+	console.log(`PSD generation completed in ${timeTaken}s, file size: ${fileSizeMB}MB`);
+	
+	// Download
+	const blob = new Blob([buffer], { type: 'application/octet-stream' });
+	const url = URL.createObjectURL(blob);
+	const downloadElement = document.createElement('a');
+	downloadElement.download = getCardName() + '.psd';
+	downloadElement.href = url;
+	document.body.appendChild(downloadElement);
+	downloadElement.click();
+	downloadElement.remove();
+	URL.revokeObjectURL(url);
+	
+	notify(`PSD exported successfully (${fileSizeMB}MB in ${timeTaken}s)`, 3);
+} catch (error) {
+	// Provide more helpful error messages
+	const errorSuffix = error.message.includes('buffer') ? ': Failed to generate file buffer'
+		: error.message.includes('memory') ? ': Out of memory. Try closing other tabs.'
+		: error.message ? `: ${error.message}` : '';
+	notify(`PSD export failed${errorSuffix}`, 5);
+}
 }
 
 // Helper function to convert Canvas blend modes to Photoshop blend modes
