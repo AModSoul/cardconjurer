@@ -21,7 +21,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	//sets card version
 	card.version = 'dungeon';
 	card.onload = '/js/frames/versionDungeon.js';
-	loadScript('/js/frames/versionDungeon.js');
+	await loadScript('/js/frames/versionDungeon.js');
 	//art bounds
 	card.artBounds = {x:0, y:0, width:1, height:1};
 	autoFitArt();
