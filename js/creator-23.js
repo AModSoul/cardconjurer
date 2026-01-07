@@ -113,6 +113,11 @@ async function resetCardIrregularities({canvas = [getStandardWidth(), getStandar
 	card.bottomInfoZoom = 1;
 	card.bottomInfoColor = 'white';
 	replacementMasks = {};
+	// Clear gradient unless maintaining it
+	if (!card.gradientOptions || resetOthers) {
+		clearGradient();
+		delete card.gradientOptions;
+	}
 	//rotation
 	if (card.landscape) {
 		// previewContext.scale(card.width/card.height, card.height/card.width);
@@ -186,6 +191,7 @@ sizeCanvas('card');
 sizeCanvas('frame');
 sizeCanvas('frameMasking');
 sizeCanvas('frameCompositing');
+sizeCanvas('gradient');
 sizeCanvas('text');
 sizeCanvas('paragraph');
 sizeCanvas('line');
@@ -383,6 +389,176 @@ function findManaSymbolIndex(string) {
 }
 function getManaSymbol(key) {
 	return mana.get(key);
+}
+function drawHorizontalGradient(options = {}) {
+    const {
+        startFromBottom = true,
+        maxOpacity = 1,
+        height = 0.3,
+        solidHeight = 0,
+        yPosition = null,
+        colors = ['#000000'],
+        fadeDirection = 'up'
+    } = options;
+
+    gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
+    
+    const canvasWidth = gradientCanvas.width;
+    const canvasHeight = gradientCanvas.height;
+    
+    // Consolidate color logic - determine final colors to use
+    function getFinalColors() {
+        if (colors.length === 0) return ['#808080']; // Grey for 0 colors
+        if (colors.length > 3) return ['#e3d193']; // Gold for 4+ colors
+        return colors;
+    }
+    
+    // Create gradient stops for any number of colors
+    function createGradientStops(gradient, colorsToUse, alpha) {
+        const colorCount = colorsToUse.length;
+        
+        if (colorCount === 1) {
+            const rgb = hexToRgb(colorsToUse[0]);
+            const color = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, color);
+        } else if (colorCount === 2) {
+            const [color1, color2] = colorsToUse;
+            const rgb1 = hexToRgb(color1);
+            const rgb2 = hexToRgb(color2);
+            const blended = blendColors(color1, color2);
+            const blendedRgb = hexToRgb(blended);
+            
+            gradient.addColorStop(0, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
+            gradient.addColorStop(0.45, `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${alpha})`);
+            gradient.addColorStop(0.5, `rgba(${blendedRgb.r}, ${blendedRgb.g}, ${blendedRgb.b}, ${alpha})`);
+            gradient.addColorStop(0.55, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
+            gradient.addColorStop(1, `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${alpha})`);
+        } else if (colorCount === 3) {
+            const [color1, color2, color3] = colorsToUse;
+            const positions = [0, 0.31, 0.333, 0.356, 0.644, 0.667, 0.69, 1];
+            const colorValues = [
+                hexToRgb(color1),
+                hexToRgb(color1),
+                hexToRgb(blendColors(color1, color2)),
+                hexToRgb(color2),
+                hexToRgb(color2),
+                hexToRgb(blendColors(color2, color3)),
+                hexToRgb(color3),
+                hexToRgb(color3)
+            ];
+            
+            positions.forEach((pos, i) => {
+                const rgb = colorValues[i];
+                gradient.addColorStop(pos, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
+            });
+        }
+        
+        return gradient;
+    }
+    
+    // Helper function to create multi-color horizontal gradient with proper opacity
+    function createHorizontalGradient(alpha = maxOpacity) {
+        const gradient = gradientContext.createLinearGradient(0, 0, canvasWidth, 0);
+        const colorsToUse = getFinalColors();
+        return createGradientStops(gradient, colorsToUse, alpha);
+    }
+    
+    // Calculate positioning (consolidated logic)
+    const { startY, fadeHeight, solidAreaHeight } = calculatePositioning();
+    
+    function calculatePositioning() {
+        let startY, fadeHeight, solidAreaHeight;
+        
+        if (yPosition !== null) {
+            startY = Math.round(yPosition * canvasHeight);
+            fadeHeight = Math.round(height * canvasHeight);
+            solidAreaHeight = Math.round(solidHeight * canvasHeight);
+        } else {
+            fadeHeight = Math.round(height * canvasHeight);
+            solidAreaHeight = Math.round(solidHeight * canvasHeight);
+            const totalHeight = fadeHeight + solidAreaHeight;
+            startY = startFromBottom ? canvasHeight - totalHeight : 0;
+        }
+        
+        return { startY, fadeHeight, solidAreaHeight };
+    }
+    
+    // Draw solid area with proper opacity
+    if (solidAreaHeight > 0) {
+        const solidY = fadeDirection === 'down' ? startY + fadeHeight : startY + fadeHeight;
+        gradientContext.fillStyle = createHorizontalGradient(maxOpacity);
+        gradientContext.fillRect(0, solidY, canvasWidth, solidAreaHeight);
+    }
+    
+    // Draw fade area (consolidated fade logic)
+    const colorsToUse = getFinalColors();
+    
+    if (colorsToUse.length === 1) {
+        drawSingleColorFade(colorsToUse[0], startY, fadeHeight);
+    } else {
+        drawMultiColorFade(startY, fadeHeight);
+    }
+    
+    function drawSingleColorFade(color, startY, fadeHeight) {
+        const fadeStartY = fadeDirection === 'down' ? startY : startY + fadeHeight;
+        const fadeEndY = fadeDirection === 'down' ? startY + fadeHeight : startY;
+        const fadeGradient = gradientContext.createLinearGradient(0, fadeStartY, 0, fadeEndY);
+        
+        const rgb = hexToRgb(color);
+        const transparentColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`;
+        const solidColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${maxOpacity})`;
+        
+        if (fadeDirection === 'down') {
+            fadeGradient.addColorStop(0, transparentColor);
+            fadeGradient.addColorStop(1, solidColor);
+        } else {
+            fadeGradient.addColorStop(0, solidColor);
+            fadeGradient.addColorStop(1, transparentColor);
+        }
+        
+        gradientContext.fillStyle = fadeGradient;
+        gradientContext.fillRect(0, startY, canvasWidth, fadeHeight);
+    }
+    
+    function drawMultiColorFade(startY, fadeHeight) {
+        const fadeStart = fadeDirection === 'down' ? startY : startY + fadeHeight;
+        const increment = fadeDirection === 'down' ? 1 : -1;
+        
+        for (let y = 0; y < fadeHeight; y++) {
+            const currentY = fadeStart + (y * increment);
+            const fadeProgress = y / fadeHeight;
+            const alpha = fadeDirection === 'down' ? fadeProgress * maxOpacity : (1 - fadeProgress) * maxOpacity;
+            
+            gradientContext.fillStyle = createHorizontalGradient(alpha);
+            gradientContext.fillRect(0, currentY, canvasWidth, 1);
+        }
+    }
+}
+
+// Helper function to blend two hex colors (if not already defined)
+function blendColors(hex1, hex2, ratio = 0.5) {
+    const rgb1 = hexToRgb(hex1);
+    const rgb2 = hexToRgb(hex2);
+    
+    const r = Math.round(rgb1.r * (1 - ratio) + rgb2.r * ratio);
+    const g = Math.round(rgb1.g * (1 - ratio) + rgb2.g * ratio);
+    const b = Math.round(rgb1.b * (1 - ratio) + rgb2.b * ratio);
+    
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+// Helper function to convert hex to RGB (if not already defined)
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : {r: 0, g: 0, b: 0};
+}
+function clearGradient() {
+	gradientContext.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
 }
 //FRAME TAB
 function drawFrames() {
@@ -3503,10 +3679,39 @@ async function drawText() {
 	textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
 	prePTContext.clearRect(0, 0, prePTCanvas.width, prePTCanvas.height);
 	drawTextBetweenFrames = false;
-	for (var textObject of Object.entries(card.text)) {
-		await writeText(textObject[1], textContext);
-		continue;
+	
+	// Check if any textbox has an outline
+	const hasAnyOutlines = Object.values(card.text).some(textObj => 
+		(textObj.outlineWidth || 0) > 0
+	);
+	
+	if (!hasAnyOutlines) {
+		// Simple single-pass rendering
+		for (var textObject of Object.entries(card.text)) {
+			await writeText(textObject[1], textContext);
+			continue;
+		}
+	} else {
+		// Two-pass rendering for outlined text
+		textContext.isOutlinePass = true;
+		textContext.isFillPass = false;
+		for (var textObject of Object.entries(card.text)) {
+			await writeText(textObject[1], textContext);
+			continue;
+		}
+		
+		textContext.isOutlinePass = false;
+		textContext.isFillPass = true;
+		for (var textObject of Object.entries(card.text)) {
+			await writeText(textObject[1], textContext);
+			continue;
+		}
+		
+		// Clean up flags (only needed when we set them)
+		delete textContext.isOutlinePass;
+		delete textContext.isFillPass;
 	}
+	
 	if (drawTextBetweenFrames || redrawFrames) {
 		drawFrames();
 		if (!drawTextBetweenFrames) {
@@ -3532,6 +3737,9 @@ function writeText(textObject, targetContext) {
 	var textManaCost = textObject.manaCost || false;
 	var textAllCaps = textObject.allCaps || false;
 	var textManaSpacing = scaleWidth(textObject.manaSpacing) || 0;
+    // Check for drawing mode flags on the context
+    var isOutlinePass = targetContext.isOutlinePass || false;
+    var isFillPass = targetContext.isFillPass || false;
 	//Buffers the canvases accordingly
 	var canvasMargin = 300;
 	paragraphCanvas.width = textWidth + 2 * canvasMargin;
@@ -4118,7 +4326,8 @@ function writeText(textObject, targetContext) {
 						shadowColor: textShadowColor,
 						shadowOffsetX: textShadowOffsetX,
 						shadowOffsetY: textShadowOffsetY,
-						shadowBlur: textShadowBlur
+						shadowBlur: textShadowBlur,
+						outlineColor: lineContext.strokeStyle
 					});
 					currentX += manaSymbolWidth + manaSymbolSpacing * 2;
 
@@ -4211,7 +4420,8 @@ function writeText(textObject, targetContext) {
 				// First pass: Draw outlines only
 				manaSymbolsToRender.forEach(symbolData => {
 					if (!symbolData.hasOutline) return;
-					outlineContext.fillStyle = 'black';
+					// Use the outline color from the textbox instead of hardcoded 'black'
+					outlineContext.fillStyle = symbolData.outlineColor || 'black';
 					outlineContext.beginPath();
 					var centerX = symbolData.x + symbolData.width/2;
 					var centerY = symbolData.y + symbolData.height/2;
@@ -4336,24 +4546,39 @@ function writeText(textObject, targetContext) {
 					maxSpaceSize: 6,
 					minSpaceSize: 0
 				};
-
+			
 				if (textArcRadius > 0) {
-					lineContext.fillTextArc(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY, textArcRadius, textArcStart, currentX, textOutlineWidth);
+					// For text WITHOUT outline, only draw on fill pass (or if no passes)
+					if (textOutlineWidth <= 0 && isOutlinePass) {
+						// Skip this text during outline pass
+					} else if (textOutlineWidth > 0 && isOutlinePass) {
+						// Draw outline only for arc text
+						lineContext.strokeTextArc(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY, textArcRadius, textArcStart, currentX);
+					} else if (isFillPass || (!isOutlinePass && !isFillPass)) {
+						// Draw fill for arc text (in fill pass OR when not doing multi-pass)
+						lineContext.fillTextArc(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY, textArcRadius, textArcStart, currentX, 0);
+					}
 				} else {
-					if (textOutlineWidth >= 1) {
+					// For text WITHOUT outline, only draw on fill pass (or if no passes)
+					if (textOutlineWidth <= 0 && isOutlinePass) {
+						// Skip this text during outline pass
+					} else if (textOutlineWidth > 0 && isOutlinePass) {
+						// Draw outline only
 						if (fillJustify) {
 							lineContext.strokeJustifyText(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY, justifyWidth, justifySettings);
 						} else {
 							lineContext.strokeText(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY);
 						}
-					}
-					if (fillJustify) {
-						lineContext.fillJustifyText(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY, justifyWidth, justifySettings);
-					} else {
-						lineContext.fillText(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY);
+					} else if (isFillPass || (!isOutlinePass && !isFillPass)) {
+						// Draw fill (in fill pass OR when not doing multi-pass)
+						if (fillJustify) {
+							lineContext.fillJustifyText(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY, justifyWidth, justifySettings);
+						} else {
+							lineContext.fillText(wordToWrite, currentX + canvasMargin, canvasMargin + textSize * textFontHeightRatio + lineY);
+						}
 					}
 				}
-
+			
 				if (fillJustify) {
 					currentX += lineContext.measureJustifiedText(wordToWrite, justifyWidth, justifySettings);
 				} else {
@@ -4412,10 +4637,26 @@ CanvasRenderingContext2D.prototype.fillTextArc = function(text, x, y, radius, st
 	this.rotate(startRotation + widthToAngle(distance, radius));
 	for (var i = 0; i < text.length; i++) {
 		var letter = text[i];
+		// Only draw outline if outlineWidth is specified and > 0
 		if (outlineWidth >= 1) {
 			this.strokeText(letter, 0, -radius);
+		} else {
+			// Only draw fill when outlineWidth is 0
+			this.fillText(letter, 0, -radius);
 		}
-		this.fillText(letter, 0, -radius);
+		this.rotate(widthToAngle(this.measureText(letter).width, radius));
+	}
+	this.restore();
+}
+
+// Add a stroke-only version for arc text
+CanvasRenderingContext2D.prototype.strokeTextArc = function(text, x, y, radius, startRotation, distance = 0) {
+	this.save();
+	this.translate(x - distance + scaleWidth(0.5), y + radius);
+	this.rotate(startRotation + widthToAngle(distance, radius));
+	for (var i = 0; i < text.length; i++) {
+		var letter = text[i];
+		this.strokeText(letter, 0, -radius);
 		this.rotate(widthToAngle(this.measureText(letter).width, radius));
 	}
 	this.restore();
@@ -4595,7 +4836,7 @@ function artEdited() {
 	drawCard();
 }
 function autoFitArt() {
-	document.querySelector('#art-rotate').value = 0;
+        document.querySelector('#art-rotate').value = card.artBounds.rotation || 0;
 	if (art.width / art.height > scaleWidth(card.artBounds.width) / scaleHeight(card.artBounds.height)) {
 		document.querySelector('#art-y').value = Math.round(scaleY(card.artBounds.y) - scaleHeight(card.marginY));
 		document.querySelector('#art-zoom').value = (scaleHeight(card.artBounds.height) / art.height * 100).toFixed(1);
@@ -4765,6 +5006,7 @@ function setSymbolEdited() {
 	card.setSymbolX = document.querySelector('#setSymbol-x').value / card.width;
 	card.setSymbolY = document.querySelector('#setSymbol-y').value / card.height;
 	card.setSymbolZoom = document.querySelector('#setSymbol-zoom').value / 100;
+	card.setSymbolRotate = document.querySelector('#setSymbol-rotate').value || 0;
 	drawCard();
 }
 function resetSetSymbol() {
@@ -4773,6 +5015,7 @@ function resetSetSymbol() {
 	}
 	document.querySelector('#setSymbol-x').value = Math.round(scaleX(card.setSymbolBounds.x));
 	document.querySelector('#setSymbol-y').value = Math.round(scaleY(card.setSymbolBounds.y));
+	document.querySelector('#setSymbol-rotate').value = card.setSymbolBounds.rotation || 0;
 	var setSymbolZoom;
 	if (setSymbol.width / setSymbol.height > scaleWidth(card.setSymbolBounds.width) / scaleHeight(card.setSymbolBounds.height)) {
 		setSymbolZoom = (scaleWidth(card.setSymbolBounds.width) / setSymbol.width * 100).toFixed(1);
@@ -5048,6 +5291,19 @@ function drawSetSymbol(cardContext, setSymbol, bounds) {
     const symbolHeight = setSymbol.height * card.setSymbolZoom; 
     const x = scaleX(card.setSymbolX);
     const y = scaleY(card.setSymbolY);
+    const rotation = card.setSymbolRotate || 0;
+
+    // Save context for rotation
+    cardContext.save();
+    
+    // Apply rotation if needed
+    if (rotation !== 0) {
+        const centerX = x + symbolWidth / 2;
+        const centerY = y + symbolHeight / 2;
+        cardContext.translate(centerX, centerY);
+        cardContext.rotate(Math.PI / 180 * rotation);
+        cardContext.translate(-centerX, -centerY);
+    }
 
     if (bounds.outlineWidth && bounds.outlineWidth > 0) {
         // Create temp canvas for outlined symbol
@@ -5101,6 +5357,7 @@ function drawSetSymbol(cardContext, setSymbol, bounds) {
         // Draw main symbol without outline (simple path)
         cardContext.drawImage(setSymbol, x, y, symbolWidth, symbolHeight);
     }
+    cardContext.restore();
 }
 //DRAWING THE CARD (putting it all together)
 function drawCard() {
@@ -5116,6 +5373,12 @@ function drawCard() {
 	}
 	cardContext.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
 	cardContext.restore();
+	// Add gradient here - after art but before frames
+	cardContext.drawImage(gradientCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+	// Add divider gradient if it exists (for minimalist version)
+	if (card.dividerCanvas && card.version === 'Minimalist') {
+		cardContext.drawImage(card.dividerCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
+	}
 	// frame elements
 	if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
 		cardContext.drawImage(planeswalkerPreFrameCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
@@ -5207,7 +5470,7 @@ function drawCard() {
 	// cutout the corners
 	cardContext.globalCompositeOperation = 'destination-out';
 	if (!card.noCorners && (card.marginX == 0 && card.marginY == 0)) {
-		var w = card.version == 'battle' ? 2100 : getStandardWidth();
+		var w = getStandardWidth();
 
 		cardContext.drawImage(corner, 0, 0, scaleWidth(59/w), scaleWidth(59/w));
 		cardContext.rotate(Math.PI / 2);
@@ -5257,6 +5520,1142 @@ function downloadCard(alt = false, jpeg = false) {
 		}
 	}
 }
+
+// Helper to parse color string to RGB object
+function parseColorToRGB(color) {
+	if (color.startsWith('#')) {
+		const hex = color.slice(1);
+		return {
+			r: parseInt(hex.substr(0, 2), 16),
+			g: parseInt(hex.substr(2, 2), 16),
+			b: parseInt(hex.substr(4, 2), 16)
+		};
+	}
+	const colorMap = {
+		'black': { r: 0, g: 0, b: 0 },
+		'white': { r: 255, g: 255, b: 255 },
+		'red': { r: 255, g: 0, b: 0 },
+		'blue': { r: 0, g: 0, b: 255 },
+	};
+	return colorMap[color] || { r: 0, g: 0, b: 0 };
+}
+
+// Exports the current card as a layered PSD file with masks, frames, text, and art
+async function downloadCardAsPSD() {
+	const startTime = performance.now();
+	
+	if (card.infoArtist.replace(/ /g, '') == '' && !card.artSource.includes('/img/blank.png') && !card.artZoom == 0) {
+		notify('You must credit an artist before downloading!', 5);
+		return;
+	}
+
+	// Check if ag-psd library is loaded
+	if (typeof agPsd === 'undefined') {
+		notify('PSD export failed: Library still loading. Try again in a moment.', 3);
+		console.error('ag-psd library not loaded');
+		return;
+	}
+
+	try {
+		// Use actual canvas dimensions which include margins
+		const psdWidth = cardCanvas.width;
+		const psdHeight = cardCanvas.height;
+		
+		// Set appropriate PPI based on whether margins are included
+		const hasMargins = card.marginX > 0 || card.marginY > 0;
+		const targetPPI = hasMargins ? 804.04 : 810.48;  // Lower PPI with margins, higher without
+		
+		// Define Y offset multipliers for each text field
+		const textOffsets = {
+			'title': 0.95,
+			'type': 1.1,
+			'rules': 0.999,
+			'pt': 0.80,
+			'mana': 0.8,
+			'default': 0.95  // fallback for unlisted fields
+		};
+
+		// Define X offset for each text field (in pixels)
+		const textXOffsets = {
+			'pt': +10,
+			'default': 0
+		};
+		
+		// Create PSD structure with metadata
+		const psd = {
+			width: psdWidth,
+			height: psdHeight,
+			channels: 3,  // RGB
+			bitsPerChannel: 8,
+			colorMode: 3, // ColorMode.RGB (from ag-psd)
+			children: [],
+			// Add image resources for proper color profile and resolution metadata
+			imageResources: {
+				resolutionInfo: {
+					horizontalResolution: targetPPI,
+					horizontalResolutionUnit: 'PPI',
+					widthUnit: 'Inches',
+					verticalResolution: targetPPI,
+					verticalResolutionUnit: 'PPI',
+					heightUnit: 'Inches'
+				},
+				// Add pixel aspect ratio (square pixels)
+				pixelAspectRatio: {
+					aspect: 1.0
+				},
+				// Add print scale
+				printScale: {
+					style: 0,
+					x: 1.0,
+					y: 1.0,
+					scale: 1.0
+				}
+			}
+		};
+
+		// Helper to create common layer properties
+		const createLayerBase = (name, canvas, opacity = 1, blendMode = 'normal') => ({
+			name,
+			canvas,
+			left: 0,
+			top: 0,
+			right: psdWidth,
+			bottom: psdHeight,
+			opacity,
+			blendMode
+		});
+
+		// Helper to create a canvas sized to PSD dimensions
+		const createCanvas = () => {
+			const canvas = document.createElement('canvas');
+			canvas.width = psdWidth;
+			canvas.height = psdHeight;
+			return { canvas, ctx: canvas.getContext('2d') };
+		};
+
+		// Helper to check if text field is rules text
+		const checkIsRulesText = (key, textObject) => 
+			key === 'rules' || (textObject?.name?.toLowerCase().includes('rules')) || (textObject?.name?.toLowerCase() === 'case');
+
+		// Helper to check if layer is editable
+		const isEditableLayer = (layer) => layer.name?.includes('(Editable)');
+
+		// Helper to get scaled bounds from a bounds object
+		const getScaledBounds = (bounds) => ({
+			x: Math.round(scaleX(bounds?.x || 0)),
+			y: Math.round(scaleY(bounds?.y || 0)),
+			width: Math.round(scaleWidth(bounds?.width || 1)),
+			height: Math.round(scaleHeight(bounds?.height || 1))
+		});
+
+		// Helper to get scaled text box coordinates
+		const getScaledTextBounds = (textObject) => ({
+			x: scaleX(textObject?.x || 0),
+			y: scaleY(textObject?.y || 0),
+			width: scaleWidth(textObject?.width || 1),
+			height: scaleHeight(textObject?.height || 1)
+		});
+
+		// Add art layer only if art is present
+		if (!card.artSource.includes('/img/blank.png') && card.artZoom > 0) {
+			const { canvas: artCanvas, ctx: artCtx } = createCanvas();
+			artCtx.save();
+			artCtx.translate(scaleX(card.artX), scaleY(card.artY));
+			artCtx.rotate(Math.PI / 180 * (card.artRotate || 0));
+			if (document.querySelector('#grayscale-art').checked) {
+				artCtx.filter = 'grayscale(1)';
+			}
+			artCtx.drawImage(art, 0, 0, art.width * card.artZoom, art.height * card.artZoom);
+			artCtx.restore();
+			
+			psd.children.push(createLayerBase('Art', artCanvas));
+		}
+
+		// Create frame group with all frame layers inside
+		const frameGroup = {
+			name: 'Frame',
+			children: [],
+			opened: false
+		};
+
+		// Add planeswalker pre-frame canvas (if version is planeswalker)
+		if (card.version.includes('planeswalker') && typeof planeswalkerPreFrameCanvas !== "undefined") {
+			const { canvas: pwPreFrameCanvas, ctx: pwPreFrameCtx } = createCanvas();
+			pwPreFrameCtx.drawImage(planeswalkerPreFrameCanvas, 0, 0, psdWidth, psdHeight);
+			frameGroup.children.push(createLayerBase('Planeswalker Pre-Frame', pwPreFrameCanvas));
+		}
+
+		// Add Minimalist gradient to frame group (if version is Minimalist)
+		if (card.version === 'Minimalist' && gradientCanvas && card.gradientOptions) {
+			const { canvas: minimalistGradientCanvas, ctx: minimalistGradientCtx } = createCanvas();
+			minimalistGradientCtx.drawImage(gradientCanvas, 0, 0, psdWidth, psdHeight);
+			frameGroup.children.push(createLayerBase('Minimalist Gradient', minimalistGradientCanvas));
+		}
+
+		// Add Minimalist divider to frame group (if version is Minimalist)
+		if (card.version === 'Minimalist' && card.dividerCanvas) {
+			// Create divider layer
+			if (window.drawDividerBar && window.getDividerColors) {
+				const { canvas: dividerCanvas, ctx: dividerCtx } = createCanvas();
+				
+				// Temporarily set card.dividerContext to our new context
+				const originalDividerContext = card.dividerContext;
+				card.dividerContext = dividerCtx;
+				
+				// Draw only divider bar
+				const { colorsToUse, colorCount } = window.getDividerColors();
+				window.drawDividerBar(colorsToUse, colorCount);
+				
+				// Restore original context
+				card.dividerContext = originalDividerContext;
+				
+				frameGroup.children.push(createLayerBase('Minimalist Divider', dividerCanvas));
+			}
+		}
+
+		// Helper function to create a PSD mask object from ImageData
+		const createPSDMask = (imageData) => ({
+			top: 0,
+			left: 0,
+			bottom: psdHeight,
+			right: psdWidth,
+			defaultColor: 255,
+			imageData,
+			disabled: false,
+			positionRelativeToLayer: false,
+			fromVectorData: false
+		});
+
+		// Helper function to combine multiple masks by multiplying them together
+		const multiplyMasks = (mask1Data, mask2Data) => {
+			const { canvas, ctx } = createCanvas();
+			ctx.putImageData(mask1Data, 0, 0);
+			
+			const { canvas: tempCanvas } = createCanvas();
+			tempCanvas.getContext('2d').putImageData(mask2Data, 0, 0);
+			
+			ctx.globalCompositeOperation = 'multiply';
+			ctx.drawImage(tempCanvas, 0, 0);
+			return ctx.getImageData(0, 0, psdWidth, psdHeight);
+		};
+
+		// Helper to calculate mask transform coordinates
+		const getMaskTransform = (bounds, ogBounds) => ({
+			x: scaleX((bounds.x || 0) - (ogBounds.x || 0) - ((ogBounds.x || 0) * ((bounds.width || 1) / (ogBounds.width || 1) - 1))),
+			y: scaleY((bounds.y || 0) - (ogBounds.y || 0) - ((ogBounds.y || 0) * ((bounds.height || 1) / (ogBounds.height || 1) - 1))),
+			w: scaleWidth((bounds.width || 1) / (ogBounds.width || 1)),
+			h: scaleHeight((bounds.height || 1) / (ogBounds.height || 1))
+		});
+
+	// Helper to apply masks to a canvas context
+	const applyMasksToFrame = (ctx, frame) => {
+		const bounds = frame.bounds || {};
+		const ogBounds = frame.ogBounds || bounds;
+		const { x, y, width, height } = getScaledBounds(bounds);
+		const transform = getMaskTransform(bounds, ogBounds);
+		
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.drawImage(frame.image, x, y, width, height);
+		ctx.globalCompositeOperation = 'destination-in';
+		frame.masks.forEach(mask => ctx.drawImage(mask.image, transform.x, transform.y, transform.w, transform.h));
+	};		// Helper to convert alpha to inverted grayscale mask
+		const alphaToInvertedMask = (imageData) => {
+			const pixels = imageData.data;
+			for (let i = 0; i < pixels.length; i += 4) {
+				const maskValue = 255 - pixels[i + 3]; // Invert alpha
+				pixels[i] = pixels[i + 1] = pixels[i + 2] = maskValue;
+				pixels[i + 3] = 255;
+			}
+			return imageData;
+		};
+
+		// Process frames from bottom to top and collect all layers first
+		const reversedFrames = card.frames.slice().reverse();
+		const frameLayers = [];
+		const eraseMasks = [];
+		const ptLayers = [];
+		const crownLayers = [];
+			
+		// First pass: create all frame layers and identify erase layers
+		for (let index = 0; index < reversedFrames.length; index++) {
+			const frame = reversedFrames[index];
+			
+		if (frame.erase && frame.image) {
+			// Create erase mask
+			const { canvas: eraseCanvas, ctx: eraseCtx } = createCanvas();
+			
+		
+		const bounds = frame.bounds || {};
+		const ogBounds = frame.ogBounds || bounds;
+		
+		applyMasksToFrame(eraseCtx, frame);
+			
+			// Apply HSL adjustments if needed
+			if (frame.hslHue || frame.hslSaturation || frame.hslLightness) {
+				hsl(eraseCanvas, frame.hslHue || 0, frame.hslSaturation || 0, frame.hslLightness || 0);
+			}				// Convert alpha to inverted grayscale mask
+				eraseCtx.putImageData(alphaToInvertedMask(eraseCtx.getImageData(0, 0, psdWidth, psdHeight)), 0, 0);
+				
+				// Store the erase mask along with the frame's mask info for later combination
+				eraseMasks.push({ 
+					index, 
+					canvas: eraseCanvas,
+					frameMasks: frame.masks || [],
+					bounds,
+					ogBounds
+				});
+				continue; // Skip creating a regular frame layer for erase frames
+			}
+			
+			// Create regular frame layer
+			const { canvas: frameCanvas, ctx: frameCtx } = createCanvas();
+			
+		if (frame.image) {
+			const bounds = frame.bounds || {};
+			const ogBounds = frame.ogBounds || bounds;
+			const { x, y, width, height } = getScaledBounds(bounds);
+			
+			const { canvas: tempMaskCanvas, ctx: tempMaskCtx } = createCanvas();				tempMaskCtx.globalCompositeOperation = 'source-over';
+				tempMaskCtx.drawImage(black, 0, 0, psdWidth, psdHeight);
+				
+				const transform = getMaskTransform(bounds, ogBounds);
+				tempMaskCtx.globalCompositeOperation = 'source-in';
+				frame.masks.forEach(mask => tempMaskCtx.drawImage(mask.image, transform.x, transform.y, transform.w, transform.h));
+				tempMaskCtx.drawImage(frame.image, x, y, width, height);
+				
+				frameCtx.drawImage(tempMaskCanvas, 0, 0);
+			}
+			
+			// Build layer name with mask names if they exist
+			const maskNames = frame.masks?.map(m => m.name).filter(n => n && !n.toLowerCase().includes('mask')).join(', ');
+			const layerName = (frame.name || `Frame ${index + 1}`) + (maskNames ? `, ${maskNames}` : '');
+
+			const layerData = {
+				index,
+				name: layerName,
+				canvas: frameCanvas,
+				opacity: (frame.opacity || 100) / 100,
+				blendMode: convertBlendMode(frame.mode),
+				colorOverlay: frame.colorOverlayCheck ? frame.colorOverlay : null,
+				hslHue: frame.hslHue || 0,
+				hslSaturation: frame.hslSaturation || 0,
+				hslLightness: frame.hslLightness || 0,
+				frameData: {
+					image: frame.image,
+					bounds: frame.bounds || {},
+					ogBounds: frame.ogBounds || frame.bounds || {},
+					masks: frame.masks || []
+				}
+			};
+			
+			// Categorize layers into PT, Crown, or regular frame layers
+			const name = frame.name?.toLowerCase() || '';
+			if (name.includes('power/toughness')) ptLayers.push(layerData);
+			else if (name.includes('crown')) crownLayers.push(layerData);
+			else frameLayers.push(layerData);
+		}
+
+	// Helper function to create a combined mask from all frame masks (including half masks)
+	const createCombinedFrameMask = (frame, psdWidth, psdHeight, invert = false) => {
+		if (!frame.masks?.length) return null;
+		
+		const { canvas: maskCanvas, ctx: maskCtx } = createCanvas();
+		
+		// Start with white (fully visible)
+		maskCtx.fillStyle = 'white';
+		maskCtx.fillRect(0, 0, psdWidth, psdHeight);
+		maskCtx.globalCompositeOperation = 'multiply';
+		
+		const bounds = frame.bounds || {};
+		const ogBounds = frame.ogBounds || bounds;
+		const transform = getMaskTransform(bounds, ogBounds);
+		
+		// Create reusable temp canvas outside the loop
+		const { canvas: tempCanvas, ctx: tempCtx } = createCanvas();
+		
+		// Apply each mask
+		frame.masks.forEach(mask => {
+			// Clear and draw mask, convert alpha to grayscale (optionally inverted)
+			tempCtx.clearRect(0, 0, psdWidth, psdHeight);
+			tempCtx.drawImage(mask.image, transform.x, transform.y, transform.w, transform.h);
+			const tempData = tempCtx.getImageData(0, 0, psdWidth, psdHeight);
+			const pixels = tempData.data;
+			
+			for (let i = 0; i < pixels.length; i += 4) {
+				pixels[i] = pixels[i + 1] = pixels[i + 2] = invert ? 255 - pixels[i + 3] : pixels[i + 3];
+				pixels[i + 3] = 255;
+			}
+			
+			tempCtx.putImageData(tempData, 0, 0);
+			maskCtx.drawImage(tempCanvas, 0, 0);
+		});
+		
+		return maskCtx.getImageData(0, 0, psdWidth, psdHeight);
+	};
+
+	// Second pass: apply erase masks to all layers before them
+	const allLayers = [...ptLayers, ...crownLayers, ...frameLayers];
+
+	allLayers.forEach(layer => {
+		const applicableEraseMasks = eraseMasks.filter(erase => erase.index > layer.index);
+		if (applicableEraseMasks.length === 0) return;
+		
+		// Quick check: does this layer have any content?
+		const layerCtx = layer.canvas.getContext('2d');
+		const layerData = layerCtx.getImageData(0, 0, psdWidth, psdHeight);
+		const layerPixels = layerData.data;
+		
+		const layerHasContent = layerPixels.some((_, i) => i % 4 === 3 && layerPixels[i] > 0);
+		if (!layerHasContent) return;
+		
+		// Combine all applicable erase masks
+		const { canvas: combinedMaskCanvas, ctx: combinedMaskCtx } = createCanvas();
+		
+		// Start with white (fully visible)
+		combinedMaskCtx.fillStyle = 'white';
+		combinedMaskCtx.fillRect(0, 0, psdWidth, psdHeight);
+		
+		// Apply each erase layer by multiplying
+		applicableEraseMasks.forEach(erase => {
+			// Use frame masks if present (inverted for erase), otherwise use erase canvas
+			const eraseMaskData = erase.frameMasks?.length > 0
+				? createCombinedFrameMask({ masks: erase.frameMasks, bounds: erase.bounds, ogBounds: erase.ogBounds }, psdWidth, psdHeight, true)
+				: erase.canvas.getContext('2d').getImageData(0, 0, psdWidth, psdHeight);
+			
+			const erasePixels = eraseMaskData.data;
+			const combinedData = combinedMaskCtx.getImageData(0, 0, psdWidth, psdHeight);
+			const combinedPixels = combinedData.data;
+			
+			for (let i = 0; i < combinedPixels.length; i += 4) {
+				const finalValue = (combinedPixels[i] / 255) * (erasePixels[i] / 255) * 255;
+				combinedPixels[i] = combinedPixels[i + 1] = combinedPixels[i + 2] = finalValue;
+			}
+			
+			combinedMaskCtx.putImageData(combinedData, 0, 0);
+		});
+		
+		// Check if mask actually affects this layer
+		const finalMaskData = combinedMaskCtx.getImageData(0, 0, psdWidth, psdHeight);
+		const finalMaskPixels = finalMaskData.data;
+		
+		const maskAffectsLayer = finalMaskPixels.some((_, i) => 
+			i % 4 === 0 && layerPixels[i + 3] > 0 && finalMaskPixels[i] < 255
+		);
+		
+		if (maskAffectsLayer) {
+			layer.mask = createPSDMask(finalMaskData);
+		}
+	});
+
+	// Helper function to add layer with optional color overlay and HSL adjustment clipping masks
+	const addLayerWithColorOverlay = (layer, targetArray) => {
+			// Determine if we need to recreate the full frame
+			const hasFrameMasks = layer.frameData?.masks?.length > 0;
+			let fullFrameCanvas = layer.canvas;
+			let combinedMaskData = null;
+			
+		// If we have frame masks, draw the full frame and create combined mask
+		if (hasFrameMasks) {
+			const { canvas, ctx } = createCanvas();
+			fullFrameCanvas = canvas;
+			
+			const { bounds = {}, ogBounds = bounds, image } = layer.frameData;
+			if (image) {
+				const { x, y, width, height } = getScaledBounds(bounds);
+				ctx.drawImage(image, x, y, width, height);
+			}
+			
+			combinedMaskData = createCombinedFrameMask(layer.frameData, psdWidth, psdHeight);
+		}			// Combine frame mask with erase mask if both exist
+			if (combinedMaskData && layer.mask) {
+				combinedMaskData = multiplyMasks(combinedMaskData, layer.mask.imageData);
+			} else if (layer.mask) {
+				combinedMaskData = layer.mask.imageData;
+			}
+			
+			// Create and add base layer
+			const baseLayer = createLayerBase(layer.name, fullFrameCanvas, layer.opacity, layer.blendMode);
+			if (combinedMaskData) baseLayer.mask = createPSDMask(combinedMaskData);
+			targetArray.push(baseLayer);
+			
+			// Add HSL adjustment layer if needed
+			if (layer.hslHue || layer.hslSaturation || layer.hslLightness) {
+				const { canvas: hslCanvas, ctx: hslCtx } = createCanvas();
+				hslCtx.drawImage(fullFrameCanvas, 0, 0);
+				hsl(hslCanvas, layer.hslHue || 0, layer.hslSaturation || 0, layer.hslLightness || 0);
+				
+				const hslLabel = [
+					layer.hslHue && `H:${layer.hslHue > 0 ? '+' : ''}${layer.hslHue}`,
+					layer.hslSaturation && `S:${layer.hslSaturation > 0 ? '+' : ''}${layer.hslSaturation}`,
+					layer.hslLightness && `L:${layer.hslLightness > 0 ? '+' : ''}${layer.hslLightness}`
+				].filter(Boolean).join(', ');
+				
+				targetArray.push({
+					...createLayerBase(`${layer.name} HSL Adjustment [${hslLabel}]`, hslCanvas),
+					clipping: true
+				});
+			}
+			
+			// Add color overlay layer if needed
+			if (layer.colorOverlay) {
+				const { canvas: colorCanvas, ctx: colorCtx } = createCanvas();
+				colorCtx.fillStyle = layer.colorOverlay;
+				colorCtx.fillRect(0, 0, psdWidth, psdHeight);
+				
+				targetArray.push({
+					...createLayerBase(`${layer.name} Color Overlay`, colorCanvas),
+					clipping: true
+				});
+			}
+		};
+
+		// Add regular frame layers last
+		frameLayers.forEach(layer => {
+			addLayerWithColorOverlay(layer, frameGroup.children);
+		});
+
+		// Store station text layers to add to text group later
+		const stationTextLayers = [];
+
+		// Add station squares after frame layers (so they appear on top)
+		if (card.version.toLowerCase().includes('station') && card.station && card.station.squares) {
+			// Draw square 2 (bottom square) first
+			const square2 = card.station.squares[2];
+			if (square2.enabled && card.text?.ability2) {
+				const { canvas: square2Canvas, ctx: square2Ctx } = createCanvas();
+				const basePos = card.station.baseTextPositions?.ability2;
+				if (basePos) {
+					const squareX = scaleX(basePos.x) + (square2.x - 214);
+					const squareY = scaleY(basePos.y) + square2.y;
+					
+					square2Ctx.fillStyle = square2.color;
+					square2Ctx.globalAlpha = 1; // Full opacity in canvas
+					square2Ctx.fillRect(squareX, squareY, square2.width, square2.height);
+					
+					// Add with layer opacity set to the square's opacity
+					frameGroup.children.push(createLayerBase('Station Square 2', square2Canvas, square2.opacity || 1));
+				}
+			}
+			
+			// Draw square 1 (top square) second
+			const square1 = card.station.squares[1];
+			if (square1.enabled && card.text?.ability1 && !card.station.disableFirstAbility) {
+				const { canvas: square1Canvas, ctx: square1Ctx } = createCanvas();
+				const basePos = card.station.baseTextPositions?.ability1;
+				if (basePos) {
+					const squareX = scaleX(basePos.x) + (square1.x - 214);
+					const squareY = scaleY(basePos.y) + square1.y;
+					
+					square1Ctx.fillStyle = square1.color;
+					square1Ctx.globalAlpha = 1; // Full opacity in canvas
+					square1Ctx.fillRect(squareX, squareY, square1.width, square1.height);
+					
+					// Add with layer opacity set to the square's opacity
+					frameGroup.children.push(createLayerBase('Station Square 1', square1Canvas, square1.opacity || 1));
+				}
+			}
+		}
+
+	// Add PT layers group second if there are any (or if it's a station card with PT)
+	const hasStationPT = card.version.toLowerCase().includes('station') && card.station && card.text?.pt?.text?.trim() && typeof stationPTImage !== "undefined";
+	
+	if (ptLayers.length > 0 || hasStationPT || (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness)) {
+		const ptChildren = [];			// Add Minimalist P/T symbols to the PT group (if version is Minimalist)
+			if (card.version === 'Minimalist' && card.dividerCanvas && window.drawPTSymbols && card.text.power && card.text.toughness) {
+				const { canvas: ptSymbolsCanvas, ctx: ptSymbolsCtx } = createCanvas();
+				
+				// Temporarily set card.dividerContext to our new context
+				const originalDividerContext = card.dividerContext;
+				card.dividerContext = ptSymbolsCtx;
+				
+				// Draw only P/T symbols
+				window.drawPTSymbols();
+				
+				// Restore original context
+				card.dividerContext = originalDividerContext;
+				
+				ptChildren.push(createLayerBase('Minimalist P/T Symbols', ptSymbolsCanvas));
+			}
+			
+			// Add regular PT layers
+			ptLayers.forEach(layer => {
+				addLayerWithColorOverlay(layer, ptChildren);
+			});
+			
+			
+			// Add station PT box directly to PT children if it exists
+			if (hasStationPT) {
+				const getStationPosition = (type, index, key, settings) => {
+					const square = card.station.squares[index];
+					const basePos = card.station.baseTextPositions?.[key];
+					if (!basePos) return null;
+					
+					const squareX = scaleX(basePos.x) + (square.x - 214);
+					const squareY = scaleY(basePos.y) + square.y;
+					const elementX = type === 'pt' ? squareX + square.width + (settings.x - 266) : squareX + (settings.x || -81);
+					const elementY = squareY + (square.height / 2) + (settings.y || 0);
+					
+					return { elementX, elementY, settings };
+				};
+				
+				// Extract color from PT image
+				const getColorFromSrc = (imageSrc) => {
+					if (!imageSrc) return '';
+					// Match /badges/w.png or /pt/u.png pattern
+					const match = imageSrc.match(/\/(badges|pt)\/([a-z])\.png/i);
+					if (match) {
+						const colorCode = match[2].toLowerCase();
+						const colorMap = {
+							'w': 'White', 'u': 'Blue', 'b': 'Black', 'r': 'Red', 'g': 'Green',
+							'm': 'Multicolored', 'a': 'Artifact', 'c': 'Colorless', 'l': 'Land'
+						};
+						return (colorMap[colorCode] || '') ? colorMap[colorCode] + ' ' : '';
+					}
+					return '';
+				};
+				
+				const ptColor = getColorFromSrc(stationPTImage?.src);
+				
+				const pos = getStationPosition('pt', 2, 'ability2', card.station.ptSettings);
+				if (pos) {
+					const { canvas: boxCanvas, ctx: boxCtx } = createCanvas();
+					if (stationPTImage?.complete && stationPTImage.naturalWidth > 0) {
+						boxCtx.drawImage(stationPTImage, pos.elementX, pos.elementY - (pos.settings.height / 2), pos.settings.width, pos.settings.height);
+					}
+					ptChildren.push(createLayerBase(`${ptColor}Station PT`, boxCanvas));
+					
+					const { canvas: textCanvas, ctx: textCtx } = createCanvas();
+					textCtx.font = scaleHeight(pos.settings.fontSize) + 'px belerenbsc';
+					textCtx.fillStyle = 'white';
+					textCtx.textAlign = 'center';
+					textCtx.textBaseline = 'middle';
+					textCtx.fillText(card.text.pt.text, pos.elementX + (pos.settings.width / 2) + 3, pos.elementY + 7);
+					stationTextLayers.push(createLayerBase('Station PT', textCanvas));
+				}
+			}
+			
+			frameGroup.children.push({
+				name: 'Power/Toughness Box',
+				children: ptChildren,
+				opened: false
+			});
+		}
+		
+		// Store station badges to add after PT but before crowns
+		let stationBadgesGroup = null;
+
+		// Add planeswalker post-frame canvas (if version is planeswalker)
+		if (card.version.toLowerCase().includes('planeswalker')) {
+			if (typeof planeswalkerPostFrameCanvas !== "undefined") {
+				const { canvas: pwPostFrameCanvas, ctx: pwPostFrameCtx } = createCanvas();
+				pwPostFrameCtx.drawImage(planeswalkerPostFrameCanvas, 0, 0, psdWidth, psdHeight);
+				frameGroup.children.push(createLayerBase('Planeswalker Post-Frame', pwPostFrameCanvas));
+			} else if (typeof planeswalkerCanvas !== "undefined") {
+				// Fallback for older planeswalker canvas
+				const { canvas: pwCanvas, ctx: pwCtx } = createCanvas();
+				pwCtx.drawImage(planeswalkerCanvas, 0, 0, psdWidth, psdHeight);
+				frameGroup.children.push(createLayerBase('Planeswalker Frame', pwCanvas));
+			}
+		} else if (card.version.toLowerCase().includes('station') && card.station && typeof stationBadgeImage !== "undefined" && typeof stationPTImage !== "undefined") {
+			// For station cards, separate badges and PT boxes from their text
+			
+			// Extract color from image sources
+			const getColorFromSrc = (imageSrc) => {
+				if (!imageSrc) return '';
+				// Match /badges/w.png or /pt/u.png pattern
+				const match = imageSrc.match(/\/(badges|pt)\/([a-z])\.png/i);
+				if (match) {
+					const colorCode = match[2].toLowerCase();
+					const colorMap = {
+						'w': 'White', 'u': 'Blue', 'b': 'Black', 'r': 'Red', 'g': 'Green',
+						'm': 'Multicolored', 'a': 'Artifact', 'c': 'Colorless', 'l': 'Land'
+					};
+					return (colorMap[colorCode] || '') ? colorMap[colorCode] + ' ' : '';
+				}
+				return '';
+			};
+			
+			const badgeColor = getColorFromSrc(stationBadgeImage?.src);
+			const ptColor = getColorFromSrc(stationPTImage?.src);
+			
+			const getStationPosition = (type, index, key, settings) => {
+				const square = card.station.squares[index];
+				const basePos = card.station.baseTextPositions?.[key];
+				if (!basePos) return null;
+				
+				const squareX = scaleX(basePos.x) + (square.x - 214);
+				const squareY = scaleY(basePos.y) + square.y;
+				const elementX = type === 'pt' ? squareX + square.width + (settings.x - 266) : squareX + (settings.x || -81);
+				const elementY = squareY + (square.height / 2) + (settings.y || 0);
+				
+				return { elementX, elementY, settings };
+			};
+			
+			const stationBadges = [];
+			
+			// Badge 2 text and box
+			if (card.station.badgeValues?.[2]?.trim() && /\d/.test(card.station.badgeValues[2])) {
+				const pos = getStationPosition('badge', 2, 'ability2', card.station.badgeSettings);
+				if (pos) {
+					const { canvas: textCanvas, ctx: textCtx } = createCanvas();
+					textCtx.font = scaleHeight(pos.settings.fontSize) + 'px belerenbsc';
+					textCtx.fillStyle = 'white';
+					textCtx.textAlign = 'center';
+					textCtx.textBaseline = 'middle';
+					textCtx.fillText(card.station.badgeValues[2], pos.elementX + (pos.settings.width / 2) + 3, pos.elementY + 5);
+					stationTextLayers.push(createLayerBase('Station Badge 2', textCanvas));
+					
+					const { canvas: boxCanvas, ctx: boxCtx } = createCanvas();
+					if (stationBadgeImage?.complete && stationBadgeImage.naturalWidth > 0) {
+						boxCtx.drawImage(stationBadgeImage, pos.elementX, pos.elementY - (pos.settings.height / 2), pos.settings.width, pos.settings.height);
+					}
+					stationBadges.push(createLayerBase(`${badgeColor}Station Badge 2`, boxCanvas));
+				}
+			}
+			
+			// Badge 1 text and box
+			if (card.station.badgeValues?.[1]?.trim() && /\d/.test(card.station.badgeValues[1])) {
+				const pos = getStationPosition('badge', 1, 'ability1', card.station.badgeSettings);
+				if (pos) {
+					const { canvas: textCanvas, ctx: textCtx } = createCanvas();
+					textCtx.font = scaleHeight(pos.settings.fontSize) + 'px belerenbsc';
+					textCtx.fillStyle = 'white';
+					textCtx.textAlign = 'center';
+					textCtx.textBaseline = 'middle';
+					textCtx.fillText(card.station.badgeValues[1], pos.elementX + (pos.settings.width / 2) + 3, pos.elementY + 5);
+					stationTextLayers.push(createLayerBase('Station Badge 1', textCanvas));
+					
+					const { canvas: boxCanvas, ctx: boxCtx } = createCanvas();
+					if (stationBadgeImage?.complete && stationBadgeImage.naturalWidth > 0) {
+						boxCtx.drawImage(stationBadgeImage, pos.elementX, pos.elementY - (pos.settings.height / 2), pos.settings.width, pos.settings.height);
+					}
+					stationBadges.push(createLayerBase(`${badgeColor}Station Badge 1`, boxCanvas));
+				}
+			}
+			
+			// Store badges subgroup to add after crowns
+			if (stationBadges.length > 0) {
+				stationBadgesGroup = {
+					name: 'Badges',
+					children: stationBadges,
+					opened: false
+				};
+			}
+		}
+		
+		// Add station badges group if it exists
+		if (stationBadgesGroup) {
+			frameGroup.children.push(stationBadgesGroup);
+		}
+
+		// Add Crown layers group if there are any
+		if (crownLayers.length > 0) {
+			const crownChildren = [];
+			crownLayers.forEach(layer => {
+				addLayerWithColorOverlay(layer, crownChildren);
+			});
+			frameGroup.children.push({
+				name: 'Crowns',
+				children: crownChildren,
+				opened: false
+			});
+		}
+
+		// Add saga canvas (if version is saga)
+		if (card.version.toLowerCase().includes('saga') && typeof sagaCanvas !== "undefined") {
+			const { canvas: sagaFrameCanvas, ctx: sagaFrameCtx } = createCanvas();
+			sagaFrameCtx.drawImage(sagaCanvas, 0, 0, psdWidth, psdHeight);
+			frameGroup.children.push(createLayerBase('Saga Frame', sagaFrameCanvas));
+		} else if (card.version.includes('class') && !card.version.includes('classic') && typeof classCanvas !== "undefined") {
+			// Add class canvas (alternative to saga)
+			const { canvas: classFrameCanvas, ctx: classFrameCtx } = createCanvas();
+			classFrameCtx.drawImage(classCanvas, 0, 0, psdWidth, psdHeight);
+			frameGroup.children.push(createLayerBase('Class Frame', classFrameCanvas));
+		}
+
+		// Add the frame group to the PSD only if it has children
+		if (frameGroup.children.length > 0) {
+			psd.children.push(frameGroup);
+		}
+
+		// Add watermark layer (after frames, before set symbol if one is present)
+		if (!card.watermarkSource.includes('/img/blank.png') && card.watermarkZoom > 0) {
+			// Store current opacity
+			const originalOpacity = card.watermarkOpacity;
+			
+			// Temporarily set to full opacity
+			card.watermarkOpacity = 1;
+			document.querySelector('#watermark-opacity').value = 100;
+			
+			// Redraw watermark at full opacity
+			watermarkEdited();
+			
+			// Create a canvas with the full opacity watermark
+			const { canvas: fullOpacityWatermarkCanvas, ctx: fullOpacityWatermarkCtx } = createCanvas();
+			fullOpacityWatermarkCtx.drawImage(watermarkCanvas, 0, 0);
+			
+			// Restore original opacity in UI and card object
+			card.watermarkOpacity = originalOpacity;
+			document.querySelector('#watermark-opacity').value = originalOpacity * 100;
+			watermarkEdited();
+			
+			// Add to PSD with correct layer opacity
+			psd.children.push(createLayerBase('Watermark', fullOpacityWatermarkCanvas, originalOpacity));
+		}
+
+		// Create text group with individual text fields AND editable text layers
+		const textGroup = {
+			name: 'Text',
+			children: []
+		};
+
+		// Track flavor divider position during text rendering
+		let actualFlavorDividerY = null;
+
+		// Font name mapping (shared across all text fields)
+		const fontMap = {
+			'mplantin': 'MPlantin',
+			'mplantini': 'MPlantin-It',
+			'belerenb': 'Beleren-Bold',
+			'beleren': 'Beleren',
+			'belerenbsc': 'BelerenSmallCaps-Bold',
+			'matrix': 'MatrixBoldSmallCaps',
+			'matrixb': 'MatrixBoldSmallCaps',
+			'gothammedium': 'GothamMedium',
+			'gothambold': 'GothamBold',
+			'goudymedieval': 'GoudyMediaeval',
+		};
+
+		// Render each text field separately with BOTH raster and editable text
+		// Reverse the order so layers appear in reverse (last text field at bottom)
+		const textEntries = Object.entries(card.text).reverse();
+		for (const [key, textObject] of textEntries) {
+			// Skip empty text fields entirely
+			if (!textObject.text || !textObject.text.trim()) {
+				continue;
+			}
+			
+			// Check if this text has flavor text - we'll capture the actual position during rendering
+			const hasFlavorBar = textObject.text && (textObject.text.includes('{flavor}') || textObject.text.includes('{bar}'));
+
+			// Create raster text canvas (with mana symbols)
+			const { canvas: textFieldCanvas, ctx: textFieldCtx } = createCanvas();
+			
+			// Render this specific text field
+			await writeText(textObject, textFieldCtx);
+			
+			// If this field had a flavor bar, scan the canvas to find where it was actually drawn
+			if (hasFlavorBar && card.showsFlavorBar) {
+				const imageData = textFieldCtx.getImageData(0, 0, psdWidth, psdHeight);
+				
+				// Scan for the flavor bar (look for non-transparent pixels in likely Y range)
+				const { y: textBoxY, height: textBoxHeight } = getScaledTextBounds(textObject);
+				const fontSize = scaleHeight(textObject.size || 0.038);
+				
+				// Search within the text box area, starting from bottom
+				const searchStartY = Math.round(textBoxY + textBoxHeight);
+				const searchEndY = Math.round(textBoxY);
+				
+				// Look for a horizontal line of pixels (the bar is wide) - scan from bottom up
+				for (let y = searchStartY; y > searchEndY; y--) {
+					let consecutivePixels = 0;
+					
+					// Sample every 4 pixels for better performance
+					for (let x = 0; x < psdWidth; x += 4) {
+						const index = (y * psdWidth + x) * 4;
+						const alpha = imageData.data[index + 3];
+						
+						if (alpha > 0) {
+							consecutivePixels++;
+							
+							// If we found a long horizontal line, this is likely our bar
+							if (consecutivePixels > scaleWidth(0.5) / 4) {
+								actualFlavorDividerY = y;
+								break;
+							}
+						} else {
+							consecutivePixels = 0;
+						}
+					}
+					
+					if (actualFlavorDividerY !== null) break;
+				}
+			}
+			
+			textGroup.children.push({
+				name: textObject.name || key,
+				canvas: textFieldCanvas
+			});
+
+			// Add editable text layer if there's actual text content
+			let cleanText = textObject.text
+				.replace(/\{line\}/g, '\n')
+				.replace(/\{lns\}/g, '\n')
+				.replace(/\{[^}]+\}/g, '')
+				.trim();
+
+
+		if (cleanText) {
+			const { x: textBoxX, y: textBoxY, width: textBoxWidth, height: textBoxHeight } = getScaledTextBounds(textObject);
+			const fontSize = scaleHeight(textObject.size || 0.038);
+			const fillColor = parseColorToRGB(textObject.color || 'black');
+			const textRotation = textObject.rotation || 0;
+				// Get alignment
+				const alignment = ['left', 'center', 'right'].includes(textObject.align) ? textObject.align : 'left';
+
+				// Get font name from map
+				const actualFont = textObject.font || 'mplantin';
+				const fontName = fontMap[actualFont.toLowerCase()] || fontMap['mplantin'];
+
+				// Get the Y offset for this specific text field
+				const offsetMultiplier = textOffsets[key] || textOffsets['default'];
+				const baselineOffset = fontSize * offsetMultiplier;
+
+				// Get the X offset for this specific text field
+				const xOffset = textXOffsets[key] || textXOffsets['default'];
+
+				// Calculate rotation transform and bounding box
+				let cos, sin, minX, maxX, minY, maxY;
+				
+				if (textRotation === 0) {
+					// Fast path: no rotation - use simple bounds
+					cos = 1;
+					sin = 0;
+					minX = textBoxX + xOffset;
+					maxX = minX + textBoxWidth;
+					minY = textBoxY;
+					maxY = minY + textBoxHeight;
+				} else {
+					// Full rotation calculation
+					const rotationRad = (textRotation * Math.PI) / 180;
+					cos = Math.cos(rotationRad);
+					sin = Math.sin(rotationRad);
+
+					// Calculate rotated bounding box for proper layer bounds
+					const corners = [
+						{ x: 0, y: 0 },
+						{ x: textBoxWidth, y: 0 },
+						{ x: textBoxWidth, y: textBoxHeight },
+						{ x: 0, y: textBoxHeight }
+					];
+
+					// Rotate each corner around the origin (top-left of text box)
+					const rotatedCorners = corners.map(corner => ({
+						x: corner.x * cos - corner.y * sin + textBoxX + xOffset,
+						y: corner.x * sin + corner.y * cos + textBoxY
+					}));
+
+					// Find the bounding box of the rotated corners
+					minX = Math.min(...rotatedCorners.map(c => c.x));
+					maxX = Math.max(...rotatedCorners.map(c => c.x));
+					minY = Math.min(...rotatedCorners.map(c => c.y));
+					maxY = Math.max(...rotatedCorners.map(c => c.y));
+				}
+
+		// Check if this is the rules text field
+		const isRulesText = checkIsRulesText(key, textObject);
+
+		if (isRulesText) {
+			// Create PARAGRAPH text layer for rules text
+			const { x: boxLeft, y: boxTop, width: boxWidth, height: boxHeight } = getScaledTextBounds(textObject);					textGroup.children.push({
+						name: (textObject.name || key) + ' (Editable)',
+						text: {
+							text: cleanText,
+							transform: [cos, sin, -sin, cos, boxLeft + xOffset, boxTop],
+							shapeType: 'box',
+							boxBounds: [0, 0, boxWidth, boxHeight],
+							style: {
+								font: { name: fontName },
+								fontSize: fontSize,
+								fillColor: fillColor,
+								leading: fontSize * 1.2,
+							},
+							paragraphStyle: {
+								alignment: alignment,
+								firstLineIndent: 0,
+								startIndent: 0,
+								endIndent: 0,
+								spaceBefore: 0,
+								spaceAfter: 0,
+							}
+						},
+						top: minY,
+						left: minX,
+						bottom: maxY,
+						right: maxX
+					});
+				} else {
+					// Create POINT text layer for other text (title, type, pt, etc.)
+					textGroup.children.push({
+						name: (textObject.name || key) + ' (Editable)',
+						text: {
+							text: cleanText,
+							transform: [cos, sin, -sin, cos, textBoxX + xOffset, textBoxY + baselineOffset],
+							style: {
+								font: { name: fontName },
+								fontSize: fontSize,
+								fillColor: fillColor,
+							},
+							paragraphStyle: {
+								alignment: alignment
+							}
+						},
+						top: minY,
+						left: minX,
+						bottom: maxY,
+						right: maxX
+					});
+				}
+			}
+		}
+	
+	
+	// Add flavor divider in editable text layer if present
+	let flavorDividerLayer = null;
+	if (actualFlavorDividerY !== null && card.showsFlavorBar) {
+		const barSymbol = getManaSymbol('bar');
+		if (barSymbol?.image) {
+			const { canvas, ctx } = createCanvas();
+			const rulesText = Object.values(card.text).find(t => checkIsRulesText(null, t));
+			const barWidth = (rulesText ? scaleWidth(rulesText.width || 0.8) : psdWidth * 0.8) * 0.96;
+			ctx.drawImage(barSymbol.image, (psdWidth - barWidth) / 2, actualFlavorDividerY, barWidth, scaleHeight(0.03));
+			flavorDividerLayer = { name: 'Flavor Divider', canvas };
+		}
+	}
+	// Organize text layers with editable text in a sub-group
+	const editableTextLayers = [];
+	const staticTextLayers = [];
+	
+	// Add station text layers to static text group FIRST if they exist
+	if (typeof stationTextLayers !== 'undefined' && stationTextLayers.length > 0) {
+		staticTextLayers.push(...stationTextLayers);
+	}
+
+	textGroup.children.forEach(layer => {
+		if (isEditableLayer(layer)) {
+			editableTextLayers.push(layer);
+		} else {
+			staticTextLayers.push(layer);
+		}
+	});
+	
+	// Add flavor divider to editable text group if it exists
+	if (flavorDividerLayer) {
+		editableTextLayers.push(flavorDividerLayer);
+	}
+	
+	const textLayersChildren = [];
+
+	// Add static text layers group FIRST (will appear at bottom of text group in PSD)
+	if (staticTextLayers.length > 0) {
+		textLayersChildren.push({
+			name: 'Static Text Layers',
+			children: staticTextLayers,
+			opened: true
+		});
+	}
+
+	// Add editable text layers group LAST if there are any (will appear at top of text group in PSD)
+	if (editableTextLayers.length > 0) {
+		textLayersChildren.push({
+			name: 'Editable Text',
+			children: editableTextLayers,
+			opened: false,
+			hidden: true
+		});
+	}
+
+	const finalTextGroup = {
+		name: 'Text',
+		children: textLayersChildren,
+		opened: false
+	};
+
+	// Add the text group to the PSD only if it has children
+	if (finalTextGroup.children.length > 0) {
+		psd.children.push(finalTextGroup);
+	}
+
+	// Add set symbol layer
+	if (card.setSymbolBounds && !setSymbol.src.includes('/img/blank.png')) {
+		const { canvas: setSymbolCanvas, ctx: setSymbolCtx } = createCanvas();
+		
+		drawSetSymbol(setSymbolCtx, setSymbol, card.setSymbolBounds);
+		
+		const setCode = document.querySelector('#set-symbol-code')?.value?.toUpperCase() || '';
+		const rarityCode = document.querySelector('#set-symbol-rarity')?.value?.toLowerCase() || '';
+		const rarityMap = { 'c': 'Common', 'u': 'Uncommon', 'r': 'Rare', 'm': 'Mythic', 'red': 'Red', 's': 'Timeshifted', 't': 'Timeshifted' };
+		const setRarity = rarityMap[rarityCode] || rarityCode;
+		const setSymbolName = [setRarity, setCode, 'Set Symbol'].filter(x => x).join(' ');
+		
+		psd.children.push(createLayerBase(setSymbolName, setSymbolCanvas));
+	}
+	
+	// Add bottom info layer only if collector info is enabled
+	if (document.querySelector('#enableCollectorInfo').checked) {
+		psd.children.push(createLayerBase('Collector Info', bottomInfoCanvas));
+	}
+
+	// Write PSD file
+	const buffer = agPsd.writePsd(psd, { 
+		generateThumbnail: true,
+		trimImageData: false,
+		logMissingFeatures: false
+	});
+	
+	if (!buffer || buffer.byteLength === 0) {
+		throw new Error('Failed to generate PSD buffer - buffer is empty');
+	}
+	
+	const endTime = performance.now();
+	const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+	const fileSizeMB = (buffer.byteLength / (1024 * 1024)).toFixed(2);
+	console.log(`PSD generation completed in ${timeTaken}s, file size: ${fileSizeMB}MB`);
+	
+	// Download
+	const blob = new Blob([buffer], { type: 'application/octet-stream' });
+	const url = URL.createObjectURL(blob);
+	const downloadElement = document.createElement('a');
+	downloadElement.download = getCardName() + '.psd';
+	downloadElement.href = url;
+	document.body.appendChild(downloadElement);
+	downloadElement.click();
+	downloadElement.remove();
+	URL.revokeObjectURL(url);
+	
+	notify(`PSD exported successfully (${fileSizeMB}MB in ${timeTaken}s)`, 3);
+} catch (error) {
+	// Provide more helpful error messages
+	const errorSuffix = error.message.includes('buffer') ? ': Failed to generate file buffer'
+		: error.message.includes('memory') ? ': Out of memory. Try closing other tabs.'
+		: error.message ? `: ${error.message}` : '';
+	notify(`PSD export failed${errorSuffix}`, 5);
+}
+}
+
+// Helper function to convert Canvas blend modes to Photoshop blend modes
+function convertBlendMode(mode) {
+	const modeMap = {
+		'source-over': 'normal',
+		'multiply': 'multiply',
+		'screen': 'screen',
+		'overlay': 'overlay',
+		'darken': 'darken',
+		'lighten': 'lighten',
+		'color-dodge': 'color dodge',
+		'color-burn': 'color burn',
+		'hard-light': 'hard light',
+		'soft-light': 'soft light',
+		'difference': 'difference',
+		'exclusion': 'exclusion',
+		'hue': 'hue',
+		'saturation': 'saturation',
+		'color': 'color',
+		'luminosity': 'luminosity'
+	};
+	return modeMap[mode] || 'normal';
+}
+
 //IMPORT/SAVE TAB
 function importCard(cardObject) {
 	console.log('Import card called with:', cardObject); // Log initial import data
@@ -5682,7 +7081,7 @@ function parseRollAbilities(text) {
 }
 
 function parseStationCard(oracleText) {
-    if (!oracleText || !oracleText.includes('STATION')) {
+    if (!oracleText || !oracleText.includes('Station')) {
         return null;
     }
 
@@ -5695,8 +7094,8 @@ function parseStationCard(oracleText) {
     // Format station reminder text with italics
     preStationText = preStationText.replace(/Station (\([^)]+\))/g, 'Station {i}$1{/i}');
     
-    // Find all STATION abilities with their numbers - more flexible regex
-    const stationRegex = /STATION (\d+\+)\s*\n([^]*?)(?=\nSTATION \d+\+|$)/g;
+    // Updated regex to match new scryfall format: "10+ | ability text"
+    const stationRegex = /(\d+\+)\s*\|\s*([^\n]+)/g;
     const stationAbilities = [];
     
     let match;
@@ -5714,11 +7113,16 @@ function parseStationCard(oracleText) {
 }
 
 function changeCardIndex() {
-	var cardToImport = scryfallCard[document.querySelector('#import-index').value];
+	let cardToImport = scryfallCard[document.querySelector('#import-index').value];
 	// Add debug logging for card Layout detection
 	console.log('Card layout:', cardToImport.layout);
 	console.log('Card version:', card.version);
 
+	if (cardToImport.set == "plst") {
+		var components = cardToImport.collector_number.split('-');
+		cardToImport.set = components[0];
+		cardToImport.collector_number = components[1];
+	}
     // Clear all existing text fields to prevent old data from persisting BUT preserve Multi Face reminder text if we're using a Multi Face frame
     var savedFuseReminderText = '';
 	var savedDescriptiveTexts = {};
@@ -5955,7 +7359,7 @@ function changeCardIndex() {
         textEdited();
     }
 
-else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('STATION') && card.version.includes('station')) {
+else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('Station') && card.version.includes('station')) {
 
     // Clear existing station fields
     if (card.text) {
@@ -6243,6 +7647,10 @@ else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('STATION'
 			card.text.pt.text = cardToImport.power + '/' + cardToImport.toughness || '';
 		}
 	}
+	else if (card.version == 'Minimalist' && card.text.power && card.text.toughness) {
+		card.text.power.text = cardToImport.power || '';
+		card.text.toughness.text = cardToImport.toughness || '';
+	}
 	if (card.text.pt && card.text.pt.text == undefined + '/' + undefined) {card.text.pt.text = '';}
 	if (card.text.pt && card.text.pt.text == undefined + '\n' + undefined) {card.text.pt.text = '';}
 	if (card.text.pt && card.text.pt.text == '{}') {card.text.pt.text = '';}
@@ -6370,12 +7778,22 @@ else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('STATION'
 		}
 	}
 	//art
-	document.querySelector('#art-name').value = cardToImport.name;
-	fetchScryfallData(cardToImport.name, artFromScryfall, 'art');
-	if (document.querySelector('#importAllPrints').checked) {
-		// document.querySelector('#art-index').value = document.querySelector('#import-index').value;
-		// changeArtIndex();
-	}
+	var artSearchName = cardToImport.original_name || cardToImport.name;
+	document.querySelector('#art-name').value = artSearchName;
+	// If importing all prints, modify the callback to select the correct art after data loads
+	const callback = document.querySelector('#importAllPrints').checked 
+		? (scryfallResponse) => {
+			artFromScryfall(scryfallResponse);
+			// Find and select the matching art
+			const illustrationID = cardToImport.illustration_id;
+			const index = scryfallArt.findIndex(card => card.illustration_id === illustrationID);
+			if (index >= 0) {
+				document.querySelector('#art-index').value = index;
+				changeArtIndex();
+			}
+		}
+		: artFromScryfall;
+	fetchScryfallData(artSearchName, callback, 'art');
 	//set symbol
 	if (!document.querySelector('#lockSetSymbolCode').checked) {
 		document.querySelector('#set-symbol-code').value = cardToImport.set;
@@ -6473,6 +7891,7 @@ async function loadCard(selectedCardKey) {
 		document.querySelector('#setSymbol-x').value = scaleX(card.setSymbolX) - scaleWidth(card.marginX);
 		document.querySelector('#setSymbol-y').value = scaleY(card.setSymbolY) - scaleHeight(card.marginY);
 		document.querySelector('#setSymbol-zoom').value = card.setSymbolZoom * 100;
+		document.querySelector('#setSymbol-rotate').value = card.setSymbolRotate || 0;
 		uploadSetSymbol(card.setSymbolSource);
 		document.querySelector('#watermark-x').value = scaleX(card.watermarkX) - scaleWidth(card.marginX);
 		document.querySelector('#watermark-y').value = scaleY(card.watermarkY) - scaleHeight(card.marginY);
@@ -6662,13 +8081,17 @@ async function imageLocal(event, destination, otherParams) {
 	await reader.readAsDataURL(event.target.files[0]);
 }
 function loadScript(scriptPath) {
+	return new Promise((resolve, reject) => {
 	var script = document.createElement('script');
 	script.setAttribute('type', 'text/javascript');
-	script.onerror = function(){notify('A script failed to load, likely due to an update. Please reload your page. Sorry for the inconvenience.');}
-	script.setAttribute('src', scriptPath);
-	if (typeof script != 'undefined') {
-		document.querySelectorAll('head')[0].appendChild(script);
+	script.onload = resolve;
+	script.onerror = function(){
+		notify('A script failed to load, likely due to an update. Please reload your page. Sorry for the inconvenience.');
+		reject();
 	}
+	script.setAttribute('src', scriptPath);
+	document.querySelectorAll('head')[0].appendChild(script);
+	});
 }
 // Stretchable SVGs
 function stretchSVG(frameObject) {
@@ -6722,10 +8145,17 @@ function processScryfallCard(card, responseCards) {
 			face.rarity = card.rarity;
 			face.collector_number = card.collector_number;
 			face.lang = card.lang;
-      face.layout = card.layout; // Add layout from parent card
-			if (card.lang != 'en' || face.printed_name) {
+			face.layout = card.layout; // Add layout from parent card
+			face.illustration_id = card.illustration_id;
+			// Store original name before any modifications
+			face.original_name = face.name;
+			// Apply printed name if it exists
+			if (face.printed_name) {
+				face.name = face.printed_name;
+			}
+			// Apply other printed text for non-English cards
+			if (card.lang != 'en') {
 				face.oracle_text = face.printed_text || face.oracle_text;
-				face.name = face.printed_name || face.name;
 				face.type_line = face.printed_type_line || face.type_line;
 			}
 			responseCards.push(face);
@@ -6734,9 +8164,15 @@ function processScryfallCard(card, responseCards) {
 			}
 		});
 	} else {
-		if (card.lang != 'en' || card.printed_name) {
+		// Store original name before any modifications
+		card.original_name = card.name;
+		// Apply printed name if it exists
+		if (card.printed_name) {
+			card.name = card.printed_name;
+		}
+		// Apply other printed text for non-English cards
+		if (card.lang != 'en') {
 			card.oracle_text = card.printed_text || card.oracle_text;
-			card.name = card.printed_name || card.name;
 			card.type_line = card.printed_type_line || card.type_line;
 		}
 		// Ensure layout is set even for single-faced cards
