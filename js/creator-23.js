@@ -4793,6 +4793,16 @@ async function addTextbox(textboxType) {
 		loadTextOptions({dateStamp: {name:'Date Stamp', text:'', x:0.11, y:0.5072, width:0.78, height:0.0286, size:0.0286, font:'belerenb', oneLine:true, align:'right', color:'#ffd35b', shadowX:-0.0007, shadowY:-0.001}}, false);
 	}
 }
+function clearAllCardText() {
+    if (confirm('Are you sure you want to clear all text from this card? This cannot be undone.')) {
+        Object.keys(card.text).forEach(key => {
+            card.text[key].text = '';
+        });
+        document.querySelector('#text-editor').value = '';
+        drawTextBuffer();
+        autoFrameBuffer();
+    }
+}
 //ART TAB
 function uploadArt(imageSource, otherParams) {
 	art.src = imageSource;
