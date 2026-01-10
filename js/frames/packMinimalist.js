@@ -32,19 +32,23 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	// Notify user about included margin
 	notify('Note: This Minimalist frame pack already includes margins - no additional margin frame needed.', 5);
 
+	// Merge with existing minimalist settings if they exist, otherwise create new
 	card.minimalist = {
-		baseY: 0.935,
-		minHeight: 0.10,
-		maxHeight: 0.25,
+		...(card.minimalist || {}),
+		baseY: 0.91,
 		spacing: 0.05,
-		currentHeight: 0.12,
+		minHeight: 0.1,
+		maxHeight: 0.25,
+		currentHeight: 0.1,
 		ctx: textContext,
 	};
 
-	// Initialize gradient options - this ensures the gradient system is enabled
-	card.gradientOptions = {
-		maxOpacity: 0.75
-	};
+	// Initialize gradient options - merge with existing if present
+	if (!card.gradientOptions) {
+		card.gradientOptions = {
+			maxOpacity: 0.75
+		};
+	}
 
 	// Disable rounded corners for minimalist frame
 	document.querySelector('#rounded-corners').checked = false;
@@ -74,7 +78,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.022, color: 'white', shadowX:0.0014, shadowY:0.001},
 			rules: {
 				name: 'Rules Text', text: '', x: 0.1139, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.7720, height: card.minimalist.currentHeight,
-				size: 0.029, font: 'Plantin-MT-Pro-Rg', color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright', shadowX:0.0014, shadowY:0.001},
+				size: 0.029, color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright', shadowX:0.0014, shadowY:0.001},
 			power: {
 				name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.0765, height: 0.049, size: 0.04,
 				font: 'belerenbsc', oneLine: true, align: 'center', color: 'white', shadowX:0.0014, shadowY:0.001},
