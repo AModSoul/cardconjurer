@@ -1,13 +1,11 @@
-//checks to see if it needs to run
-
 //============================================================================
 // CONSTANTS AND CONFIGURATION
 //============================================================================
 
 // Check if constants already exist before declaring them
-if (typeof MINIMALIST_DEFAULTS === 'undefined') {
-	const MINIMALIST_DEFAULTS = {
-		baseY: 0.935,
+if (typeof window.MINIMALIST_DEFAULTS === 'undefined') {
+	window.MINIMALIST_DEFAULTS = {
+		baseY: 0.91,
 		spacing: 0.05,
 		minHeight: 0.1,
 		maxHeight: 0.25,
@@ -26,47 +24,55 @@ if (typeof MINIMALIST_DEFAULTS === 'undefined') {
 			color1: '#FFF7D8',
 			color2: '#26C7FE',
 			color3: '#B264FF',
-			colorCount: 'auto'
+			colorCount: 'ci-auto'
 		},
 		ptSettings: {
 			enabled: true,
-			colorMode: 'auto',
+			colorMode: 'ci-auto',
 			color1: '#FFFFFF',
 			color2: '#FFFFFF'
 		},
 		typeSettings: {
-			autoColor: true,
+			autoColor: false,
+			autoColorCI: true,
 			customColor: '#FFFFFF'
 		}
 	};
-	window.MINIMALIST_DEFAULTS = MINIMALIST_DEFAULTS;
 }
 
-if (typeof COLOR_MAP === 'undefined') {
-	const COLOR_MAP = {
+if (typeof window.COLOR_MAP === 'undefined') {
+	window.COLOR_MAP = {
 		'white': '#FFF7D8',
 		'blue': '#26C7FE',
 		'black': '#B264FF',
 		'red': '#F13F35',
 		'green': '#29EEA6'
 	};
-	window.COLOR_MAP = COLOR_MAP;
 }
 
-if (typeof MANA_COLOR_MAP === 'undefined') {
-	const MANA_COLOR_MAP = {
+if (typeof window.MANA_COLOR_MAP === 'undefined') {
+	window.MANA_COLOR_MAP = {
 		'w': 'white',
 		'u': 'blue',
 		'b': 'black',
 		'r': 'red',
 		'g': 'green'
 	};
-	window.MANA_COLOR_MAP = MANA_COLOR_MAP;
 }
 
 // Cache color calculations - use window object to avoid redeclaration
-if (typeof COLOR_CACHE === 'undefined') {
+if (typeof window.COLOR_CACHE === 'undefined') {
 	window.COLOR_CACHE = new Map();
+}
+
+// Default/fallback colors used throughout the frame
+if (typeof window.MINIMALIST_COLOR_DEFAULTS === 'undefined') {
+	window.MINIMALIST_COLOR_DEFAULTS = {
+		colorless: '#CBC2C0',    // Used for colorless cards (P/T symbols, divider)
+		multicolor: '#e3d193',    // Gold for multicolor
+		artifact: '#808080',      // Gray for artifacts/no color
+		white: '#FFFFFF'          // Default white for text
+	};
 }
 
 //============================================================================
@@ -108,7 +114,7 @@ function initDOMCache() {
 		'minimalist-bg-color-2', 'minimalist-bg-color-3',
 		'minimalist-color-1', 'minimalist-color-2', 'minimalist-color-3',
 		'minimalist-pt-color-1', 'minimalist-pt-color-2',
-		'minimalist-type-auto-color', 'minimalist-type-color'
+		'minimalist-type-auto-color', 'minimalist-type-auto-color-ci', 'minimalist-type-color'
 	];
 	
 	elementIds.forEach(id => {
@@ -264,8 +270,62 @@ function getManaColorsFromText() {
 	return colors;
 }
 
+function getColorIdentityColors() {
+	if (!card.colorIdentity || !Array.isArray(card.colorIdentity) || card.colorIdentity.length === 0) {
+		return [];
+	}
+	
+	const colors = [];
+	const seenColors = new Set();
+	
+	for (const colorLetter of card.colorIdentity) {
+		const colorKey = colorLetter.toLowerCase();
+		if (window.MANA_COLOR_MAP[colorKey] && !seenColors.has(window.MANA_COLOR_MAP[colorKey])) {
+			colors.push(window.MANA_COLOR_MAP[colorKey]);
+			seenColors.add(window.MANA_COLOR_MAP[colorKey]);
+		}
+	}
+	
+	return colors;
+}
+
 function getManaHexColors() {
 	return getManaColorsFromText().map(color => getColorHex(color));
+}
+
+function getColorIdentityHexColors() {
+	return getColorIdentityColors().map(color => getColorHex(color));
+}
+
+/**
+ * Get color(s) based on a mode ('auto' for mana cost, 'ci-auto' for color identity)
+ * Returns an object with color array and convenience properties
+ * @param {string} mode - 'auto' or 'ci-auto'
+ * @returns {object} - { colors: array, count: number, isEmpty: boolean, isSingle: boolean, isMulti: boolean }
+ */
+function getColorsForMode(mode) {
+	const colorArray = mode === 'ci-auto' ? getColorIdentityColors() : getManaColorsFromText();
+	return {
+		colors: colorArray,
+		hexColors: colorArray.map(c => getColorHex(c)),
+		count: colorArray.length,
+		isEmpty: colorArray.length === 0,
+		isSingle: colorArray.length === 1,
+		isMulti: colorArray.length > 1
+	};
+}
+
+/**
+ * Get a single color for text/UI based on the color count
+ * @param {object} colorInfo - Result from getColorsForMode()
+ * @param {string} defaultColor - Default color if no colors found
+ * @returns {string} - Hex color string
+ */
+function getSingleColorFromMode(colorInfo, defaultColor = null) {
+	defaultColor = defaultColor || window.MINIMALIST_COLOR_DEFAULTS.white;
+	if (colorInfo.isEmpty) return defaultColor;
+	if (colorInfo.isSingle) return getColorHex(colorInfo.colors[0]);
+	return window.MINIMALIST_COLOR_DEFAULTS.multicolor;
 }
 
 function getMinimalistSetting(settingName, defaultValue = true) {
@@ -280,12 +340,6 @@ function updateCardSettings(settingsKey, newSettings) {
 	card.minimalist[settingsKey] = { ...card.minimalist[settingsKey], ...newSettings };
 }
 
-function drawSymbolIfReady(symbol, isLoaded, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY) {
-	if (textObj.text && textObj.text.length > 0 && isLoaded && symbol.complete) {
-		drawColoredSymbolAtPosition(symbol, textObj, color, symbolWidth, symbolHeight, offsetX, offsetY);
-	}
-}
-
 function setUIDefaults() {
 	const settingsMap = {
 		'max-opacity': window.MINIMALIST_DEFAULTS.settings.maxOpacity, // Use window version
@@ -298,6 +352,7 @@ function setUIDefaults() {
 		'pt-color-1': window.MINIMALIST_DEFAULTS.ptSettings.color1,
 		'pt-color-2': window.MINIMALIST_DEFAULTS.ptSettings.color2,
 		'type-auto-color': window.MINIMALIST_DEFAULTS.typeSettings.autoColor,
+		'type-auto-color-ci': window.MINIMALIST_DEFAULTS.typeSettings.autoColorCI,
 		'type-color': window.MINIMALIST_DEFAULTS.typeSettings.customColor 
 	};
 	
@@ -416,55 +471,291 @@ function measureTextWidth(text, textObj) {
 	return width;
 }
 
-function updateTextPositions(rulesHeight) {
-	const dividerOffset = 0.03;
-	const dividerSpacing = 0.02;
+/**
+ * Calculate the proper box height for rules text based on actual text content
+ * @param {string} text - The rules text to measure
+ * @returns {number} - The calculated height as a fraction of card height (0-1)
+ */
+function calculateRulesBoxHeight(text) {
+	if (!text || !card.text.rules) return card.minimalist.minHeight;
 	
-	const rulesY = card.minimalist.baseY - rulesHeight - dividerOffset;
-	const typeY = rulesY - (card.minimalist.spacing * 0.9) - dividerSpacing;
+	const dims = getCardDimensions();
+	const ctx = card.minimalist.ctx;
+	
+	// Set up the context with the current font
+	ctx.clearRect(0, 0, dims.width, dims.height);
+	ctx.font = `${card.text.rules.size * dims.height}px "${card.text.rules.font}"`;
+	
+	// Measure the actual text height
+	const actualTextHeight = measureTextHeight(
+		text,
+		ctx,
+		card.text.rules.width * dims.width,
+		card.text.rules.size * dims.height
+	);
+	
+	// Calculate and clamp the height
+	const newHeight = Math.min(
+		card.minimalist.maxHeight,
+		Math.max(
+			card.minimalist.minHeight,
+			(actualTextHeight / dims.height)
+		)
+	);
+	
+	return newHeight;
+}
+
+//============================================================================
+// TEXT PIXEL SCANNING
+//============================================================================
+
+function findFirstTextPixel() {
+	// Scan the text canvas to find the first rendered pixel of rules text
+	if (!textCanvas) {
+		console.log('Pixel scan skipped: no textCanvas');
+		return null;
+	}
+	
+	if (!card.text.rules) {
+		console.log('Pixel scan skipped: no card.text.rules');
+		return null;
+	}
+	
+	if (!card.text.rules.text || card.text.rules.text.trim() === '') {
+		console.log('Pixel scan skipped: rules text is empty. Text value:', card.text.rules.text);
+		return null;
+	}
+	
+	const dims = getCardDimensions();
+	const rulesY = card.text.rules.y * dims.height;
+	const rulesHeight = card.text.rules.height * dims.height;
+	const rulesX = card.text.rules.x * dims.width;
+	const rulesWidth = card.text.rules.width * dims.width;
+	
+	console.log('Starting pixel scan from Y:', Math.floor(rulesY), 'to', Math.floor(rulesY + rulesHeight), 'Text length:', card.text.rules.text.length);
+	console.log('Canvas dimensions:', textCanvas.width, 'x', textCanvas.height);
+	
+	// Get image data from the text canvas in the rules text area
+	const ctx = textContext;
+	const startY = Math.floor(rulesY);
+	const endY = Math.floor(rulesY + rulesHeight);
+	const startX = Math.floor(rulesX);
+	const width = Math.floor(rulesWidth);
+	
+	let firstTextY = null;
+	let lastTextY = null;
+	let pixelsChecked = 0;
+	
+	// Scan line by line from top to bottom to find first and last text pixels
+	for (let y = startY; y < endY; y++) {
+		const imageData = ctx.getImageData(startX, y, width, 1);
+		const data = imageData.data;
+		
+		// Check if any pixel in this row has non-zero alpha (is visible)
+		let hasTextInRow = false;
+		for (let i = 3; i < data.length; i += 4) {
+			pixelsChecked++;
+			if (data[i] > 0) {
+				hasTextInRow = true;
+				break;
+			}
+		}
+		
+		if (hasTextInRow) {
+			if (firstTextY === null) {
+				firstTextY = y;
+			}
+			lastTextY = y;
+		}
+	}
+	
+	if (firstTextY === null || lastTextY === null) {
+		console.log('No text pixels found in scan after checking', pixelsChecked, 'pixels');
+		return card.text.rules.y;
+	}
+	
+	// Calculate text height for logging
+	const textHeightPixels = lastTextY - firstTextY;
+	
+	// Just use the first pixel position directly
+	const normalizedTop = firstTextY / dims.height;
+	
+	console.log('Text spans from Y:', firstTextY, 'to', lastTextY, '(height:', textHeightPixels, 'px)');
+	console.log('First pixel at:', firstTextY, 'px (', normalizedTop, 'normalized)');
+	
+	return normalizedTop;
+}
+
+function updateRulesTextBox(rulesHeight) {
+	// Calculate and update only the rules text box position and height
+	const dividerToBaseGap = 0.005; // Gap between divider and top of rules box
+	const rulesY = card.minimalist.baseY - rulesHeight - dividerToBaseGap;
+	
+	// Update the rules text position
+	if (card.text.rules) {
+		card.text.rules.y = rulesY;
+		card.text.rules.height = rulesHeight;
+	}
+	
+	// Update background gradient based on new rules position
+	updateBackgroundGradient(card.text.mana?.y || 0.5, rulesY);
+	
+	return { rulesY, dividerToBaseGap };
+}
+
+function updateCardLayout(rulesY, dividerToBaseGap) {
+	// Position all card elements relative to the rules text box
+	// This keeps the layout consistent regardless of rules text length
+	
+	// Position divider at a fixed gap above the rules box
+	const dividerY = rulesY - dividerToBaseGap;
+	
+	// Position type line above the divider
+	const typeToDividerGap = 0.050;
+	const typeY = dividerY - typeToDividerGap;
+	
+	// Position title above type line
 	const titleY = typeY - (card.minimalist.spacing * 0.65);
+	
+	// Position mana cost above title
 	const manaY = titleY - (card.minimalist.spacing * 0.6);
 	
-	const dividerOffset2 = 0.050;
-	const dividerY = typeY + dividerOffset2;
-	const setSymbolOffsetAboveDivider = 0.025;
+	// Position set symbol above divider
+	const setSymbolOffsetAboveDivider = 0.030;
 	const setSymbolY = dividerY - setSymbolOffsetAboveDivider;
 
-    // Update text positions - all using 0.090 for x coordinate
-    if (card.text.rules) {
-        card.text.rules.y = rulesY;
-        card.text.rules.height = rulesHeight;
-    }
-    if (card.text.type) {
-        card.text.type.y = typeY;
-        card.text.type.x = 0.090;
-    }
-    if (card.text.title) {
-        card.text.title.y = titleY;
-        card.text.title.x = 0.090;
-    }
-    if (card.text.mana) {
-        card.text.mana.y = manaY;
-        card.text.mana.x = 0.090;
-    }
-    
-    // Update set symbol position
-    if (card.setSymbolBounds) {
-        card.setSymbolBounds.y = setSymbolY;
-        resetSetSymbol();
-    }
+	// Store divider position for use in drawing functions
+	card.minimalist.dividerY = dividerY;
 
-    // Update background gradient
-    updateBackgroundGradient(manaY, rulesY);
-    
-    // Update divider
-    const dividerEnabled = getMinimalistSetting('divider-enabled');
-    if (dividerEnabled) {
-        drawDividerGradient();
-    }
-    
-    drawCard();
-    return { rulesY, typeY, titleY, manaY, setSymbolY };
+	// Update text element positions
+	if (card.text.type) {
+		card.text.type.y = typeY;
+		card.text.type.x = 0.090;
+	}
+	if (card.text.title) {
+		card.text.title.y = titleY;
+		card.text.title.x = 0.090;
+	}
+	if (card.text.mana) {
+		card.text.mana.y = manaY;
+		card.text.mana.x = 0.090;
+	}
+	
+	// Update set symbol position
+	if (card.setSymbolBounds) {
+		card.setSymbolBounds.y = setSymbolY;
+		resetSetSymbol();
+	}
+
+	// Update background gradient with new mana position
+	updateBackgroundGradient(manaY, rulesY);
+	
+	// Update divider
+	const dividerEnabled = getMinimalistSetting('divider-enabled');
+	if (dividerEnabled) {
+		drawDividerGradient();
+	}
+	
+	return { dividerY, typeY, titleY, manaY, setSymbolY };
+}
+
+function updateDividerAndAbove(dividerY) {
+	// Updates only the divider and elements above it
+	// Does NOT touch the rules text box position
+	// This maintains consistent divider-to-text gap regardless of box size
+	
+	// Position type line above the divider
+	const typeToDividerGap = 0.042;
+	const typeY = dividerY - typeToDividerGap;
+	
+	// Position title above type line
+	const titleY = typeY - (card.minimalist.spacing * 0.62);
+	
+	// Position mana cost above title
+	const manaY = titleY - (card.minimalist.spacing * 0.55);
+	
+	// Position set symbol above divider
+	const setSymbolOffsetAboveDivider = 0.028;
+	const setSymbolY = dividerY - setSymbolOffsetAboveDivider;
+
+	// Store divider position for use in drawing functions
+	card.minimalist.dividerY = dividerY;
+
+	// Update text element positions (but not rules!)
+	if (card.text.type) {
+		card.text.type.y = typeY;
+		card.text.type.x = 0.090;
+	}
+	if (card.text.title) {
+		card.text.title.y = titleY;
+		card.text.title.x = 0.090;
+	}
+	if (card.text.mana) {
+		card.text.mana.y = manaY;
+		card.text.mana.x = 0.090;
+	}
+	
+	// Update set symbol position
+	if (card.setSymbolBounds) {
+		card.setSymbolBounds.y = setSymbolY;
+		resetSetSymbol();
+	}
+
+	// Update background gradient with new positions
+	// Keep rules position stable
+	const rulesY = card.text.rules ? card.text.rules.y : card.minimalist.baseY - card.minimalist.currentHeight;
+	updateBackgroundGradient(manaY, rulesY);
+	
+	return { dividerY, typeY, titleY, manaY, setSymbolY };
+}
+
+async function updateTextPositions(rulesHeight, skipDrawCard = false) {
+	// PHASE 1: Position rules text box and all other elements
+	const { rulesY, dividerToBaseGap } = updateRulesTextBox(rulesHeight);
+	
+	// Position all card elements relative to rules box first
+	updateCardLayout(rulesY, dividerToBaseGap);
+	
+	// Update the background gradient
+	updateBackgroundGradient(card.text.mana?.y || 0.5, rulesY);
+	
+	// PHASE 2: Draw the text so it renders on the canvas
+	await drawText();
+	
+	// PHASE 3: Scan the actual rendered text to find where text pixels actually appear
+	const actualTextTopY = findFirstTextPixel();
+	
+	if (actualTextTopY !== null && card.text.rules) {
+		// Calculate the gap from divider to actual visible text
+		// The divider should be a fixed distance above where text actually appears
+		const desiredDividerGap = 0.01; // Gap from divider to actual first text pixel
+		const dividerY = actualTextTopY - desiredDividerGap;
+		
+		console.log('Text box at:', rulesY, 'Actual text at:', actualTextTopY, 'Divider at:', dividerY);
+		
+		// Only update divider position and elements above it
+		// DO NOT reposition the rules text box - keep it stable
+		updateDividerAndAbove(dividerY);
+		
+		// Redraw text at new positions (type, title, mana moved)
+		await drawText();
+		
+		// Redraw the divider and card with new positions
+		drawDividerGradient();
+		if (!skipDrawCard) {
+			drawCard();
+		}
+	} else {
+		// Fallback: if scan fails, use the standard positioning
+		console.log('Scan failed, using standard positioning at rulesY:', rulesY);
+		drawDividerGradient();
+		if (!skipDrawCard) {
+			drawCard();
+		}
+	}
+	
+	return rulesY;
 }
 
 
@@ -477,10 +768,11 @@ function createGradientForColors(context, x, y, width, colorsToUse, colorCount) 
 	const gradient = context.createLinearGradient(x, 0, x + width, 0);
 	
 	if (colorCount === 0) {
-		gradient.addColorStop(0, hexToRgba('#CBC2C0', 0.5));
-		gradient.addColorStop(0.25, hexToRgba('#CBC2C0', 1));
-		gradient.addColorStop(0.75, hexToRgba('#CBC2C0', 1));
-		gradient.addColorStop(1, hexToRgba('#CBC2C0', 0.5));
+		const colorless = window.MINIMALIST_COLOR_DEFAULTS.colorless;
+		gradient.addColorStop(0, hexToRgba(colorless, 0.5));
+		gradient.addColorStop(0.25, hexToRgba(colorless, 1));
+		gradient.addColorStop(0.75, hexToRgba(colorless, 1));
+		gradient.addColorStop(1, hexToRgba(colorless, 0.5));
 	} else if (colorCount === 1) {
 		const color = colorsToUse[0];
 		gradient.addColorStop(0, hexToRgba(color, 0.5));
@@ -509,10 +801,11 @@ function createGradientForColors(context, x, y, width, colorsToUse, colorCount) 
 		gradient.addColorStop(0.833, hexToRgba(color3, 1));
 		gradient.addColorStop(1, hexToRgba(color3, 0.5));
 	} else {
-		gradient.addColorStop(0, hexToRgba('#e3d193', 0.5));
-		gradient.addColorStop(0.25, hexToRgba('#e3d193', 1));
-		gradient.addColorStop(0.75, hexToRgba('#e3d193', 1));
-		gradient.addColorStop(1, hexToRgba('#e3d193', 0.5));
+		const multicolor = window.MINIMALIST_COLOR_DEFAULTS.multicolor;
+		gradient.addColorStop(0, hexToRgba(multicolor, 0.5));
+		gradient.addColorStop(0.25, hexToRgba(multicolor, 1));
+		gradient.addColorStop(0.75, hexToRgba(multicolor, 1));
+		gradient.addColorStop(1, hexToRgba(multicolor, 0.5));
 	}
 	
 	return gradient;
@@ -556,7 +849,7 @@ function getDividerColors() {
 	let colorsToUse = [];
 	let colorCount = 0;
 	
-	if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount !== 'auto') {
+	if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount !== 'auto' && card.minimalist.dividerSettings.colorCount !== 'ci-auto') {
 		colorCount = parseInt(card.minimalist.dividerSettings.colorCount);
 		const customColors = [
 			card.minimalist.dividerSettings.color1,
@@ -564,6 +857,9 @@ function getDividerColors() {
 			card.minimalist.dividerSettings.color3
 		];
 		colorsToUse = customColors.slice(0, colorCount);
+	} else if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount === 'ci-auto') {
+		colorsToUse = getColorIdentityHexColors();
+		colorCount = colorsToUse.length;
 	} else {
 		colorsToUse = getManaHexColors();
 		colorCount = colorsToUse.length;
@@ -575,9 +871,10 @@ function getDividerColors() {
 function drawDividerBar(colorsToUse, colorCount) {
 	const rulesX = 0.086;
 	const rulesWidth = 0.831;
-	const typeY = card.text.type.y;
-	const dividerOffset = 0.050;
-	const dividerY = typeY + dividerOffset;
+	
+	// Use the divider position calculated in updateTextPositions based on text scan
+	// Fallback to type line position if not set yet
+	const dividerY = card.minimalist.dividerY || (card.text.type.y + 0.050);
 	const dividerHeight = 0.002;
 	
 	const actualX = rulesX * card.width;
@@ -637,7 +934,7 @@ function drawPTSymbols() {
 	const powerSymbolX = powerTextLeftEdge - powerTextToSymbolSpacing;
 	const powerSymbolY = toughnessTextY - (powerSymbolHeight / 2) + (card.text.power.size * dims.height / 2);
 	
-	// Update the power text position
+	// Update the power text position to align with symbols
 	if (hasPower) {
 		card.text.power.x = powerTextCenterX / dims.width;
 		card.text.power.y = card.text.toughness.y; // Use same Y as toughness
@@ -653,20 +950,21 @@ function drawPTSymbols() {
 }
 
 function getPTColors() {
-	const colorMode = card.minimalist.ptSettings?.colorMode ?? 'auto';
+	const colorMode = card.minimalist.ptSettings?.colorMode ?? 'ci-auto';
 	let powerColor, toughnessColor;
 
-	if (colorMode === 'auto') {
-		const manaColors = getManaColorsFromText();
-		if (manaColors.length === 0) {
-			powerColor = toughnessColor = '#CBC2C0';
-		} else if (manaColors.length === 1) {
-			powerColor = toughnessColor = getColorHex(manaColors[0]);
-		} else if (manaColors.length === 2) {
-			powerColor = getColorHex(manaColors[0]);
-			toughnessColor = getColorHex(manaColors[1]);
+	if (colorMode === 'auto' || colorMode === 'ci-auto') {
+		const colorInfo = getColorsForMode(colorMode);
+		
+		if (colorInfo.isEmpty) {
+			powerColor = toughnessColor = window.MINIMALIST_COLOR_DEFAULTS.colorless;
+		} else if (colorInfo.isSingle) {
+			powerColor = toughnessColor = getColorHex(colorInfo.colors[0]);
+		} else if (colorInfo.count === 2) {
+			powerColor = getColorHex(colorInfo.colors[0]);
+			toughnessColor = getColorHex(colorInfo.colors[1]);
 		} else {
-			powerColor = toughnessColor = '#e3d193';
+			powerColor = toughnessColor = window.MINIMALIST_COLOR_DEFAULTS.multicolor;
 		}
 	} else if (colorMode === '1') {
 		powerColor = toughnessColor = card.minimalist.ptSettings.color1;
@@ -709,20 +1007,24 @@ function toggleColorVisibility(type) {
 		bg: {
 			countElement: 'minimalist-bg-color-count',
 			containers: ['bg-color-1-container', 'bg-color-2-container', 'bg-color-3-container'],
-			autoValue: 'mana-auto'
+			autoValue: 'mana-auto',
+			ciAutoValue: 'ci-auto'
 		},
 		divider: {
 			countElement: 'minimalist-color-count',
 			containers: ['divider-color-1-container', 'divider-color-2-container', 'divider-color-3-container'],
-			autoValue: 'auto'
+			autoValue: 'auto',
+			ciAutoValue: 'ci-auto'
 		},
 		pt: {
 			countElement: 'minimalist-pt-color-mode',
 			containers: ['pt-color-1-container', 'pt-color-2-container'],
-			autoValue: 'auto'
+			autoValue: 'auto',
+			ciAutoValue: 'ci-auto'
 		},
 		type: {
 			checkboxElement: 'minimalist-type-auto-color',
+			checkboxElementCI: 'minimalist-type-auto-color-ci',
 			containers: ['type-color-container']
 		}
 	};
@@ -733,12 +1035,20 @@ function toggleColorVisibility(type) {
 	// Handle type color (checkbox-based) differently
 	if (type === 'type') {
 		const autoColorCheckbox = document.getElementById(settings.checkboxElement);
+		const autoColorCICheckbox = document.getElementById(settings.checkboxElementCI);
 		const container = document.getElementById(settings.containers[0]);
 		const colorInput = document.getElementById('minimalist-type-color');
 		
-		if (autoColorCheckbox && container) {
-			const isAutoChecked = autoColorCheckbox.checked;
+		if (autoColorCheckbox && autoColorCICheckbox && container) {
+			// If either checkbox is checked, hide the custom color input
+			const isAutoChecked = autoColorCheckbox.checked || autoColorCICheckbox.checked;
 			container.style.display = isAutoChecked ? 'none' : 'block';
+			
+			// Ensure only one auto checkbox is checked at a time
+			if (autoColorCheckbox.checked && autoColorCICheckbox.checked) {
+				// If both are checked (shouldn't happen, but handle it), keep CI checked
+				autoColorCheckbox.checked = false;
+			}
 			
 			// ALWAYS keep the input enabled, just hide/show the container
 			if (colorInput) {
@@ -759,7 +1069,7 @@ function toggleColorVisibility(type) {
 	});
 
 	// Show appropriate containers based on selection
-	if (selectedValue === settings.autoValue) {
+	if (selectedValue === settings.autoValue || selectedValue === settings.ciAutoValue) {
 		return;
 	}
 
@@ -821,7 +1131,8 @@ function createMinimalistUI() {
 	<div class='padding input-grid margin-bottom'>
 		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient(); toggleColorVisibility("bg");'>
 			<option value='1' selected>1 Color</option>
-			<option value='mana-auto'>Auto (Mana Colors)</option>
+			<option value='mana-auto'>Auto (Mana Cost)</option>
+			<option value='ci-auto'>Auto (Color Identity)</option>
 			<option value='2'>2 Colors</option>
 			<option value='3'>3 Colors</option>
 		</select>
@@ -853,8 +1164,13 @@ function createMinimalistUI() {
 	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Type Line Color</h5>
 
 	<h5 class='input-description margin-bottom'>Auto Type Line Color</h5>
+	<label class='checkbox-container input margin-bottom'>Auto Color (from color identity)
+		<input id='minimalist-type-auto-color-ci' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
+		<span class='checkmark'></span>
+	</label>
+
 	<label class='checkbox-container input margin-bottom'>Auto Color (from mana cost)
-		<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
+		<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");'>
 		<span class='checkmark'></span>
 	</label>
 
@@ -878,10 +1194,17 @@ function createMinimalistUI() {
 	<h5 class='padding input-description'>Divider Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
 		<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleColorVisibility("divider");'>
-			<option value='auto'>Auto (from mana cost)</option>
+			<option value='auto'>Auto (Mana Cost)</option>
+			<option value='ci-auto' selected>Auto (Color Identity)</option>
 			<option value='1'>1 Color</option>
 			<option value='2'>2 Colors</option>
 			<option value='3'>3 Colors</option>
+		</select>
+	</div>
+
+	<div id='divider-color-1-container' style='display: none;'>
+		<h5 class='padding input-description'>Color 1:</h5>
+		<div class='padding input-grid margin-bottom'>
 		</select>
 	</div>
 
@@ -919,7 +1242,8 @@ function createMinimalistUI() {
 	<h5 class='padding input-description'>Symbol Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
 		<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); toggleColorVisibility("pt");'>
-			<option value='auto'>Auto (from mana cost)</option>
+			<option value='auto'>Auto (Mana Cost)</option>
+			<option value='ci-auto' selected>Auto (Color Identity)</option>
 			<option value='1'>1 Color</option>
 			<option value='2'>2 Colors</option>
 		</select>
@@ -960,28 +1284,39 @@ function updateMinimalistVisuals(options = {}) {
 		includeTextPositions = false,
 		includeDivider = true,
 		includeText = true,
-		includeBackground = false
+		includeBackground = false,
+		skipDrawCard = false  // Allow caller to skip final drawCard if they'll call it themselves
 	} = options;
 	
-	requestAnimationFrame(() => {
-		if (includeTextPositions) {
-			updateTextPositions(card.minimalist.currentHeight);
+	// Cancel any pending update to avoid redundant redraws
+	if (card.minimalist._pendingUpdate) {
+		cancelAnimationFrame(card.minimalist._pendingUpdate);
+	}
+	
+	card.minimalist._pendingUpdate = requestAnimationFrame(async () => {
+		card.minimalist._pendingUpdate = null;
+		
+		// Update text positions if needed - this now handles its own text rendering internally
+		if (includeTextPositions || (includeBackground && card.text.rules)) {
+			await updateTextPositions(card.minimalist.currentHeight);
+			// updateTextPositions calls drawCard internally, so we're done
+			return;
 		}
 		
-		if (includeBackground && card.text.rules) {
-			updateTextPositions(card.minimalist.currentHeight);
+		// Otherwise handle the other updates manually
+		if (includeText) {
+			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+			drawTextBuffer();
 		}
 		
 		if (includeDivider) {
 			drawDividerGradient(); // This includes P/T symbols
 		}
 		
-		if (includeText) {
-			textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-			drawTextBuffer();
+		// Only call drawCard once at the end, unless caller will handle it
+		if (!skipDrawCard) {
+			drawCard();
 		}
-		
-		drawCard();
 	});
 }
 
@@ -1022,7 +1357,12 @@ function updateBackgroundGradient(manaY, rulesY) {
 		if (settings.bgColorCount === 'mana-auto') {
 			backgroundColors = getManaHexColors();
 			if (backgroundColors.length === 0) {
-				backgroundColors = ['#808080'];
+				backgroundColors = [window.MINIMALIST_COLOR_DEFAULTS.artifact];
+			}
+		} else if (settings.bgColorCount === 'ci-auto') {
+			backgroundColors = getColorIdentityHexColors();
+			if (backgroundColors.length === 0) {
+				backgroundColors = [window.MINIMALIST_COLOR_DEFAULTS.artifact];
 			}
 		} else {
 			const colorCount = parseInt(settings.bgColorCount);
@@ -1058,10 +1398,17 @@ function updateBackgroundGradient(manaY, rulesY) {
 
 function updateDividerColors() {
 	if (card.version === 'Minimalist') {
+		const colorCountElement = getCachedElement('minimalist-color-count');
+		const colorCount = colorCountElement?.value;
+		
+		// Don't update if we don't have a valid value from the UI yet
+		if (!colorCount) {
+			return;
+		}
+		
 		const color1 = getCachedElement('minimalist-color-1').value;
 		const color2 = getCachedElement('minimalist-color-2').value;
 		const color3 = getCachedElement('minimalist-color-3').value;
-		const colorCount = getCachedElement('minimalist-color-count').value;
 		
 		updateCardSettings('dividerSettings', { color1, color2, color3, colorCount });
 		updateMinimalistVisuals({ includeDivider: true, includeText: false });
@@ -1083,49 +1430,58 @@ function updatePTSymbols() {
 function updateTypeLineColor() {
 	if (card.version === 'Minimalist' && card.text.type) {
 		const autoColorElement = getCachedElement('minimalist-type-auto-color');
+		const autoColorCIElement = getCachedElement('minimalist-type-auto-color-ci');
 		const typeColorInput = getCachedElement('minimalist-type-color');
 		
-		if (!autoColorElement || !typeColorInput) {
+		if (!autoColorElement || !autoColorCIElement || !typeColorInput) {
 			console.log('Type line elements not found:', {
 				autoColor: !!autoColorElement,
+				autoColorCI: !!autoColorCIElement,
 				typeColor: !!typeColorInput
 			});
 			return;
 		}
 		
 		const autoColor = autoColorElement.checked;
+		const autoColorCI = autoColorCIElement.checked;
 		let newColor;
 		
 		typeColorInput.disabled = false; // Always enable the input
 		
-		if (autoColor) {
-			const manaColors = getManaColorsFromText();
-			if (manaColors.length === 1) {
-				newColor = getColorHex(manaColors[0]);
-			} else if (manaColors.length > 1) {
-				newColor = '#e3d193'; // Gold for multicolor
-			} else {
-				newColor = '#FFFFFF';
-			}
+		if (autoColorCI) {
+			// Use color identity
+			const colorInfo = getColorsForMode('ci-auto');
+			newColor = getSingleColorFromMode(colorInfo);
 			typeColorInput.value = newColor;
+			
+			// Uncheck mana cost if CI is checked
+			if (autoColor) {
+				autoColorElement.checked = false;
+			}
+		} else if (autoColor) {
+			// Use mana cost
+			const colorInfo = getColorsForMode('auto');
+			newColor = getSingleColorFromMode(colorInfo);
+			typeColorInput.value = newColor;
+			
+			// Uncheck CI if mana cost is checked
+			if (autoColorCI) {
+				autoColorCIElement.checked = false;
+			}
 		} else {
+			// Use custom color
 			newColor = typeColorInput.value;
 		}
 		
 		card.text.type.color = newColor;
 		
 		updateCardSettings('typeSettings', { 
-			autoColor, 
-			customColor: typeColorInput.value 
+			autoColor: autoColor,
+			autoColorCI: autoColorCI,
+			customColor: typeColorInput.value
 		});
 		
 		updateMinimalistVisuals({ includeText: true, includeDivider: false });
-	}
-}
-
-function handlePTChange() {
-	if (card.version === 'Minimalist') {
-		updateMinimalistVisuals({ includeDivider: true, includeText: false });
 	}
 }
 
@@ -1197,18 +1553,19 @@ function resetMinimalistGradient() {
 	
 	updateTypeLineColor();
 
-	updateTextPositions(card.minimalist.currentHeight);
-	
-	// Visual feedback
-	const resetButton = document.getElementById('reset-minimalist-gradient');
-	const originalText = resetButton.textContent;
-	resetButton.textContent = 'Settings Reset!';
-	resetButton.classList.add('success-highlight');
-	
-	setTimeout(() => {
-		resetButton.textContent = originalText;
-		resetButton.classList.remove('success-highlight');
-	}, 1500);
+	// This is async now, so we need to await it
+	updateTextPositions(card.minimalist.currentHeight).then(() => {
+		// Visual feedback after update completes
+		const resetButton = document.getElementById('reset-minimalist-gradient');
+		const originalText = resetButton.textContent;
+		resetButton.textContent = 'Settings Reset!';
+		resetButton.classList.add('success-highlight');
+		
+		setTimeout(() => {
+			resetButton.textContent = originalText;
+			resetButton.classList.remove('success-highlight');
+		}, 1500);
+	});
 }
 
 
@@ -1265,6 +1622,8 @@ function resetMinimalistGradient() {
 		toggleColorVisibility('pt');
 		toggleColorVisibility('type');
 		updateTypeLineColor();
+		
+		// Don't call updateMinimalistVisuals here - setupTextHandling will handle the initial draw
 	}, 100);
 
 	    // Store original setBottomInfoStyle function and override it
@@ -1313,9 +1672,6 @@ function resetMinimalistGradient() {
 			
 			card.minimalist.lastProcessedText = text;
 	
-			const dims = getCardDimensions();
-			const ctx = card.minimalist.ctx;
-			
 			// Check if we're at max height and text is getting longer
 			const currentHeight = card.minimalist.currentHeight;
 			const isAtMaxHeight = currentHeight >= card.minimalist.maxHeight;
@@ -1329,25 +1685,8 @@ function resetMinimalistGradient() {
 				return;
 			}
 			
-			// Only calculate height if we need to (not at max, or text is getting shorter)
-			// Batch context operations
-			ctx.clearRect(0, 0, dims.width, dims.height);
-			ctx.font = `${card.text.rules.size * dims.height}px "${card.text.rules.font}"`;
-			
-			const actualTextHeight = measureTextHeight(
-				text,
-				ctx,
-				card.text.rules.width * dims.width,
-				card.text.rules.size * dims.height
-			);
-					
-			const newHeight = Math.min(
-				card.minimalist.maxHeight,
-				Math.max(
-					card.minimalist.minHeight,
-					(actualTextHeight / dims.height)
-				)
-			);
+			// Calculate the proper height using the helper function
+			const newHeight = calculateRulesBoxHeight(text);
 	
 			// Only update if height actually changed
 			if (Math.abs(newHeight - currentHeight) < 0.001) {
@@ -1357,45 +1696,60 @@ function resetMinimalistGradient() {
 	
 			const now = Date.now();
 			const textLengthChanged = Math.abs(lastLength - textLength) > 10;
-			const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
-			
-			if (textLengthChanged || timeElapsed) {
-				requestAnimationFrame(() => {
-					card.minimalist.currentHeight = newHeight;
-					updateTextPositions(newHeight);
-					drawTextBuffer();
-					drawCard();
-					
-					card.minimalist.lastTextLength = textLength;
-					card.minimalist.lastFullUpdate = now;
-				});
-			}
-		}, 200);
-	
-	// Restore saved text
+		const timeElapsed = now - (card.minimalist.lastFullUpdate || 0) > 1000;
+		
+		if (textLengthChanged || timeElapsed) {
+			requestAnimationFrame(async () => {
+				card.minimalist.currentHeight = newHeight;
+				
+				// Now update positions based on the rendered text (it will call drawText internally)
+				await updateTextPositions(newHeight);
+				
+				card.minimalist.lastTextLength = textLength;
+				card.minimalist.lastFullUpdate = now;
+			});
+		}
+	}, 200);	// Restore saved text
 	let hasRulesText = false;
 	for (const key in savedText) {
 		if (card.text[key]) {
 			card.text[key].text = savedText[key];
 			if (key === 'rules' && savedText[key]) {
 				hasRulesText = true;
-				textEdited();
-				requestAnimationFrame(() => {
-					debouncedScale(savedText[key]);
-				});
 			}
 		}
 	}
 
-	if (!hasRulesText) {
+	// If we have rules text, immediately calculate the proper height
+	if (hasRulesText && savedText.rules) {
+		const newHeight = calculateRulesBoxHeight(savedText.rules);
+		
+		card.minimalist.currentHeight = newHeight;
+		card.minimalist.lastTextLength = savedText.rules.length;
+		card.minimalist.lastProcessedText = savedText.rules;
+		card.minimalist.lastFullUpdate = Date.now(); // Prevent immediate re-processing
+		
+		// Update positions - it will handle text rendering internally
 		updateTextPositions(card.minimalist.currentHeight);
-	}
-
-	// Set up input listener
+	} else {
+	// No rules text yet, but still draw the initial frame with default settings
+	drawTextBuffer();
+	updateMinimalistVisuals({
+		includeBackground: true,
+		includeDivider: true,
+		includeText: false
+	});
+}	// Set up input listener
 	const textEditor = getCachedElement('text-editor') || DOM_CACHE.textEditor;
 	if (textEditor && !textEditor._minimalistListener) {
 		textEditor._minimalistListener = true; // Prevent duplicate listeners
 		textEditor.addEventListener('input', function() {
+			// Only trigger recalculation for rules text, not P/T or other fields
+			const currentTextField = Object.keys(card.text)[selectedTextIndex];
+			if (currentTextField !== 'rules') {
+				return; // Skip recalculation for non-rules fields
+			}
+			
 			const text = this.value;
 			const delay = text.length > 500 ? 250 : 0;
 			setTimeout(() => debouncedScale(text), delay);
@@ -1404,23 +1758,60 @@ function resetMinimalistGradient() {
 
 	// Override textEdited function
 	const originalTextEdited = window.textEdited;
-	window.textEdited = function() {
-		if (originalTextEdited) originalTextEdited();
-		
+	window.textEdited = async function() {
 		if (card.version === 'Minimalist') {
-			// Update all visual elements in one coordinated call
+			// Check what text field is currently being edited
+			const currentTextField = Object.keys(card.text)[selectedTextIndex];
+			const isPowerOrToughness = currentTextField === 'power' || currentTextField === 'toughness';
+			
+		// If editing power/toughness, just let normal flow handle it
+		if (isPowerOrToughness) {
+			// Call original to handle the text update normally
+			if (originalTextEdited) originalTextEdited();
+			
+			// After the debounced drawText completes, update P/T positions and redraw
+			// Use a slightly longer delay to ensure drawText has completed
+			setTimeout(async () => {
+				if (card.version === 'Minimalist' && card.dividerCanvas) {
+					// Redraw divider with updated P/T symbols (this also updates power.x position)
+					drawDividerGradient();
+					// Redraw text to show power at its new position
+					await drawText();
+				}
+			}, 600); // 100ms after drawTextBuffer's 500ms delay
+			
+			return;
+		}
+		
+			// For non-P/T fields, update type line color and divider colors
 			updateTypeLineColor();
 			syncDividerColorsWithMana();
 			
+			// For rules text, do the full position recalculation
 			if (card.text.rules && card.text.rules.text) {
-				setTimeout(() => {
-					debouncedScale(card.text.rules.text);
-				}, 400);
+				const text = card.text.rules.text;
+				
+				// Calculate the proper height using the helper function
+				const newHeight = calculateRulesBoxHeight(text);
+				
+				// Update the height immediately
+				card.minimalist.currentHeight = newHeight;
+				card.minimalist.lastProcessedText = text;
+				card.minimalist.lastTextLength = text.length;
+				
+				// Update text positions with proper height - this will call drawText and drawCard
+				await updateTextPositions(newHeight, false);
+				
+				// Don't call the original textEdited since we already handled the draw
+				return;
 			}
 		}
+		
+		// For non-Minimalist or when no rules text, call original
+		if (originalTextEdited) originalTextEdited();
 	};
 	
-	// Override bottomInfoEdited to preserve minimalist styling
+	// Don't override bottomInfoEdited to preserve minimalist styling
 	const originalBottomInfoEdited = window.bottomInfoEdited;
 	window.bottomInfoEdited = async function() {
 		if (originalBottomInfoEdited) {
@@ -1458,8 +1849,18 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 
 	// Initialize card minimalist object
 	if (!card.minimalist) {
+		// Deep clone the defaults to avoid reference issues
+		const defaults = window.MINIMALIST_DEFAULTS;
 		card.minimalist = {
-			...MINIMALIST_DEFAULTS,
+			baseY: defaults.baseY,
+			spacing: defaults.spacing,
+			minHeight: defaults.minHeight,
+			maxHeight: defaults.maxHeight,
+			currentHeight: defaults.currentHeight,
+			settings: { ...defaults.settings },
+			dividerSettings: { ...defaults.dividerSettings },
+			ptSettings: { ...defaults.ptSettings },
+			typeSettings: { ...defaults.typeSettings },
 			textCache: {},
 			lastTextLength: 0,
 			lastProcessedText: '',
@@ -1479,11 +1880,66 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 		initDOMCache();
 	}
 	
+	// Ensure all text fields have a fontSize property to prevent errors
+	// Some text fields (like power/toughness) use 'size' instead of 'fontSize'
+	if (card.text) {
+		for (const key in card.text) {
+			if (card.text[key] && typeof card.text[key].fontSize === 'undefined') {
+				// If fontSize is missing, use the size property or a default
+				card.text[key].fontSize = card.text[key].size || 0.04;
+			}
+		}
+	}
+	
 	// Create UI
 	createMinimalistUI();
+	
+	// Sync UI dropdowns with stored settings to ensure defaults are properly applied
+	if (card.minimalist.dividerSettings?.colorCount) {
+		const dividerDropdown = document.getElementById('minimalist-color-count');
+		if (dividerDropdown) {
+			dividerDropdown.value = card.minimalist.dividerSettings.colorCount;
+		}
+	}
+	
+	if (card.minimalist.ptSettings?.colorMode) {
+		const ptDropdown = document.getElementById('minimalist-pt-color-mode');
+		if (ptDropdown) {
+			ptDropdown.value = card.minimalist.ptSettings.colorMode;
+		}
+	}
+	
+	// Don't draw here - setupTextHandling/initializeMinimalistVersion will handle the initial draw
+	
+	// Watch for mana cost and color identity changes (for imports and updates)
+	let lastManaText = card.text?.mana?.text || '';
+	let lastColorIdentity = card.colorIdentity ? JSON.stringify(card.colorIdentity) : '[]';
+	
+	// Throttle the watcher to reduce overhead - only check every 250ms instead of 100ms
+	setInterval(() => {
+		if (card.version === 'Minimalist') {
+			const currentManaText = card.text?.mana?.text || '';
+			const currentColorIdentity = card.colorIdentity ? JSON.stringify(card.colorIdentity) : '[]';
+			
+			// Check if either mana cost or color identity changed
+			if (currentManaText !== lastManaText || currentColorIdentity !== lastColorIdentity) {
+				lastManaText = currentManaText;
+				lastColorIdentity = currentColorIdentity;
+				
+				// Only update colors/gradients that depend on these values
+				// Don't update text positions - those are handled by setupTextHandling
+				updateMinimalistVisuals({ 
+					includeBackground: false,  // Don't trigger text position recalc
+					includeDivider: true, 
+					includeText: false  // Don't redraw text, just colors
+				});
+			}
+		}
+	}, 250); // Reduced frequency to 250ms for better Firefox performance
 
 	// Make functions globally accessible
 	window.updateMinimalistGradient = updateMinimalistGradient;
+	window.updateMinimalistVisuals = updateMinimalistVisuals;
 	window.updateDividerColors = updateDividerColors;
 	window.updatePTSymbols = updatePTSymbols;
 	window.updateTypeLineColor = updateTypeLineColor;
@@ -1501,4 +1957,11 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	};
 	window.debounce = debounce;
 	window.initializeMinimalistVersion = initializeMinimalistVersion;
+	
+	// Create debounced versions for better Firefox performance
+	// These reduce the number of redraws when users drag sliders or type quickly
+	window.debouncedUpdateGradient = debounce(updateMinimalistGradient, 50);
+	window.debouncedUpdateDivider = debounce(updateDividerColors, 50);
+	window.debouncedUpdatePT = debounce(updatePTSymbols, 50);
+	window.debouncedUpdateTypeLine = debounce(updateTypeLineColor, 50);
 }

@@ -47,7 +47,7 @@ function getStandardHeight() {
 }
 
 //card object
-var card = {width:getStandardWidth(), height:getStandardHeight(), marginX:0, marginY:0, frames:[], artSource:fixUri('/img/blank.png'), artX:0, artY:0, artZoom:1, artRotate:0, setSymbolSource:fixUri('/img/blank.png'), setSymbolX:0, setSymbolY:0, setSymbolZoom:1, watermarkSource:fixUri('/img/blank.png'), watermarkX:0, watermarkY:0, watermarkZoom:1, watermarkLeft:'none', watermarkRight:'none', watermarkOpacity:0.4, version:'', manaSymbols:[]};
+var card = {width:getStandardWidth(), height:getStandardHeight(), marginX:0, marginY:0, frames:[], artSource:fixUri('/img/blank.png'), artX:0, artY:0, artZoom:1, artRotate:0, setSymbolSource:fixUri('/img/blank.png'), setSymbolX:0, setSymbolY:0, setSymbolZoom:1, watermarkSource:fixUri('/img/blank.png'), watermarkX:0, watermarkY:0, watermarkZoom:1, watermarkLeft:'none', watermarkRight:'none', watermarkOpacity:0.4, version:'', manaSymbols:[], colorIdentity:[]};
 //core images/masks
 const black = new Image(); black.crossOrigin = 'anonymous'; black.src = fixUri('/img/black.png');
 const blank = new Image(); blank.crossOrigin = 'anonymous'; blank.src = fixUri('/img/blank.png');
@@ -172,7 +172,9 @@ async function setBottomInfoStyle() {
 function sizeCanvas(name, width = Math.round(card.width * (1 + 2 * card.marginX)), height = Math.round(card.height * (1 + 2 * card.marginY))) {
 	if (!window[name + 'Canvas']) {
 		window[name + 'Canvas'] = document.createElement('canvas');
-		window[name + 'Context'] = window[name + 'Canvas'].getContext('2d');
+		// Use willReadFrequently for text canvas since we scan it for pixel data
+		const contextOptions = (name === 'text') ? { willReadFrequently: true } : {};
+		window[name + 'Context'] = window[name + 'Canvas'].getContext('2d', contextOptions);
 		canvasList[canvasList.length] = name;
 	}
 	window[name + 'Canvas'].width = width;
@@ -3642,8 +3644,10 @@ function loadTextOptions(textObject, replace=true) {
 }
 function textOptionClicked(event) {
 	selectedTextIndex = getElementIndex(event.target);
-	document.querySelector('#text-editor').value = Object.entries(card.text)[selectedTextIndex][1].text;
-	document.querySelector('#text-editor-font-size').value = Object.entries(card.text)[selectedTextIndex][1].fontSize;
+	const textField = Object.entries(card.text)[selectedTextIndex][1];
+	document.querySelector('#text-editor').value = textField.text;
+	// Use fontSize if it exists, otherwise fall back to size or empty string
+	document.querySelector('#text-editor-font-size').value = textField.fontSize || textField.size || '';
 	selectSelectable(event);
 }
 function textboxEditor() {
@@ -7291,6 +7295,15 @@ else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('Station'
 		}
 	}
 
+	// Store color_identity from Scryfall import BEFORE setting text fields
+	// This ensures it's available when the minimalist watcher fires
+	if (cardToImport.color_identity) {
+		card.colorIdentity = cardToImport.color_identity;
+	} else {
+		// Default to empty array if not present
+		card.colorIdentity = [];
+	}
+	
 	if (card.text.nickname) {card.text.nickname.text = cardToImport.flavor_name || '';}
 	if (card.text.mana) {card.text.mana.text = cardToImport.mana_cost || '';}
 	if (card.text.type) {card.text.type.text = langFontCode + cardToImport.type_line || '';}
@@ -7545,6 +7558,7 @@ else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('Station'
 			console.log('Scryfall API search failed.')
 		}
 	}
+	
 	//art
 	var artSearchName = cardToImport.original_name || cardToImport.name;
 	document.querySelector('#art-name').value = artSearchName;
