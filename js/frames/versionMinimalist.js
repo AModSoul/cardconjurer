@@ -1042,15 +1042,33 @@ function toggleColorVisibility(type) {
 		if (autoColorCheckbox && autoColorCICheckbox && container) {
 			// If either checkbox is checked, hide the custom color input
 			const isAutoChecked = autoColorCheckbox.checked || autoColorCICheckbox.checked;
-			container.style.display = isAutoChecked ? 'none' : 'block';
 			
-			// Ensure only one auto checkbox is checked at a time
-			if (autoColorCheckbox.checked && autoColorCICheckbox.checked) {
-				// If both are checked (shouldn't happen, but handle it), keep CI checked
-				autoColorCheckbox.checked = false;
+			// Use flex display instead of block to maintain the layout
+			container.style.display = isAutoChecked ? 'none' : 'flex';
+			
+			// Disable the opposite checkbox when one is checked
+			if (autoColorCheckbox.checked) {
+				autoColorCICheckbox.disabled = true;
+				// Add visual styling
+				autoColorCICheckbox.parentElement.style.opacity = '0.5';
+				autoColorCICheckbox.parentElement.style.cursor = 'not-allowed';
+			} else if (autoColorCICheckbox.checked) {
+				autoColorCheckbox.disabled = true;
+				// Add visual styling
+				autoColorCheckbox.parentElement.style.opacity = '0.5';
+				autoColorCheckbox.parentElement.style.cursor = 'not-allowed';
+			} else {
+				// If neither is checked, enable both
+				autoColorCheckbox.disabled = false;
+				autoColorCICheckbox.disabled = false;
+				// Remove visual styling
+				autoColorCheckbox.parentElement.style.opacity = '1';
+				autoColorCheckbox.parentElement.style.cursor = 'pointer';
+				autoColorCICheckbox.parentElement.style.opacity = '1';
+				autoColorCICheckbox.parentElement.style.cursor = 'pointer';
 			}
 			
-			// ALWAYS keep the input enabled, just hide/show the container
+			// ALWAYS keep the color input enabled, just hide/show the container
 			if (colorInput) {
 				colorInput.disabled = false;
 			}
@@ -1078,7 +1096,6 @@ function toggleColorVisibility(type) {
 		const container = document.getElementById(settings.containers[i]);
 		if (container) container.style.display = 'block';
 	}
-
 }
 
 //============================================================================
@@ -1108,19 +1125,25 @@ function createMinimalistUI() {
 		<span class='checkmark'></span>
 	</label>
 
-	<h5 class='padding input-description'>Maximum Opacity (0-1):</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
-	</div>
-
-	<h5 class='padding input-description'>Fade Start Position:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
-	</div>
-
-	<h5 class='padding input-description'>Fade End Position:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<input id='minimalist-fade-top-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.5' max='0' step='0.01' value='-0.15'>
+	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1;">
+			<h5 class='padding input-description'>Max Opacity:</h5>
+			<div class='padding input-grid'>
+				<input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
+			</div>
+		</div>
+		<div style="flex: 1;">
+			<h5 class='padding input-description'>Fade Start:</h5>
+			<div class='padding input-grid'>
+				<input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
+			</div>
+		</div>
+		<div style="flex: 1;">
+			<h5 class='padding input-description'>Fade End:</h5>
+			<div class='padding input-grid'>
+				<input id='minimalist-fade-top-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.5' max='0' step='0.01' value='-0.15'>
+			</div>
+		</div>
 	</div>
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
@@ -1138,24 +1161,28 @@ function createMinimalistUI() {
 		</select>
 	</div> 
 
-	<div id='bg-color-1-container'>
-		<h5 class='padding input-description'>Background Color 1:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-bg-color-1' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
-		</div>
-	</div>
+	<div style="position: relative; min-height: 60px;">
+		<div id='bg-colors-wrapper' style='display: flex; gap: 10px;'>
+			<div id='bg-color-1-container' style='display: block; flex: 1;'>
+				<h5 class='padding input-description'>Color 1:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-bg-color-1' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+				</div>
+			</div>
 
-	<div id='bg-color-2-container' style='display: none;'>
-		<h5 class='padding input-description'>Background Color 2:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-bg-color-2' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
-		</div>
-	</div>
+			<div id='bg-color-2-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 2:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-bg-color-2' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+				</div>
+			</div>
 
-	<div id='bg-color-3-container' style='display: none;'>
-		<h5 class='padding input-description'>Background Color 3:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+			<div id='bg-color-3-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 3:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -1163,21 +1190,25 @@ function createMinimalistUI() {
 
 	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Type Line Color</h5>
 
-	<h5 class='input-description margin-bottom'>Auto Type Line Color</h5>
-	<label class='checkbox-container input margin-bottom'>Auto Color (from color identity)
-		<input id='minimalist-type-auto-color-ci' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
-		<span class='checkmark'></span>
-	</label>
+	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1;">
+			<h5 class='input-description margin-bottom'>Auto Type Line Color</h5>
+			<label class='checkbox-container input margin-bottom'>Auto Color (from color identity)
+				<input id='minimalist-type-auto-color-ci' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
+				<span class='checkmark'></span>
+			</label>
 
-	<label class='checkbox-container input margin-bottom'>Auto Color (from mana cost)
-		<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");'>
-		<span class='checkmark'></span>
-	</label>
+			<label class='checkbox-container input'>Auto Color (from mana cost)
+				<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");'>
+				<span class='checkmark'></span>
+			</label>
+		</div>
 
-	<div id='type-color-container' style='display: none;'>
-		<h5 class='padding input-description'>Type Line Color:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-type-color' type='color' class='input' oninput='window.updateTypeLineColor();' value='#FFFFFF'>
+		<div id='type-color-container' style='display: none; flex: 1; display: flex; flex-direction: column;'>
+			<h5 class='input-description' style="margin-bottom: 5px;">Type Line Color:</h5>
+			<div style='flex: 1; display: flex; align-items: stretch;'>
+				<input id='minimalist-type-color' type='color' class='input' oninput='window.updateTypeLineColor();' value='#FFFFFF' style='height: 100%;'>
+			</div>
 		</div>
 	</div>
 
@@ -1185,47 +1216,49 @@ function createMinimalistUI() {
 
 	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Divider Bar</h5>
 
-	<h5 class='input-description margin-bottom'>Enable Divider Bar</h5>
-	<label class='checkbox-container input margin-bottom'>Toggle Divider Bar
-		<input id='minimalist-divider-enabled' type='checkbox' class='input' onchange='updateDividerColors();' checked>
-		<span class='checkmark'></span>
-	</label>
-
-	<h5 class='padding input-description'>Divider Colors:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleColorVisibility("divider");'>
-			<option value='auto'>Auto (Mana Cost)</option>
-			<option value='ci-auto' selected>Auto (Color Identity)</option>
-			<option value='1'>1 Color</option>
-			<option value='2'>2 Colors</option>
-			<option value='3'>3 Colors</option>
-		</select>
-	</div>
-
-	<div id='divider-color-1-container' style='display: none;'>
-		<h5 class='padding input-description'>Color 1:</h5>
-		<div class='padding input-grid margin-bottom'>
-		</select>
-	</div>
-
-	<div id='divider-color-1-container' style='display: none;'>
-		<h5 class='padding input-description'>Color 1:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-color-1' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1;">
+			<div style="height: 0px;"></div>
+			<h5 class='input-description' style="margin-bottom: 5px;">Divider Toggle:</h5>
+			<label class='checkbox-container input'>Toggle Divider Bar
+				<input id='minimalist-divider-enabled' type='checkbox' class='input' onchange='updateDividerColors();' checked>
+				<span class='checkmark'></span>
+			</label>
+		</div>
+		<div style="flex: 1;">
+			<h5 class='input-description' style="margin-bottom: 5px;">Divider Colors:</h5>
+			<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleColorVisibility("divider");'>
+				<option value='auto'>Auto (Mana Cost)</option>
+				<option value='ci-auto' selected>Auto (Color Identity)</option>
+				<option value='1'>1 Color</option>
+				<option value='2'>2 Colors</option>
+				<option value='3'>3 Colors</option>
+			</select>
 		</div>
 	</div>
 
-	<div id='divider-color-2-container' style='display: none;'>
-		<h5 class='padding input-description'>Color 2:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-color-2' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
-		</div>
-	</div>
+	<div style="position: relative; min-height: 5px;">
+		<div id='divider-colors-wrapper' style='display: flex; gap: 10px;'>
+			<div id='divider-color-1-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 1:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-color-1' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+				</div>
+			</div>
 
-	<div id='divider-color-3-container' style='display: none;'>
-		<h5 class='padding input-description'>Color 3:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+			<div id='divider-color-2-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 2:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-color-2' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+				</div>
+			</div>
+
+			<div id='divider-color-3-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 3:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -1233,33 +1266,41 @@ function createMinimalistUI() {
 
 	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">P/T Symbols</h5>
 
-	<h5 class='input-description margin-bottom'>Enable P/T Symbols</h5>
-	<label class='checkbox-container input margin-bottom'>Toggle P/T Symbols
-		<input id='minimalist-pt-symbols-enabled' type='checkbox' class='input' onchange='updatePTSymbols();' checked>
-		<span class='checkmark'></span>
-	</label>
-
-	<h5 class='padding input-description'>Symbol Colors:</h5>
-	<div class='padding input-grid margin-bottom'>
-		<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); toggleColorVisibility("pt");'>
-			<option value='auto'>Auto (Mana Cost)</option>
-			<option value='ci-auto' selected>Auto (Color Identity)</option>
-			<option value='1'>1 Color</option>
-			<option value='2'>2 Colors</option>
-		</select>
-	</div>
-
-	<div id='pt-color-1-container' style='display: none;'>
-		<h5 class='padding input-description'>Color 1:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1;">
+			<div style="height: 0px;"></div>
+			<h5 class='input-description' style="margin-bottom: 5px;">Toggle P/T Symbols:</h5>
+			<label class='checkbox-container input'>Toggle P/T Symbols
+				<input id='minimalist-pt-symbols-enabled' type='checkbox' class='input' onchange='updatePTSymbols();' checked>
+				<span class='checkmark'></span>
+			</label>
+		</div>
+		<div style="flex: 1;">
+			<h5 class='input-description' style="margin-bottom: 5px;">Symbol Colors:</h5>
+			<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); toggleColorVisibility("pt");'>
+				<option value='auto'>Auto (Mana Cost)</option>
+				<option value='ci-auto' selected>Auto (Color Identity)</option>
+				<option value='1'>1 Color</option>
+				<option value='2'>2 Colors</option>
+			</select>
 		</div>
 	</div>
 
-	<div id='pt-color-2-container' style='display: none;'>
-		<h5 class='padding input-description'>Color 2:</h5>
-		<div class='padding input-grid margin-bottom'>
-			<input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+	<div style="position: relative; min-height: 5px;">
+		<div id='pt-colors-wrapper' style='display: flex; gap: 10px;'>
+			<div id='pt-color-1-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 1:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+				</div>
+			</div>
+
+			<div id='pt-color-2-container' style='display: none; flex: 1;'>
+				<h5 class='padding input-description'>Color 2:</h5>
+				<div class='padding input-grid margin-bottom'>
+					<input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -1503,7 +1544,7 @@ function resetMinimalistGradient() {
 		color1: getColorHex(manaColors[0]) || '#FFF7D8',
 		color2: getColorHex(manaColors[1]) || '#26C7FE',
 		color3: getColorHex(manaColors[2]) || '#B264FF',
-		colorCount: 'auto',
+		colorCount: 'ci-auto',
 		bgColor1: '#000000',
 		bgColor2: '#000000',
 		bgColor3: '#000000',
@@ -1525,12 +1566,13 @@ function resetMinimalistGradient() {
 	document.getElementById('minimalist-bg-color-3').value = defaultColors.bgColor3;
 	document.getElementById('minimalist-bg-color-count').value = defaultColors.bgColorCount;
 	
-	// Update type line settings
-	document.getElementById('minimalist-type-auto-color').checked = true;
+	// Update type line settings - reset to color identity auto (default)
+	document.getElementById('minimalist-type-auto-color-ci').checked = true;
+	document.getElementById('minimalist-type-auto-color').checked = false;
 	document.getElementById('minimalist-type-color').value = '#FFFFFF';
 	
 	// Update P/T settings
-	document.getElementById('minimalist-pt-color-mode').value = 'auto';
+	document.getElementById('minimalist-pt-color-mode').value = 'ci-auto';
 	document.getElementById('minimalist-pt-color-1').value = '#FFFFFF';
 	document.getElementById('minimalist-pt-color-2').value = '#FFFFFF';
 	
