@@ -1061,6 +1061,70 @@ function drawColoredSymbolAtPosition(symbol, color, symbolWidth, symbolHeight, x
 	card.dividerContext.drawImage(tempCanvas, x, y);
 }
 
+/**
+ * Create color preset swatches for quick color selection
+ * @param {string} inputId - ID of the color input to update
+ * @param {function} updateFunction - Function to call when color is selected
+ */
+function createColorPresets(inputId, updateFunction) {
+	const presets = [
+		{ name: 'White', color: '#FFFFFF' },
+		{ name: 'Blue', color: '#26C7FE' },
+		{ name: 'Black', color: '#B264FF' },
+		{ name: 'Red', color: '#F13F35' },
+		{ name: 'Green', color: '#29EEA6' },
+		{ name: 'Multi', color: '#e3d193' },
+		{ name: 'Land', color: '#ae9787' },
+		{ name: 'Colorless', color: '#CBC2C0' },
+		{ name: 'Artifact', color: '#808080' },
+		{ name: 'Pure Black', color: '#000000' },
+		{ name: 'Pure White', color: '#FFFFFF' }
+	];
+	
+	const container = document.createElement('div');
+	container.className = 'color-presets';
+	container.style.cssText = 'display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; padding: 5px 0;';
+	
+	presets.forEach(preset => {
+		const swatch = document.createElement('button');
+		swatch.className = 'color-preset-swatch';
+		swatch.title = preset.name;
+		swatch.style.cssText = `
+			width: 24px;
+			height: 24px;
+			border: 2px solid rgba(255,255,255,0.3);
+			border-radius: 4px;
+			cursor: pointer;
+			background-color: ${preset.color};
+			padding: 0;
+			transition: transform 0.1s, border-color 0.1s;
+		`;
+		
+		swatch.addEventListener('mouseenter', () => {
+			swatch.style.transform = 'scale(1.1)';
+			swatch.style.borderColor = 'rgba(255,255,255,0.8)';
+		});
+		
+		swatch.addEventListener('mouseleave', () => {
+			swatch.style.transform = 'scale(1)';
+			swatch.style.borderColor = 'rgba(255,255,255,0.3)';
+		});
+		
+		swatch.addEventListener('click', (e) => {
+			e.preventDefault();
+			const input = document.getElementById(inputId);
+			if (input) {
+				input.value = preset.color;
+				updateFunction();
+			}
+		});
+		
+		container.appendChild(swatch);
+	});
+	
+	return container;
+}
+
 function toggleColorVisibility(type) {
 	const config = {
 		bg: {
@@ -1170,6 +1234,56 @@ function createMinimalistUI() {
 	newHTML.innerHTML = getUIHTML();
 	
 	document.querySelector('#creator-menu-sections').appendChild(newHTML);
+	
+	// Add color presets to all color inputs after the UI is created
+	setTimeout(() => {
+		// Background gradient colors
+		const bgColor1 = document.getElementById('minimalist-bg-color-1');
+		const bgColor2 = document.getElementById('minimalist-bg-color-2');
+		const bgColor3 = document.getElementById('minimalist-bg-color-3');
+		
+		if (bgColor1?.parentElement) {
+			bgColor1.parentElement.appendChild(createColorPresets('minimalist-bg-color-1', updateMinimalistGradient));
+		}
+		if (bgColor2?.parentElement) {
+			bgColor2.parentElement.appendChild(createColorPresets('minimalist-bg-color-2', updateMinimalistGradient));
+		}
+		if (bgColor3?.parentElement) {
+			bgColor3.parentElement.appendChild(createColorPresets('minimalist-bg-color-3', updateMinimalistGradient));
+		}
+		
+		// Type line color
+		const typeColor = document.getElementById('minimalist-type-color');
+		if (typeColor?.parentElement?.parentElement) {
+			typeColor.parentElement.parentElement.appendChild(createColorPresets('minimalist-type-color', window.updateTypeLineColor));
+		}
+		
+		// Divider colors
+		const divColor1 = document.getElementById('minimalist-color-1');
+		const divColor2 = document.getElementById('minimalist-color-2');
+		const divColor3 = document.getElementById('minimalist-color-3');
+		
+		if (divColor1?.parentElement) {
+			divColor1.parentElement.appendChild(createColorPresets('minimalist-color-1', updateDividerColors));
+		}
+		if (divColor2?.parentElement) {
+			divColor2.parentElement.appendChild(createColorPresets('minimalist-color-2', updateDividerColors));
+		}
+		if (divColor3?.parentElement) {
+			divColor3.parentElement.appendChild(createColorPresets('minimalist-color-3', updateDividerColors));
+		}
+		
+		// P/T symbol colors
+		const ptColor1 = document.getElementById('minimalist-pt-color-1');
+		const ptColor2 = document.getElementById('minimalist-pt-color-2');
+		
+		if (ptColor1?.parentElement) {
+			ptColor1.parentElement.appendChild(createColorPresets('minimalist-pt-color-1', updatePTSymbols));
+		}
+		if (ptColor2?.parentElement) {
+			ptColor2.parentElement.appendChild(createColorPresets('minimalist-pt-color-2', updatePTSymbols));
+		}
+	}, 100); // Small delay to ensure DOM is ready
 }
 
 	function getUIHTML() {
@@ -1737,12 +1851,12 @@ function resetMinimalistGradient() {
 					// Handle minimalist version specifically
 					if (document.querySelector('#enableNewCollectorStyle').checked) {
 						await loadBottomInfo({
-							midLeft: {text:'{elemidinfo-set} \u2022 {elemidinfo-language}  {savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.0647, y:0.9434, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							topLeft: {text:'{elemidinfo-rarity} {kerning3}{elemidinfo-number}{kerning0}', x:0.0647, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							note: {text:'{loadx}{elemidinfo-note}', x:0.0647, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							bottomLeft: {text:'NOT FOR SALE', x:0.0647, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
-							wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.0647, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
-							bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.0647, y:0.9434, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
+							topLeft: {text:'{elemidinfo-rarity} {kerning3}{elemidinfo-number}{kerning0}', x:0.090, y:0.9134, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+							note: {text:'{loadx}{elemidinfo-note}', x:0.090, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+							midLeft: {text:'{elemidinfo-set} \u2022 {elemidinfo-language}  {savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.090, y:0.9334, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+							bottomLeft: {text:'NOT FOR SALE', x:0.090, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
+							wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.090, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
+							bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.090, y:0.9334, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
 						});
 					} else {
 						// Use the old style (pack default)
