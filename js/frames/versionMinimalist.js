@@ -21,9 +21,9 @@ if (typeof window.MINIMALIST_DEFAULTS === 'undefined') {
 			bgColorCount: '1'
 		},
 		dividerSettings: {
-			color1: '#FFF7D8',
-			color2: '#26C7FE',
-			color3: '#B264FF',
+			color1: '#ffffff',
+			color2: '#ffffff',
+			color3: '#ffffff',
 			colorCount: 'ci-auto'
 		},
 		ptSettings: {
@@ -33,7 +33,6 @@ if (typeof window.MINIMALIST_DEFAULTS === 'undefined') {
 			color2: '#FFFFFF'
 		},
 		typeSettings: {
-			autoColor: false,
 			autoColorCI: true,
 			customColor: '#FFFFFF'
 		}
@@ -70,7 +69,7 @@ if (typeof window.MINIMALIST_COLOR_DEFAULTS === 'undefined') {
 	window.MINIMALIST_COLOR_DEFAULTS = {
 		colorless: '#CBC2C0',    // Used for colorless cards (P/T symbols, divider)
 		multicolor: '#e3d193',    // Gold for multicolor
-		artifact: '#808080',      // Gray for artifacts/no color
+		artifact: '#bff7f8',      // Light Blue for artifacts
 		white: '#FFFFFF'          // Default white for text
 	};
 }
@@ -107,14 +106,14 @@ function initDOMCache() {
 	// Cache UI elements that are accessed frequently
 	const elementIds = [
 		'minimalist-bg-gradient-enabled', 'minimalist-divider-enabled',
-		'minimalist-max-opacity', 'minimalist-fade-bottom-offset',
+		'minimalist-min-rules-height', 'minimalist-max-rules-height', 'minimalist-max-opacity', 'minimalist-fade-bottom-offset',
 		'minimalist-fade-top-offset', 'minimalist-bg-color-count',
 		'minimalist-color-count', 'minimalist-pt-symbols-enabled',
 		'minimalist-pt-color-mode', 'minimalist-bg-color-1',
 		'minimalist-bg-color-2', 'minimalist-bg-color-3',
 		'minimalist-color-1', 'minimalist-color-2', 'minimalist-color-3',
 		'minimalist-pt-color-1', 'minimalist-pt-color-2',
-		'minimalist-type-auto-color', 'minimalist-type-auto-color-ci', 'minimalist-type-color'
+		'minimalist-type-auto-color-ci', 'minimalist-type-color'
 	];
 	
 	elementIds.forEach(id => {
@@ -225,49 +224,64 @@ function blendColors(hex1, hex2, ratio = 0.5) {
 	
 	return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
-function getManaColorsFromText() {
-	if (!card.text.mana || !card.text.mana.text) {
-		return [];
-	}
-	
-	const manaText = card.text.mana.text;
-	
-	// Use cached result if text hasn't changed
-	if (card.minimalist._lastManaText === manaText && card.minimalist._cachedManaColors) {
-		return card.minimalist._cachedManaColors;
-	}
-	
-	const colors = [];
-	const manaMatches = manaText.match(/\{[^}]+\}/g);
-	
-	if (!manaMatches) {
-		card.minimalist._cachedManaColors = colors;
-		card.minimalist._lastManaText = manaText;
-		return colors;
-	}
-	
+
+/**
+ * Update card.colorIdentity based on the current mana cost and rules text
+ * This ensures color identity stays in sync when manually typing
+ * Includes mana symbols from both mana cost and rules text (like real Magic cards)
+ */
+function updateColorIdentityFromManaCost() {
 	const seenColors = new Set();
+	
+	// Collect mana symbols from mana cost
+	if (card.text?.mana?.text) {
+		extractColorsFromText(card.text.mana.text, seenColors);
+	}
+	
+	// Collect mana symbols from rules text
+	if (card.text?.rules?.text) {
+		extractColorsFromText(card.text.rules.text, seenColors);
+	}
+	
+	// Update color identity with sorted array (WUBRG order)
+	const wubrgOrder = ['W', 'U', 'B', 'R', 'G'];
+	card.colorIdentity = wubrgOrder.filter(c => seenColors.has(c));
+}
+
+/**
+ * Extract color identity from text containing mana symbols
+ * @param {string} text - Text to scan for mana symbols
+ * @param {Set} seenColors - Set to add found colors to
+ */
+function extractColorsFromText(text, seenColors) {
+	if (!text) return;
+	
+	const manaMatches = text.match(/\{[^}]+\}/g);
+	if (!manaMatches) return;
 	
 	for (const match of manaMatches) {
 		const symbol = match.toLowerCase().replace(/[{}]/g, '');
 		
-		if (MANA_COLOR_MAP[symbol] && !seenColors.has(MANA_COLOR_MAP[symbol])) {
-			colors.push(MANA_COLOR_MAP[symbol]);
-			seenColors.add(MANA_COLOR_MAP[symbol]);
+		// Map mana symbols to color identity letters
+		if (MANA_COLOR_MAP[symbol]) {
+			// Single color symbol (w, u, b, r, g)
+			seenColors.add(symbol.toUpperCase());
 		} else if (symbol.includes('/')) {
-			const hybridColors = symbol.split('/');
-			for (const hybridColor of hybridColors) {
-				if (MANA_COLOR_MAP[hybridColor] && !seenColors.has(MANA_COLOR_MAP[hybridColor])) {
-					colors.push(MANA_COLOR_MAP[hybridColor]);
-					seenColors.add(MANA_COLOR_MAP[hybridColor]);
+			// Hybrid mana - add both colors
+			const parts = symbol.split('/');
+			for (const part of parts) {
+				if (MANA_COLOR_MAP[part]) {
+					seenColors.add(part.toUpperCase());
 				}
+			}
+		} else if (symbol.includes('p')) {
+			// Phyrexian mana (wp, up, bp, rp, gp)
+			const colorPart = symbol.replace('p', '');
+			if (MANA_COLOR_MAP[colorPart]) {
+				seenColors.add(colorPart.toUpperCase());
 			}
 		}
 	}
-	
-	card.minimalist._cachedManaColors = colors;
-	card.minimalist._lastManaText = manaText;
-	return colors;
 }
 
 function getColorIdentityColors() {
@@ -289,22 +303,17 @@ function getColorIdentityColors() {
 	return colors;
 }
 
-function getManaHexColors() {
-	return getManaColorsFromText().map(color => getColorHex(color));
-}
-
 function getColorIdentityHexColors() {
 	return getColorIdentityColors().map(color => getColorHex(color));
 }
 
 /**
- * Get color(s) based on a mode ('auto' for mana cost, 'ci-auto' for color identity)
+ * Get color(s) based on color identity
  * Returns an object with color array and convenience properties
- * @param {string} mode - 'auto' or 'ci-auto'
  * @returns {object} - { colors: array, count: number, isEmpty: boolean, isSingle: boolean, isMulti: boolean }
  */
-function getColorsForMode(mode) {
-	const colorArray = mode === 'ci-auto' ? getColorIdentityColors() : getManaColorsFromText();
+function getColorsForMode() {
+	const colorArray = getColorIdentityColors();
 	return {
 		colors: colorArray,
 		hexColors: colorArray.map(c => getColorHex(c)),
@@ -351,7 +360,6 @@ function setUIDefaults() {
 		'pt-color-mode': window.MINIMALIST_DEFAULTS.ptSettings.colorMode,
 		'pt-color-1': window.MINIMALIST_DEFAULTS.ptSettings.color1,
 		'pt-color-2': window.MINIMALIST_DEFAULTS.ptSettings.color2,
-		'type-auto-color': window.MINIMALIST_DEFAULTS.typeSettings.autoColor,
 		'type-auto-color-ci': window.MINIMALIST_DEFAULTS.typeSettings.autoColorCI,
 		'type-color': window.MINIMALIST_DEFAULTS.typeSettings.customColor 
 	};
@@ -513,17 +521,14 @@ function calculateRulesBoxHeight(text) {
 function findFirstTextPixel() {
 	// Scan the text canvas to find the first rendered pixel of rules text
 	if (!textCanvas) {
-		console.log('Pixel scan skipped: no textCanvas');
 		return null;
 	}
 	
 	if (!card.text.rules) {
-		console.log('Pixel scan skipped: no card.text.rules');
 		return null;
 	}
 	
 	if (!card.text.rules.text || card.text.rules.text.trim() === '') {
-		console.log('Pixel scan skipped: rules text is empty. Text value:', card.text.rules.text);
 		return null;
 	}
 	
@@ -532,9 +537,6 @@ function findFirstTextPixel() {
 	const rulesHeight = card.text.rules.height * dims.height;
 	const rulesX = card.text.rules.x * dims.width;
 	const rulesWidth = card.text.rules.width * dims.width;
-	
-	console.log('Starting pixel scan from Y:', Math.floor(rulesY), 'to', Math.floor(rulesY + rulesHeight), 'Text length:', card.text.rules.text.length);
-	console.log('Canvas dimensions:', textCanvas.width, 'x', textCanvas.height);
 	
 	// Get image data from the text canvas in the rules text area
 	const ctx = textContext;
@@ -571,7 +573,6 @@ function findFirstTextPixel() {
 	}
 	
 	if (firstTextY === null || lastTextY === null) {
-		console.log('No text pixels found in scan after checking', pixelsChecked, 'pixels');
 		return card.text.rules.y;
 	}
 	
@@ -580,9 +581,6 @@ function findFirstTextPixel() {
 	
 	// Just use the first pixel position directly
 	const normalizedTop = firstTextY / dims.height;
-	
-	console.log('Text spans from Y:', firstTextY, 'to', lastTextY, '(height:', textHeightPixels, 'px)');
-	console.log('First pixel at:', firstTextY, 'px (', normalizedTop, 'normalized)');
 	
 	return normalizedTop;
 }
@@ -732,8 +730,6 @@ async function updateTextPositions(rulesHeight, skipDrawCard = false) {
 		const desiredDividerGap = 0.01; // Gap from divider to actual first text pixel
 		const dividerY = actualTextTopY - desiredDividerGap;
 		
-		console.log('Text box at:', rulesY, 'Actual text at:', actualTextTopY, 'Divider at:', dividerY);
-		
 		// Only update divider position and elements above it
 		// DO NOT reposition the rules text box - keep it stable
 		updateDividerAndAbove(dividerY);
@@ -748,7 +744,6 @@ async function updateTextPositions(rulesHeight, skipDrawCard = false) {
 		}
 	} else {
 		// Fallback: if scan fails, use the standard positioning
-		console.log('Scan failed, using standard positioning at rulesY:', rulesY);
 		drawDividerGradient();
 		if (!skipDrawCard) {
 			drawCard();
@@ -849,7 +844,7 @@ function getDividerColors() {
 	let colorsToUse = [];
 	let colorCount = 0;
 	
-	if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount !== 'auto' && card.minimalist.dividerSettings.colorCount !== 'ci-auto') {
+	if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount !== 'ci-auto') {
 		colorCount = parseInt(card.minimalist.dividerSettings.colorCount);
 		const customColors = [
 			card.minimalist.dividerSettings.color1,
@@ -857,11 +852,8 @@ function getDividerColors() {
 			card.minimalist.dividerSettings.color3
 		];
 		colorsToUse = customColors.slice(0, colorCount);
-	} else if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount === 'ci-auto') {
-		colorsToUse = getColorIdentityHexColors();
-		colorCount = colorsToUse.length;
 	} else {
-		colorsToUse = getManaHexColors();
+		colorsToUse = getColorIdentityHexColors();
 		colorCount = colorsToUse.length;
 	}
 	
@@ -903,15 +895,18 @@ function drawPTSymbols() {
 	const dims = getCardDimensions();
 	
 	// Symbol sizes
-	const powerSymbolWidth = 99;
-	const powerSymbolHeight = 175;
-	const toughnessSymbolWidth = 101;
-	const toughnessSymbolHeight = 175;
+	const powerSymbolWidth = 74;
+	const powerSymbolHeight = 130;
+	const toughnessSymbolWidth = 75;
+	const toughnessSymbolHeight = 130;
 	
 	// Separate spacing controls for each gap
-	const toughnessTextToSymbolSpacing = -17; // pixels between toughness text and toughness symbol
-	const toughnessSymbolToPowerTextSpacing = 145; // pixels between toughness symbol and power text
-	const powerTextToSymbolSpacing = -17; // pixels between power text and power symbol
+	const toughnessTextToSymbolSpacing = -45; // pixels between toughness text and toughness symbol
+	const toughnessSymbolToPowerTextSpacing = 135; // pixels between toughness symbol and power text
+	const powerTextToSymbolSpacing = -45; // pixels between power text and power symbol
+	
+	// Vertical offset adjustment for symbol alignment (positive = move down, negative = move up)
+	const symbolVerticalOffset = 30; // Adjust this value to fine-tune vertical alignment
 	
 	// Step 1: Keep toughness at pack's fixed position
 	const toughnessTextCenterX = card.text.toughness.x * dims.width;
@@ -923,7 +918,7 @@ function drawPTSymbols() {
 	
 	// Position toughness symbol with its own spacing
 	const toughnessSymbolX = toughnessTextLeftEdge - toughnessTextToSymbolSpacing;
-	const toughnessSymbolY = toughnessTextY - (toughnessSymbolHeight / 2) + (card.text.toughness.size * dims.height / 2);
+	const toughnessSymbolY = toughnessTextY - (toughnessSymbolHeight / 2) + (card.text.toughness.size * dims.height / 2) + symbolVerticalOffset;
 	
 	// Step 3: Position power text with its own spacing from toughness symbol
 	const powerTextWidth = measureTextWidth(card.text.power.text, card.text.power);
@@ -932,7 +927,7 @@ function drawPTSymbols() {
 	// Step 4: Position power symbol with its own spacing from power text
 	const powerTextLeftEdge = powerTextCenterX - (powerTextWidth / 2);
 	const powerSymbolX = powerTextLeftEdge - powerTextToSymbolSpacing;
-	const powerSymbolY = toughnessTextY - (powerSymbolHeight / 2) + (card.text.power.size * dims.height / 2);
+	const powerSymbolY = toughnessTextY - (powerSymbolHeight / 2) + (card.text.power.size * dims.height / 2) + symbolVerticalOffset;
 	
 	// Update the power text position to align with symbols
 	if (hasPower) {
@@ -953,8 +948,8 @@ function getPTColors() {
 	const colorMode = card.minimalist.ptSettings?.colorMode ?? 'ci-auto';
 	let powerColor, toughnessColor;
 
-	if (colorMode === 'auto' || colorMode === 'ci-auto') {
-		const colorInfo = getColorsForMode(colorMode);
+	if (colorMode === 'ci-auto') {
+		const colorInfo = getColorsForMode();
 		
 		if (colorInfo.isEmpty) {
 			powerColor = toughnessColor = window.MINIMALIST_COLOR_DEFAULTS.colorless;
@@ -1002,28 +997,88 @@ function drawColoredSymbolAtPosition(symbol, color, symbolWidth, symbolHeight, x
 	card.dividerContext.drawImage(tempCanvas, x, y);
 }
 
+/**
+ * Create color preset swatches for quick color selection
+ * @param {string} inputId - ID of the color input to update
+ * @param {function} updateFunction - Function to call when color is selected
+ */
+function createColorPresets(inputId, updateFunction) {
+	const presets = [
+		{ name: 'White', color: '#FFFFFF' },
+		{ name: 'Blue', color: '#26C7FE' },
+		{ name: 'Black', color: '#B264FF' },
+		{ name: 'Red', color: '#F13F35' },
+		{ name: 'Green', color: '#29EEA6' },
+		{ name: 'Multi', color: '#e3d193' },
+		{ name: 'Land', color: '#ae9787' },
+		{ name: 'Colorless', color: '#CBC2C0' },
+		{ name: 'Artifact', color: '#bff7f8' },
+		{ name: 'Pure Black', color: '#000000' },
+		{ name: 'Pure White', color: '#FFFFFF' }
+	];
+	
+	const container = document.createElement('div');
+	container.className = 'color-presets';
+	container.style.cssText = 'display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; padding: 5px 0;';
+	
+	presets.forEach(preset => {
+		const swatch = document.createElement('button');
+		swatch.className = 'color-preset-swatch';
+		swatch.title = preset.name;
+		swatch.style.cssText = `
+			width: 24px;
+			height: 24px;
+			border: 2px solid rgba(255,255,255,0.3);
+			border-radius: 4px;
+			cursor: pointer;
+			background-color: ${preset.color};
+			padding: 0;
+			transition: transform 0.1s, border-color 0.1s;
+		`;
+		
+		swatch.addEventListener('mouseenter', () => {
+			swatch.style.transform = 'scale(1.1)';
+			swatch.style.borderColor = 'rgba(255,255,255,0.8)';
+		});
+		
+		swatch.addEventListener('mouseleave', () => {
+			swatch.style.transform = 'scale(1)';
+			swatch.style.borderColor = 'rgba(255,255,255,0.3)';
+		});
+		
+		swatch.addEventListener('click', (e) => {
+			e.preventDefault();
+			const input = document.getElementById(inputId);
+			if (input) {
+				input.value = preset.color;
+				updateFunction();
+			}
+		});
+		
+		container.appendChild(swatch);
+	});
+	
+	return container;
+}
+
 function toggleColorVisibility(type) {
 	const config = {
 		bg: {
 			countElement: 'minimalist-bg-color-count',
 			containers: ['bg-color-1-container', 'bg-color-2-container', 'bg-color-3-container'],
-			autoValue: 'mana-auto',
 			ciAutoValue: 'ci-auto'
 		},
 		divider: {
 			countElement: 'minimalist-color-count',
 			containers: ['divider-color-1-container', 'divider-color-2-container', 'divider-color-3-container'],
-			autoValue: 'auto',
 			ciAutoValue: 'ci-auto'
 		},
 		pt: {
 			countElement: 'minimalist-pt-color-mode',
 			containers: ['pt-color-1-container', 'pt-color-2-container'],
-			autoValue: 'auto',
 			ciAutoValue: 'ci-auto'
 		},
 		type: {
-			checkboxElement: 'minimalist-type-auto-color',
 			checkboxElementCI: 'minimalist-type-auto-color-ci',
 			containers: ['type-color-container']
 		}
@@ -1034,39 +1089,16 @@ function toggleColorVisibility(type) {
 
 	// Handle type color (checkbox-based) differently
 	if (type === 'type') {
-		const autoColorCheckbox = document.getElementById(settings.checkboxElement);
 		const autoColorCICheckbox = document.getElementById(settings.checkboxElementCI);
 		const container = document.getElementById(settings.containers[0]);
 		const colorInput = document.getElementById('minimalist-type-color');
 		
-		if (autoColorCheckbox && autoColorCICheckbox && container) {
-			// If either checkbox is checked, hide the custom color input
-			const isAutoChecked = autoColorCheckbox.checked || autoColorCICheckbox.checked;
+		if (autoColorCICheckbox && container) {
+			// If checkbox is checked, hide the custom color input
+			const isAutoChecked = autoColorCICheckbox.checked;
 			
 			// Use flex display instead of block to maintain the layout
 			container.style.display = isAutoChecked ? 'none' : 'flex';
-			
-			// Disable the opposite checkbox when one is checked
-			if (autoColorCheckbox.checked) {
-				autoColorCICheckbox.disabled = true;
-				// Add visual styling
-				autoColorCICheckbox.parentElement.style.opacity = '0.5';
-				autoColorCICheckbox.parentElement.style.cursor = 'not-allowed';
-			} else if (autoColorCICheckbox.checked) {
-				autoColorCheckbox.disabled = true;
-				// Add visual styling
-				autoColorCheckbox.parentElement.style.opacity = '0.5';
-				autoColorCheckbox.parentElement.style.cursor = 'not-allowed';
-			} else {
-				// If neither is checked, enable both
-				autoColorCheckbox.disabled = false;
-				autoColorCICheckbox.disabled = false;
-				// Remove visual styling
-				autoColorCheckbox.parentElement.style.opacity = '1';
-				autoColorCheckbox.parentElement.style.cursor = 'pointer';
-				autoColorCICheckbox.parentElement.style.opacity = '1';
-				autoColorCICheckbox.parentElement.style.cursor = 'pointer';
-			}
 			
 			// ALWAYS keep the color input enabled, just hide/show the container
 			if (colorInput) {
@@ -1087,7 +1119,7 @@ function toggleColorVisibility(type) {
 	});
 
 	// Show appropriate containers based on selection
-	if (selectedValue === settings.autoValue || selectedValue === settings.ciAutoValue) {
+	if (selectedValue === settings.ciAutoValue) {
 		return;
 	}
 
@@ -1111,6 +1143,56 @@ function createMinimalistUI() {
 	newHTML.innerHTML = getUIHTML();
 	
 	document.querySelector('#creator-menu-sections').appendChild(newHTML);
+	
+	// Add color presets to all color inputs after the UI is created
+	setTimeout(() => {
+		// Background gradient colors
+		const bgColor1 = document.getElementById('minimalist-bg-color-1');
+		const bgColor2 = document.getElementById('minimalist-bg-color-2');
+		const bgColor3 = document.getElementById('minimalist-bg-color-3');
+		
+		if (bgColor1?.parentElement) {
+			bgColor1.parentElement.appendChild(createColorPresets('minimalist-bg-color-1', updateMinimalistGradient));
+		}
+		if (bgColor2?.parentElement) {
+			bgColor2.parentElement.appendChild(createColorPresets('minimalist-bg-color-2', updateMinimalistGradient));
+		}
+		if (bgColor3?.parentElement) {
+			bgColor3.parentElement.appendChild(createColorPresets('minimalist-bg-color-3', updateMinimalistGradient));
+		}
+		
+		// Type line color
+		const typeColor = document.getElementById('minimalist-type-color');
+		if (typeColor?.parentElement?.parentElement) {
+			typeColor.parentElement.parentElement.appendChild(createColorPresets('minimalist-type-color', window.updateTypeLineColor));
+		}
+		
+		// Divider colors
+		const divColor1 = document.getElementById('minimalist-color-1');
+		const divColor2 = document.getElementById('minimalist-color-2');
+		const divColor3 = document.getElementById('minimalist-color-3');
+		
+		if (divColor1?.parentElement) {
+			divColor1.parentElement.appendChild(createColorPresets('minimalist-color-1', updateDividerColors));
+		}
+		if (divColor2?.parentElement) {
+			divColor2.parentElement.appendChild(createColorPresets('minimalist-color-2', updateDividerColors));
+		}
+		if (divColor3?.parentElement) {
+			divColor3.parentElement.appendChild(createColorPresets('minimalist-color-3', updateDividerColors));
+		}
+		
+		// P/T symbol colors
+		const ptColor1 = document.getElementById('minimalist-pt-color-1');
+		const ptColor2 = document.getElementById('minimalist-pt-color-2');
+		
+		if (ptColor1?.parentElement) {
+			ptColor1.parentElement.appendChild(createColorPresets('minimalist-pt-color-1', updatePTSymbols));
+		}
+		if (ptColor2?.parentElement) {
+			ptColor2.parentElement.appendChild(createColorPresets('minimalist-pt-color-2', updatePTSymbols));
+		}
+	}, 100); // Small delay to ensure DOM is ready
 }
 
 	function getUIHTML() {
@@ -1126,6 +1208,18 @@ function createMinimalistUI() {
 	</label>
 
 	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1;">
+			<h5 class='padding input-description'>Min Rules Height:</h5>
+			<div class='padding input-grid'>
+				<input id='minimalist-min-rules-height' type='number' class='input' oninput='updateMinimalistMinHeight();' min='0.05' max='0.5' step='0.01' value='0.1'>
+			</div>
+		</div>
+		<div style="flex: 1;">
+			<h5 class='padding input-description'>Max Rules Height:</h5>
+			<div class='padding input-grid'>
+				<input id='minimalist-max-rules-height' type='number' class='input' oninput='updateMinimalistMaxHeight();' min='0.1' max='0.8' step='0.01' value='0.25'>
+			</div>
+		</div>
 		<div style="flex: 1;">
 			<h5 class='padding input-description'>Max Opacity:</h5>
 			<div class='padding input-grid'>
@@ -1154,7 +1248,6 @@ function createMinimalistUI() {
 	<div class='padding input-grid margin-bottom'>
 		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient(); toggleColorVisibility("bg");'>
 			<option value='1' selected>1 Color</option>
-			<option value='mana-auto'>Auto (Mana Cost)</option>
 			<option value='ci-auto'>Auto (Color Identity)</option>
 			<option value='2'>2 Colors</option>
 			<option value='3'>3 Colors</option>
@@ -1197,11 +1290,6 @@ function createMinimalistUI() {
 				<input id='minimalist-type-auto-color-ci' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
 				<span class='checkmark'></span>
 			</label>
-
-			<label class='checkbox-container input'>Auto Color (from mana cost)
-				<input id='minimalist-type-auto-color' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");'>
-				<span class='checkmark'></span>
-			</label>
 		</div>
 
 		<div id='type-color-container' style='display: none; flex: 1; display: flex; flex-direction: column;'>
@@ -1228,7 +1316,6 @@ function createMinimalistUI() {
 		<div style="flex: 1;">
 			<h5 class='input-description' style="margin-bottom: 5px;">Divider Colors:</h5>
 			<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleColorVisibility("divider");'>
-				<option value='auto'>Auto (Mana Cost)</option>
 				<option value='ci-auto' selected>Auto (Color Identity)</option>
 				<option value='1'>1 Color</option>
 				<option value='2'>2 Colors</option>
@@ -1278,7 +1365,6 @@ function createMinimalistUI() {
 		<div style="flex: 1;">
 			<h5 class='input-description' style="margin-bottom: 5px;">Symbol Colors:</h5>
 			<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); toggleColorVisibility("pt");'>
-				<option value='auto'>Auto (Mana Cost)</option>
 				<option value='ci-auto' selected>Auto (Color Identity)</option>
 				<option value='1'>1 Color</option>
 				<option value='2'>2 Colors</option>
@@ -1386,6 +1472,54 @@ function updateMinimalistGradient() {
 	}
 }
 
+function updateMinimalistMinHeight() {
+	if (card.version === 'Minimalist' && card.minimalist) {
+		const minHeightInput = getCachedElement('minimalist-min-rules-height');
+		let minHeight = parseFloat(minHeightInput.value);
+		const maxHeight = card.minimalist.maxHeight;
+		
+		// Ensure min doesn't exceed max
+		if (minHeight > maxHeight) {
+			minHeight = maxHeight;
+			minHeightInput.value = maxHeight;
+		}
+		
+		card.minimalist.minHeight = minHeight;
+		
+		// Update the max attribute of the input
+		minHeightInput.max = maxHeight;
+		
+		// Recalculate text positions with new minimum height
+		const rulesText = card.text.rules?.text || '';
+		const rulesHeight = calculateRulesBoxHeight(rulesText);
+		updateTextPositions(rulesHeight);
+	}
+}
+
+function updateMinimalistMaxHeight() {
+	if (card.version === 'Minimalist' && card.minimalist) {
+		const maxHeightInput = getCachedElement('minimalist-max-rules-height');
+		let maxHeight = parseFloat(maxHeightInput.value);
+		const minHeight = card.minimalist.minHeight;
+		
+		// Ensure max doesn't go below min
+		if (maxHeight < minHeight) {
+			maxHeight = minHeight;
+			maxHeightInput.value = minHeight;
+		}
+		
+		card.minimalist.maxHeight = maxHeight;
+		
+		// Update the min attribute of the input
+		maxHeightInput.min = minHeight;
+		
+		// Recalculate text positions with new maximum height
+		const rulesText = card.text.rules?.text || '';
+		const rulesHeight = calculateRulesBoxHeight(rulesText);
+		updateTextPositions(rulesHeight);
+	}
+}
+
 function updateBackgroundGradient(manaY, rulesY) {
 	if (!card.gradientOptions) return;
 	
@@ -1395,12 +1529,7 @@ function updateBackgroundGradient(manaY, rulesY) {
 		const settings = card.minimalist.settings || MINIMALIST_DEFAULTS.settings;
 		
 		let backgroundColors = [];
-		if (settings.bgColorCount === 'mana-auto') {
-			backgroundColors = getManaHexColors();
-			if (backgroundColors.length === 0) {
-				backgroundColors = [window.MINIMALIST_COLOR_DEFAULTS.artifact];
-			}
-		} else if (settings.bgColorCount === 'ci-auto') {
+		if (settings.bgColorCount === 'ci-auto') {
 			backgroundColors = getColorIdentityHexColors();
 			if (backgroundColors.length === 0) {
 				backgroundColors = [window.MINIMALIST_COLOR_DEFAULTS.artifact];
@@ -1470,20 +1599,13 @@ function updatePTSymbols() {
 
 function updateTypeLineColor() {
 	if (card.version === 'Minimalist' && card.text.type) {
-		const autoColorElement = getCachedElement('minimalist-type-auto-color');
 		const autoColorCIElement = getCachedElement('minimalist-type-auto-color-ci');
 		const typeColorInput = getCachedElement('minimalist-type-color');
 		
-		if (!autoColorElement || !autoColorCIElement || !typeColorInput) {
-			console.log('Type line elements not found:', {
-				autoColor: !!autoColorElement,
-				autoColorCI: !!autoColorCIElement,
-				typeColor: !!typeColorInput
-			});
+		if (!autoColorCIElement || !typeColorInput) {
 			return;
 		}
 		
-		const autoColor = autoColorElement.checked;
 		const autoColorCI = autoColorCIElement.checked;
 		let newColor;
 		
@@ -1491,24 +1613,9 @@ function updateTypeLineColor() {
 		
 		if (autoColorCI) {
 			// Use color identity
-			const colorInfo = getColorsForMode('ci-auto');
+			const colorInfo = getColorsForMode();
 			newColor = getSingleColorFromMode(colorInfo);
 			typeColorInput.value = newColor;
-			
-			// Uncheck mana cost if CI is checked
-			if (autoColor) {
-				autoColorElement.checked = false;
-			}
-		} else if (autoColor) {
-			// Use mana cost
-			const colorInfo = getColorsForMode('auto');
-			newColor = getSingleColorFromMode(colorInfo);
-			typeColorInput.value = newColor;
-			
-			// Uncheck CI if mana cost is checked
-			if (autoColorCI) {
-				autoColorCIElement.checked = false;
-			}
 		} else {
 			// Use custom color
 			newColor = typeColorInput.value;
@@ -1517,7 +1624,6 @@ function updateTypeLineColor() {
 		card.text.type.color = newColor;
 		
 		updateCardSettings('typeSettings', { 
-			autoColor: autoColor,
 			autoColorCI: autoColorCI,
 			customColor: typeColorInput.value
 		});
@@ -1526,24 +1632,12 @@ function updateTypeLineColor() {
 	}
 }
 
-function syncDividerColorsWithMana() {
-	if (card.minimalist.dividerSettings && card.minimalist.dividerSettings.colorCount === 'auto') {
-		const manaColors = getManaColorsFromText();
-		
-		document.getElementById('minimalist-color-1').value = getColorHex(manaColors[0]) || '#FFF7D8';
-		document.getElementById('minimalist-color-2').value = getColorHex(manaColors[1]) || '#26C7FE';
-		document.getElementById('minimalist-color-3').value = getColorHex(manaColors[2]) || '#B264FF';
-		
-		updateMinimalistVisuals({ includeDivider: true, includeText: false });
-	}
-}
-
 function resetMinimalistGradient() {
-	const manaColors = getManaColorsFromText();
+	const ciColors = getColorIdentityColors();
 	const defaultColors = {
-		color1: getColorHex(manaColors[0]) || '#FFF7D8',
-		color2: getColorHex(manaColors[1]) || '#26C7FE',
-		color3: getColorHex(manaColors[2]) || '#B264FF',
+		color1: getColorHex(ciColors[0]) || '#FFF7D8',
+		color2: getColorHex(ciColors[1]) || '#26C7FE',
+		color3: getColorHex(ciColors[2]) || '#B264FF',
 		colorCount: 'ci-auto',
 		bgColor1: '#000000',
 		bgColor2: '#000000',
@@ -1553,6 +1647,12 @@ function resetMinimalistGradient() {
 	
 	// Set all UI defaults
 	setUIDefaults();
+	
+	// Reset min/max rules height
+	document.getElementById('minimalist-min-rules-height').value = window.MINIMALIST_DEFAULTS.minHeight;
+	document.getElementById('minimalist-max-rules-height').value = window.MINIMALIST_DEFAULTS.maxHeight;
+	card.minimalist.minHeight = window.MINIMALIST_DEFAULTS.minHeight;
+	card.minimalist.maxHeight = window.MINIMALIST_DEFAULTS.maxHeight;
 	
 	// Update color inputs with mana colors
 	document.getElementById('minimalist-color-1').value = defaultColors.color1;
@@ -1568,7 +1668,6 @@ function resetMinimalistGradient() {
 	
 	// Update type line settings - reset to color identity auto (default)
 	document.getElementById('minimalist-type-auto-color-ci').checked = true;
-	document.getElementById('minimalist-type-auto-color').checked = false;
 	document.getElementById('minimalist-type-color').value = '#FFFFFF';
 	
 	// Update P/T settings
@@ -1648,11 +1747,11 @@ function resetMinimalistGradient() {
 	});
 
 	// Initialize type line color settings
-	const typeSettings = card.minimalist.typeSettings || window.MINIMALIST_DEFAULTS.typeSettings;
-	const typeAutoCheckbox = document.getElementById('minimalist-type-auto-color');
+	const typeSettings = card.minimalist.typeSettings || window.MINIMALIST_COLOR_DEFAULTS;
+	const typeAutoCheckboxCI = document.getElementById('minimalist-type-auto-color-ci');
 	const typeColorInput = document.getElementById('minimalist-type-color');
 
-	if (typeAutoCheckbox) typeAutoCheckbox.checked = typeSettings.autoColor;
+	if (typeAutoCheckboxCI) typeAutoCheckboxCI.checked = typeSettings.autoColorCI;
 	if (typeColorInput) {
 		typeColorInput.value = typeSettings.customColor;
 	}
@@ -1668,7 +1767,7 @@ function resetMinimalistGradient() {
 		// Don't call updateMinimalistVisuals here - setupTextHandling will handle the initial draw
 	}, 100);
 
-	    // Store original setBottomInfoStyle function and override it
+		// Store original setBottomInfoStyle function and override it
 		if (!window.originalSetBottomInfoStyle) {
 			window.originalSetBottomInfoStyle = window.setBottomInfoStyle;
 			
@@ -1678,12 +1777,12 @@ function resetMinimalistGradient() {
 					// Handle minimalist version specifically
 					if (document.querySelector('#enableNewCollectorStyle').checked) {
 						await loadBottomInfo({
-							midLeft: {text:'{elemidinfo-set} \u2022 {elemidinfo-language}  {savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.0647, y:0.9434, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							topLeft: {text:'{elemidinfo-rarity} {kerning3}{elemidinfo-number}{kerning0}', x:0.0647, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							note: {text:'{loadx}{elemidinfo-note}', x:0.0647, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
-							bottomLeft: {text:'NOT FOR SALE', x:0.0647, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
-							wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.0647, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
-							bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.0647, y:0.9434, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
+							topLeft: {text:'{elemidinfo-rarity} {kerning3}{elemidinfo-number}{kerning0}', x:0.090, y:0.9134, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+							note: {text:'{loadx}{elemidinfo-note}', x:0.090, y:0.9263, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+							midLeft: {text:'{elemidinfo-set} \u2022 {elemidinfo-language}  {savex}{fontbelerenbsc}{fontsize' + scaleHeight(0.001) + '}{upinline' + scaleHeight(0.0005) + '}\uFFEE{savex2}{elemidinfo-artist}', x:0.090, y:0.9334, width:0.8707, height:0.0171, oneLine:true, font:'gothammedium', size:0.0171, color:'white', outlineWidth:0.003},
+							bottomLeft: {text:'NOT FOR SALE', x:0.090, y:0.9605, width:0.8707, height:0.0143, oneLine:true, font:'gothammedium', size:0.0143, color:'white', outlineWidth:0.003},
+							wizards: {name:'wizards', text:'{ptshift0,0.0172}\u2122 & \u00a9 {elemidinfo-year} Wizards of the Coast', x:0.090, y:0.9263, width:0.8707, height:0.0167, oneLine:true, font:'mplantin', size:0.0162, color:'white', align:'right', outlineWidth:0.003},
+							bottomRight: {text:'{ptshift0,0.0172}CardConjurer.com', x:0.090, y:0.9334, width:0.8707, height:0.0143, oneLine:true, font:'mplantin', size:0.0143, color:'white', align:'right', outlineWidth:0.003}
 						});
 					} else {
 						// Use the old style (pack default)
@@ -1762,6 +1861,21 @@ function resetMinimalistGradient() {
 		}
 	}
 
+	// Handle combined P/T field from other packs (e.g., "1/1" -> power: "1", toughness: "1")
+	if (savedText.pt && savedText.pt.includes('/')) {
+		const parts = savedText.pt.split('/');
+		if (parts.length === 2) {
+			// Set power from first part
+			if (card.text.power) {
+				card.text.power.text = parts[0].trim();
+			}
+			// Set toughness from second part
+			if (card.text.toughness) {
+				card.text.toughness.text = parts[1].trim();
+			}
+		}
+	}
+
 	// If we have rules text, immediately calculate the proper height
 	if (hasRulesText && savedText.rules) {
 		const newHeight = calculateRulesBoxHeight(savedText.rules);
@@ -1806,28 +1920,38 @@ function resetMinimalistGradient() {
 			const currentTextField = Object.keys(card.text)[selectedTextIndex];
 			const isPowerOrToughness = currentTextField === 'power' || currentTextField === 'toughness';
 			
-		// If editing power/toughness, just let normal flow handle it
-		if (isPowerOrToughness) {
-			// Call original to handle the text update normally
-			if (originalTextEdited) originalTextEdited();
+			// If editing power/toughness, just let normal flow handle it
+			if (isPowerOrToughness) {
+				// Call original to handle the text update normally
+				if (originalTextEdited) originalTextEdited();
+				
+				// After the debounced drawText completes, update P/T positions and redraw
+				// Use a slightly longer delay to ensure drawText has completed
+				setTimeout(async () => {
+					if (card.version === 'Minimalist' && card.dividerCanvas) {
+						// Redraw divider with updated P/T symbols (this also updates power.x position)
+						drawDividerGradient();
+						// Redraw text to show power at its new position
+						await drawText();
+					}
+				}, 600); // 100ms after drawTextBuffer's 500ms delay
+				
+				return;
+			}
 			
-			// After the debounced drawText completes, update P/T positions and redraw
-			// Use a slightly longer delay to ensure drawText has completed
-			setTimeout(async () => {
-				if (card.version === 'Minimalist' && card.dividerCanvas) {
-					// Redraw divider with updated P/T symbols (this also updates power.x position)
-					drawDividerGradient();
-					// Redraw text to show power at its new position
-					await drawText();
-				}
-			}, 600); // 100ms after drawTextBuffer's 500ms delay
+			// Get the current value from the text editor to ensure we have the latest text
+			const textEditor = document.getElementById('text-editor');
+			if (textEditor && card.text[currentTextField]) {
+				card.text[currentTextField].text = textEditor.value;
+			}
 			
-			return;
-		}
-		
-			// For non-P/T fields, update type line color and divider colors
+			// Update color identity from mana cost AND rules text when editing either field
+			if (currentTextField === 'mana' || currentTextField === 'rules') {
+				updateColorIdentityFromManaCost();
+			}
+			
+			// For non-P/T fields, update type line color
 			updateTypeLineColor();
-			syncDividerColorsWithMana();
 			
 			// For rules text, do the full position recalculation
 			if (card.text.rules && card.text.rules.text) {
@@ -1869,17 +1993,17 @@ function resetMinimalistGradient() {
 
 // functions to preserve and restore minimalist bottom info
 function preserveMinimalistBottomInfo() {
-    if (card.version === 'Minimalist' && card.bottomInfo) {
-        window.minimalistBottomInfo = JSON.parse(JSON.stringify(card.bottomInfo));
-    }
+	if (card.version === 'Minimalist' && card.bottomInfo) {
+		window.minimalistBottomInfo = JSON.parse(JSON.stringify(card.bottomInfo));
+	}
 }
 
 function restoreMinimalistBottomInfo() {
-    if (card.version === 'Minimalist' && window.minimalistBottomInfo) {
-        card.bottomInfo = JSON.parse(JSON.stringify(window.minimalistBottomInfo));
-        return true;
-    }
-    return false;
+	if (card.version === 'Minimalist' && window.minimalistBottomInfo) {
+		card.bottomInfo = JSON.parse(JSON.stringify(window.minimalistBottomInfo));
+		return true;
+	}
+	return false;
 }
 
 //============================================================================
@@ -1953,6 +2077,11 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	
 	// Don't draw here - setupTextHandling/initializeMinimalistVersion will handle the initial draw
 	
+	// Initialize color identity from mana cost if not already set
+	if (!card.colorIdentity || card.colorIdentity.length === 0) {
+		updateColorIdentityFromManaCost();
+	}
+	
 	// Watch for mana cost and color identity changes (for imports and updates)
 	let lastManaText = card.text?.mana?.text || '';
 	let lastColorIdentity = card.colorIdentity ? JSON.stringify(card.colorIdentity) : '[]';
@@ -1985,10 +2114,10 @@ if (!loadedVersions.includes('/js/frames/versionMinimalist.js')) {
 	window.updateDividerColors = updateDividerColors;
 	window.updatePTSymbols = updatePTSymbols;
 	window.updateTypeLineColor = updateTypeLineColor;
+	window.updateColorIdentityFromManaCost = updateColorIdentityFromManaCost;
 	window.toggleColorVisibility = toggleColorVisibility;
 	window.updateTextPositions = updateTextPositions;
 	window.drawDividerGradient = drawDividerGradient;
-	window.syncDividerColorsWithMana = syncDividerColorsWithMana;
 	window.resetMinimalistGradient = resetMinimalistGradient;
 	window.measureTextHeight = measureTextHeight;
 	window.preserveMinimalistBottomInfo = preserveMinimalistBottomInfo;

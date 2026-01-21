@@ -199,6 +199,10 @@
 	font-family: thunderman;
 	src: url('../fonts/Thunderman.ttf') format("truetype");
 }
+@font-face {
+	font-family: circularstd-book;
+	src: url("../fonts/CircularStd-Book.woff2") format('woff2');
+}
 /*Variables*/
 :root {
 	--site-background: url('../img/lowpolyBackground.svg');
