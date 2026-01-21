@@ -69,21 +69,21 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	loadTextOptions({
 		mana: {
 			name: 'Mana Cost', text: '', x: 0.090, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.12, width: 0.9190, height: 71/2100,
-			oneLine: true, size: 71/1638, align: 'left', manaCost: true, manaSpacing: 0, manaPrefix: 'outlineBright'},
+		oneLine: true, size: 71/1638, align: 'left', manaCost: true, manaSpacing: -0.0020, manaPrefix: 'outlineBright'},
 			title: {
 				name: 'Title', text: '', x: 0.090, y: card.minimalist.baseY - card.minimalist.currentHeight -  card.minimalist.spacing - 0.08,width: 0.8292,
 				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.0381, color: 'white', align: 'left'},
 			type: {
 				name: 'Type', text: '', x: 0.0854, y: card.minimalist.baseY - card.minimalist.currentHeight - card.minimalist.spacing - 0.04, width: 0.71,
-				height: 0.0543, oneLine: true, font: 'belerenb', size: 0.022, color: 'white', shadowX:0.0014, shadowY:0.001},
+		height: 0.0543, oneLine: true, font: 'circularstd-book', size: 0.023, color: 'white', shadowX:0.0014, shadowY:0.001, kerning:0.0021},
 			rules: {
 				name: 'Rules Text', text: '', x: 0.1139, y: card.minimalist.baseY - card.minimalist.currentHeight, width: 0.7720, height: card.minimalist.currentHeight,
 				size: 0.029, color: 'white', oneLine: false, align: 'left', manaPrefix: 'outlineBright', shadowX:0.0014, shadowY:0.001},
 			power: {
-				name: 'Power', text: '', x: 0.754, y: 0.896, width: 0.0765, height: 0.049, size: 0.04,
+				name: 'Power', text: '', x: 0.754, y: 0.9021, width: 0.0765, height: 0.049, size: 0.03,
 				font: 'belerenbsc', oneLine: true, align: 'center', color: 'white', shadowX:0.0014, shadowY:0.001},
 			toughness: {
-				name: 'Toughness', text: '', x: 0.8405, y: 0.896, width: 0.0765, height: 0.049, size: 0.04,
+				name: 'Toughness', text: '', x: 0.8405, y: 0.9021, width: 0.0765, height: 0.049, size: 0.03,
 				font: 'belerenbsc', oneLine: true, align: 'center', color: 'white', shadowX:0.0014, shadowY:0.001}
 		}, true);
 

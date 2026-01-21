@@ -530,7 +530,11 @@ function drawHorizontalGradient(options = {}) {
         for (let y = 0; y < fadeHeight; y++) {
             const currentY = fadeStart + (y * increment);
             const fadeProgress = y / fadeHeight;
-            const alpha = fadeDirection === 'down' ? fadeProgress * maxOpacity : (1 - fadeProgress) * maxOpacity;
+            
+            // Apply ease-in easing (quadratic)
+            const easedProgress = fadeProgress * fadeProgress;
+            
+            const alpha = fadeDirection === 'down' ? easedProgress * maxOpacity : (1 - easedProgress) * maxOpacity;
             
             gradientContext.fillStyle = createHorizontalGradient(alpha);
             gradientContext.fillRect(0, currentY, canvasWidth, 1);
