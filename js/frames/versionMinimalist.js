@@ -1204,7 +1204,7 @@ function createMinimalistUI() {
 	function getUIHTML() {
 	return `
 	<div class='readable-background padding'>
-	<h5 class='padding margin-bottom input-description' style="font-size: 2em; font-weight: bold;">Gradient Settings</h5>
+	<h5 class='padding margin-bottom input-description' style="font-size: clamp(1.2em, 4vw, 2em); font-weight: bold;">Gradient Settings</h5>
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 10px 0;"></div>
 
 	<h5 class='input-description margin-bottom'>Enable Background Gradient</h5>
@@ -1213,33 +1213,33 @@ function createMinimalistUI() {
 		<span class='checkmark'></span>
 	</label>
 
-	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
-		<div style="flex: 1;">
-			<h5 class='padding input-description'>Min Rules Height:</h5>
+	<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1 1 auto; min-width: 120px;">
+			<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Min Rules Height:</h5>
 			<div class='padding input-grid'>
 				<input id='minimalist-min-rules-height' type='number' class='input' oninput='updateMinimalistMinHeight();' min='0.05' max='0.5' step='0.01' value='0.1'>
 			</div>
 		</div>
-		<div style="flex: 1;">
-			<h5 class='padding input-description'>Max Rules Height:</h5>
+		<div style="flex: 1 1 auto; min-width: 120px;">
+			<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Max Rules Height:</h5>
 			<div class='padding input-grid'>
 				<input id='minimalist-max-rules-height' type='number' class='input' oninput='updateMinimalistMaxHeight();' min='0.1' max='0.8' step='0.01' value='0.25'>
 			</div>
 		</div>
-		<div style="flex: 1;">
-			<h5 class='padding input-description'>Max Opacity:</h5>
+		<div style="flex: 1 1 auto; min-width: 120px;">
+			<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Max Opacity:</h5>
 			<div class='padding input-grid'>
 				<input id='minimalist-max-opacity' type='number' class='input' oninput='updateMinimalistGradient();' min='0' max='1' step='0.01' value='0.95'>
 			</div>
 		</div>
-		<div style="flex: 1;">
-			<h5 class='padding input-description'>Fade Start:</h5>
+		<div style="flex: 1 1 auto; min-width: 120px;">
+			<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Fade Start:</h5>
 			<div class='padding input-grid'>
 				<input id='minimalist-fade-bottom-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.2' max='0.2' step='0.01' value='-0.05'>
 			</div>
 		</div>
-		<div style="flex: 1;">
-			<h5 class='padding input-description'>Fade End:</h5>
+		<div style="flex: 1 1 auto; min-width: 120px;">
+			<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Fade End:</h5>
 			<div class='padding input-grid'>
 				<input id='minimalist-fade-top-offset' type='number' class='input' oninput='updateMinimalistGradient();' min='-0.5' max='0' step='0.01' value='-0.15'>
 			</div>
@@ -1248,9 +1248,9 @@ function createMinimalistUI() {
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
 
-	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Background Gradient Colors</h5>
+	<h5 class='padding margin-bottom input-description' style="font-size: clamp(1em, 3vw, 1.5em); font-weight: bold;">Background Gradient Colors</h5>
 
-	<h5 class='padding input-description'>Background Colors:</h5>
+	<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Background Colors:</h5>
 	<div class='padding input-grid margin-bottom'>
 		<select id='minimalist-bg-color-count' class='input' onchange='updateMinimalistGradient(); toggleColorVisibility("bg");'>
 			<option value='1' selected>1 Color</option>
@@ -1261,23 +1261,23 @@ function createMinimalistUI() {
 	</div> 
 
 	<div style="position: relative; min-height: 60px;">
-		<div id='bg-colors-wrapper' style='display: flex; gap: 10px;'>
-			<div id='bg-color-1-container' style='display: block; flex: 1;'>
-				<h5 class='padding input-description'>Color 1:</h5>
+		<div id='bg-colors-wrapper' style='display: flex; flex-wrap: wrap; gap: 10px;'>
+			<div id='bg-color-1-container' style='display: block; flex: 1 1 calc(33% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 1:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-bg-color-1' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
 				</div>
 			</div>
 
-			<div id='bg-color-2-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 2:</h5>
+			<div id='bg-color-2-container' style='display: none; flex: 1 1 calc(33% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 2:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-bg-color-2' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
 				</div>
 			</div>
 
-			<div id='bg-color-3-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 3:</h5>
+			<div id='bg-color-3-container' style='display: none; flex: 1 1 calc(33% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 3:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-bg-color-3' type='color' class='input' oninput='updateMinimalistGradient();' value='#000000'>
 				</div>
@@ -1287,19 +1287,19 @@ function createMinimalistUI() {
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
 
-	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Type Line Color</h5>
+	<h5 class='padding margin-bottom input-description' style="font-size: clamp(1em, 3vw, 1.5em); font-weight: bold;">Type Line Color</h5>
 
-	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
-		<div style="flex: 1;">
-			<h5 class='input-description margin-bottom'>Auto Type Line Color</h5>
+	<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1 1 calc(50% - 10px); min-width: 200px;">
+			<h5 class='input-description margin-bottom' style="font-size: clamp(0.8em, 2.5vw, 1em);">Auto Type Line Color</h5>
 			<label class='checkbox-container input margin-bottom'>Auto Color (from color identity)
 				<input id='minimalist-type-auto-color-ci' type='checkbox' class='input' onchange='window.updateTypeLineColor(); toggleColorVisibility("type");' checked>
 				<span class='checkmark'></span>
 			</label>
 		</div>
 
-		<div id='type-color-container' style='display: none; flex: 1; display: flex; flex-direction: column;'>
-			<h5 class='input-description' style="margin-bottom: 5px;">Type Line Color:</h5>
+		<div id='type-color-container' style='display: none; flex: 1 1 calc(50% - 10px); min-width: 140px; display: flex; flex-direction: column;'>
+			<h5 class='input-description' style="margin-bottom: 5px; font-size: clamp(0.8em, 2.5vw, 1em);">Type Line Color:</h5>
 			<div style='flex: 1; display: flex; align-items: stretch;'>
 				<input id='minimalist-type-color' type='color' class='input' oninput='window.updateTypeLineColor();' value='#FFFFFF' style='height: 100%;'>
 			</div>
@@ -1308,19 +1308,19 @@ function createMinimalistUI() {
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 5px 0;"></div>
 
-	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">Divider Bar</h5>
+	<h5 class='padding margin-bottom input-description' style="font-size: clamp(1em, 3vw, 1.5em); font-weight: bold;">Divider Bar</h5>
 
-	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
-		<div style="flex: 1;">
+	<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1 1 calc(50% - 10px); min-width: 180px;">
 			<div style="height: 0px;"></div>
-			<h5 class='input-description' style="margin-bottom: 5px;">Divider Toggle:</h5>
+			<h5 class='input-description' style="margin-bottom: 5px; font-size: clamp(0.8em, 2.5vw, 1em);">Divider Toggle:</h5>
 			<label class='checkbox-container input'>Toggle Divider Bar
 				<input id='minimalist-divider-enabled' type='checkbox' class='input' onchange='updateDividerColors();' checked>
 				<span class='checkmark'></span>
 			</label>
 		</div>
-		<div style="flex: 1;">
-			<h5 class='input-description' style="margin-bottom: 5px;">Divider Colors:</h5>
+		<div style="flex: 1 1 calc(50% - 10px); min-width: 180px;">
+			<h5 class='input-description' style="margin-bottom: 5px; font-size: clamp(0.8em, 2.5vw, 1em);">Divider Colors:</h5>
 			<select id='minimalist-color-count' class='input' onchange='updateDividerColors(); toggleColorVisibility("divider");'>
 				<option value='ci-auto' selected>Auto (Color Identity)</option>
 				<option value='1'>1 Color</option>
@@ -1331,23 +1331,23 @@ function createMinimalistUI() {
 	</div>
 
 	<div style="position: relative; min-height: 5px;">
-		<div id='divider-colors-wrapper' style='display: flex; gap: 10px;'>
-			<div id='divider-color-1-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 1:</h5>
+		<div id='divider-colors-wrapper' style='display: flex; flex-wrap: wrap; gap: 10px;'>
+			<div id='divider-color-1-container' style='display: none; flex: 1 1 calc(33% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 1:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-color-1' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
 				</div>
 			</div>
 
-			<div id='divider-color-2-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 2:</h5>
+			<div id='divider-color-2-container' style='display: none; flex: 1 1 calc(33% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 2:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-color-2' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
 				</div>
 			</div>
 
-			<div id='divider-color-3-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 3:</h5>
+			<div id='divider-color-3-container' style='display: none; flex: 1 1 calc(33% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 3:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-color-3' type='color' class='input' oninput='updateDividerColors();' value='#FFFFFF'>
 				</div>
@@ -1357,19 +1357,19 @@ function createMinimalistUI() {
 
 	<div style="height: 2px; background-color: rgba(255,255,255,0.1); margin: 10px 0;"></div>
 
-	<h5 class='padding margin-bottom input-description' style="font-size: 1.5em; font-weight: bold;">P/T Symbols</h5>
+	<h5 class='padding margin-bottom input-description' style="font-size: clamp(1em, 3vw, 1.5em); font-weight: bold;">P/T Symbols</h5>
 
-	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
-		<div style="flex: 1;">
+	<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+		<div style="flex: 1 1 calc(50% - 10px); min-width: 180px;">
 			<div style="height: 0px;"></div>
-			<h5 class='input-description' style="margin-bottom: 5px;">Toggle P/T Symbols:</h5>
+			<h5 class='input-description' style="margin-bottom: 5px; font-size: clamp(0.8em, 2.5vw, 1em);">Toggle P/T Symbols:</h5>
 			<label class='checkbox-container input'>Toggle P/T Symbols
 				<input id='minimalist-pt-symbols-enabled' type='checkbox' class='input' onchange='updatePTSymbols();' checked>
 				<span class='checkmark'></span>
 			</label>
 		</div>
-		<div style="flex: 1;">
-			<h5 class='input-description' style="margin-bottom: 5px;">Symbol Colors:</h5>
+		<div style="flex: 1 1 calc(50% - 10px); min-width: 180px;">
+			<h5 class='input-description' style="margin-bottom: 5px; font-size: clamp(0.8em, 2.5vw, 1em);">Symbol Colors:</h5>
 			<select id='minimalist-pt-color-mode' class='input' onchange='updatePTSymbols(); toggleColorVisibility("pt");'>
 				<option value='ci-auto' selected>Auto (Color Identity)</option>
 				<option value='1'>1 Color</option>
@@ -1379,16 +1379,16 @@ function createMinimalistUI() {
 	</div>
 
 	<div style="position: relative; min-height: 5px;">
-		<div id='pt-colors-wrapper' style='display: flex; gap: 10px;'>
-			<div id='pt-color-1-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 1:</h5>
+		<div id='pt-colors-wrapper' style='display: flex; flex-wrap: wrap; gap: 10px;'>
+			<div id='pt-color-1-container' style='display: none; flex: 1 1 calc(50% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 1:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-pt-color-1' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
 				</div>
 			</div>
 
-			<div id='pt-color-2-container' style='display: none; flex: 1;'>
-				<h5 class='padding input-description'>Color 2:</h5>
+			<div id='pt-color-2-container' style='display: none; flex: 1 1 calc(50% - 10px); min-width: 140px;'>
+				<h5 class='padding input-description' style="font-size: clamp(0.8em, 2.5vw, 1em);">Color 2:</h5>
 				<div class='padding input-grid margin-bottom'>
 					<input id='minimalist-pt-color-2' type='color' class='input' oninput='updatePTSymbols();' value='#FFFFFF'>
 				</div>
