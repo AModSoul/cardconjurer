@@ -643,7 +643,10 @@ function updateCardLayout(rulesY, dividerToBaseGap) {
 	// Update set symbol position
 	if (card.setSymbolBounds) {
 		card.setSymbolBounds.y = setSymbolY;
-		resetSetSymbol();
+		// Only call resetSetSymbol if the set symbol image has loaded with valid dimensions
+		if (setSymbol && setSymbol.width > 0 && setSymbol.height > 0) {
+			resetSetSymbol();
+		}
 	}
 
 	// Update background gradient with new mana position
@@ -697,7 +700,10 @@ function updateDividerAndAbove(dividerY) {
 	// Update set symbol position
 	if (card.setSymbolBounds) {
 		card.setSymbolBounds.y = setSymbolY;
-		resetSetSymbol();
+		// Only call resetSetSymbol if the set symbol image has loaded with valid dimensions
+		if (setSymbol && setSymbol.width > 0 && setSymbol.height > 0) {
+			resetSetSymbol();
+		}
 	}
 
 	// Update background gradient with new positions
