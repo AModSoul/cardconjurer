@@ -408,14 +408,19 @@ function drawFrames() {
 			frameY = Math.round(scaleY(bounds.y || 0));
 			frameWidth = Math.round(scaleWidth(bounds.width || 1));
 			frameHeight = Math.round(scaleHeight(bounds.height || 1));
+			var frameRotate = item.rotate || 0;
 			frameMaskingContext.globalCompositeOperation = 'source-over';
 			frameMaskingContext.drawImage(black, 0, 0, frameMaskingCanvas.width, frameMaskingCanvas.height);
 			frameMaskingContext.globalCompositeOperation = 'source-in';
-			item.masks.forEach(mask => frameMaskingContext.drawImage(mask.image, scaleX((bounds.x || 0) - (ogBounds.x || 0) - ((ogBounds.x || 0) * ((bounds.width || 1) / (ogBounds.width || 1) - 1))), scaleY((bounds.y || 0) - (ogBounds.y || 0) - ((ogBounds.y || 0) * ((bounds.height || 1) / (ogBounds.height || 1) - 1))), scaleWidth((bounds.width || 1) / (ogBounds.width || 1)), scaleHeight((bounds.height || 1) / (ogBounds.height || 1))));
+			drawRotated(frameMaskingContext, frameRotate, frameX + frameWidth / 2, frameY + frameHeight / 2, (offsetX, offsetY) => {
+				item.masks.forEach(mask => frameMaskingContext.drawImage(mask.image, scaleX((bounds.x || 0) - (ogBounds.x || 0) - ((ogBounds.x || 0) * ((bounds.width || 1) / (ogBounds.width || 1) - 1))) + offsetX, scaleY((bounds.y || 0) - (ogBounds.y || 0) - ((ogBounds.y || 0) * ((bounds.height || 1) / (ogBounds.height || 1) - 1))) + offsetY, scaleWidth((bounds.width || 1) / (ogBounds.width || 1)), scaleHeight((bounds.height || 1) / (ogBounds.height || 1))));
+			});
 			if (item.preserveAlpha) { //preserves alpha, and blends colors using an alpha that only cares about the mask(s), and the user-set opacity value
 				//draw the image onto a separate canvas to view its unaltered state
 				frameCompositingContext.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
-				frameCompositingContext.drawImage(item.image, frameX, frameY, frameWidth, frameHeight);
+				drawRotated(frameCompositingContext, frameRotate, frameX + frameWidth / 2, frameY + frameHeight / 2, (offsetX, offsetY) => {
+					frameCompositingContext.drawImage(item.image, frameX + offsetX, frameY + offsetY, frameWidth, frameHeight);
+				});
 				//create pixel arrays for the existing image, new image, and alpha mask
 				var existingData = frameContext.getImageData(0, 0, frameCanvas.width, frameCanvas.height)
 				var existingPixels = existingData.data;
@@ -434,7 +439,9 @@ function drawFrames() {
 				frameContext.putImageData(existingData, 0, 0);
 			} else {
 				//mask the image
-				frameMaskingContext.drawImage(item.image, frameX, frameY, frameWidth, frameHeight);
+				drawRotated(frameMaskingContext, frameRotate, frameX + frameWidth / 2, frameY + frameHeight / 2, (offsetX, offsetY) => {
+					frameMaskingContext.drawImage(item.image, frameX + offsetX, frameY + offsetY, frameWidth, frameHeight);
+				});
 				//color overlay
 				if (item.colorOverlayCheck) {frameMaskingContext.globalCompositeOperation = 'source-in'; frameMaskingContext.fillStyle = item.colorOverlay; frameMaskingContext.fillRect(0, 0, frameMaskingCanvas.width, frameMaskingCanvas.height);}
 				//HSL adjustments
@@ -454,6 +461,17 @@ function drawFrames() {
 		frameContext.drawImage(prePTCanvas, 0, 0, frameCanvas.width, frameCanvas.height);
 	}
 	drawCard();
+}
+function drawRotated(context, rotation, centerX, centerY, drawCallback) {
+	if (rotation) {
+		context.save();
+		context.translate(centerX, centerY);
+		context.rotate(Math.PI * rotation / 180);
+		drawCallback(-centerX, -centerY);
+		context.restore();
+	} else {
+		drawCallback(0, 0);
+	}
 }
 function loadFramePacks(framePackOptions = []) {
 	document.querySelector('#selectFramePack').innerHTML = null;
@@ -485,6 +503,9 @@ function loadFramePack(frameOptions = availableFrames) {
 			frameOptionImage.src = fixUri(item.src.replace('.png', 'Thumb.png').replace('.svg', 'Thumb.png'));
 		} else {
 			frameOptionImage.src = fixUri(item.src);
+		}
+		if (item.rotate) {
+			frameOptionImage.style.transform = `rotate(${item.rotate}deg)`;
 		}
 		document.querySelector('#frame-picker').appendChild(frameOption);
 
@@ -3213,6 +3234,9 @@ async function addFrame(additionalMasks = [], loadingFrame = false) {
 		frameElementImage.src = fixUri(frameToAdd.src);
 	} else {
 		frameElementImage.src = fixUri(frameToAdd.src.replace('.png', 'Thumb.png'));
+	}
+	if (frameToAdd.rotate) {
+		frameElementImage.style.transform = `rotate(${frameToAdd.rotate}deg)`;
 	}
 	frameElement.appendChild(frameElementImage);
 	var frameElementMask = document.createElement('img');

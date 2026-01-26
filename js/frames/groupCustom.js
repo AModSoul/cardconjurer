@@ -12,6 +12,10 @@ loadFramePacks([
 	{name:'Floating Old Border (Short)', value:'OldFloatingShort'},
 	{name:'Burning Revelation (SLD)', value:'BurningRevelation'},
 
+	{name:'Borderless (Alt) Frames', value:'disabled'},
+	{name:'Borderless Flip', value:'FlipBorderlessAlt'},
+	{name:'Floating Legend Crowns Flip', value:'M15LegendCrownsFloatingFlip'},
+
 	{name:'Modern M15 Eighth Edition Style', value:'disabled'},
 	{name:'Regular', value:'M15Eighth'},
 	{name:'Nyx', value:'M15EighthNyx'},
