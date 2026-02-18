@@ -6004,7 +6004,7 @@ function changeCardIndex() {
 	var langFontCode = "";
 	if (cardToImport.lang == "ph") {langFontCode = "{fontphyrexian}"}
 	// Handle Multi Faced Card Layouts
-	const multiFacedVersions = ['flip', 'split', 'fuse', 'aftermath', 'adventure', 'omen', 'room', 'battle', 'transform'];
+	const multiFacedVersions = ['flip', 'split', 'fuse', 'aftermath', 'adventure', 'omen', 'room', 'battle', 'transform', 'modal'];
 	const isMultiFacedVersion = multiFacedVersions.some(keyword => card.version.toLowerCase().includes(keyword));
 	if (['flip', 'modal_dfc', 'transform', 'split', 'adventure'].includes(cardToImport.layout) && isMultiFacedVersion) {
 		const flipData = parseMultiFacedCards(cardToImport);
@@ -6058,8 +6058,13 @@ function changeCardIndex() {
 			}
 		}
 
-		//Back Face (standard handling for all multi-faced cards)
-        if (card.text?.title2 && card.text?.mana2) {
+		// Handle MDFC cards separately (they use flipsideType and flipSideReminder)
+		if (cardToImport.layout === 'modal_dfc' && card.text?.flipsideType && card.text?.flipSideReminder) {
+			card.text.flipsideType.text = langFontCode + flipData.back.type;
+			card.text.flipSideReminder.text = langFontCode + flipData.back.rules;
+		}
+		//Back Face (standard handling for other multi-faced cards)
+        else if (card.text?.title2 && card.text?.mana2) {
             card.text.title2.text = langFontCode + flipData.back.name;
             // Skip importing back type for room cards AND battle cards
             if (!cardToImport.type_line?.toLowerCase().includes('room')) {
