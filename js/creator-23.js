@@ -5956,12 +5956,12 @@ function changeCardIndex() {
 		cardToImport.set = components[0];
 		cardToImport.collector_number = components[1];
 	}
-    // Clear all existing text fields to prevent old data from persisting BUT preserve Multi Face reminder text if we're using a Multi Face frame
-    var savedFuseReminderText = '';
+	// Clear all existing text fields to prevent old data from persisting BUT preserve Multi Face reminder text if we're using a Multi Face frame
+	var savedFuseReminderText = '';
 	var savedDescriptiveTexts = {};
-    if (card.text && card.text.reminder && card.version === 'fuse' || card.version === 'room') {
-        savedFuseReminderText = card.text.reminder.text;
-    }
+	if (card.text && card.text.reminder && card.version === 'fuse' || card.version === 'room') {
+		savedFuseReminderText = card.text.reminder.text;
+	}
 	// Save descriptive texts for vanguard
 	if (card.text) {
 		// Save static descriptive texts that shouldn't be overwritten
@@ -5971,34 +5971,34 @@ function changeCardIndex() {
 				savedDescriptiveTexts[field] = card.text[field].text;
 			}
 		});
-    
-        // Clear all text fields
-        Object.keys(card.text).forEach(key => {
-            card.text[key].text = '';
-        });
-        
-        // Restore descriptive texts
-        Object.keys(savedDescriptiveTexts).forEach(field => {
-            if (card.text[field]) {
-                card.text[field].text = savedDescriptiveTexts[field];
-            }
-        });
-    }
+	
+		// Clear all text fields
+		Object.keys(card.text).forEach(key => {
+			card.text[key].text = '';
+		});
+		
+		// Restore descriptive texts
+		Object.keys(savedDescriptiveTexts).forEach(field => {
+			if (card.text[field]) {
+				card.text[field].text = savedDescriptiveTexts[field];
+			}
+		});
+	}
 
-    // Update reminder text from imported card if available
-    var importedReminderText = '';
-    if (cardToImport.oracle_text) {
-        // Extract reminder text from oracle text (text in parentheses)
-        var reminderMatch = cardToImport.oracle_text.match(/\([^)]+\)/);
-        if (reminderMatch) {
-            importedReminderText = reminderMatch[0];
-        }
-    }
+	// Update reminder text from imported card if available
+	var importedReminderText = '';
+	if (cardToImport.oracle_text) {
+		// Extract reminder text from oracle text (text in parentheses)
+		var reminderMatch = cardToImport.oracle_text.match(/\([^)]+\)/);
+		if (reminderMatch) {
+			importedReminderText = reminderMatch[0];
+		}
+	}
 
-    // Restore reminder text: use imported if available, otherwise use saved
-    if (card.text && card.text.reminder && (card.version === 'fuse' || card.version === 'room')) {
-        card.text.reminder.text = importedReminderText || savedFuseReminderText;
-    }
+	// Restore reminder text: use imported if available, otherwise use saved
+	if (card.text && card.text.reminder && (card.version === 'fuse' || card.version === 'room')) {
+		card.text.reminder.text = importedReminderText || savedFuseReminderText;
+	}
 		
 	//text
 	var langFontCode = "";
@@ -6064,20 +6064,20 @@ function changeCardIndex() {
 			card.text.flipSideReminder.text = langFontCode + flipData.back.rules;
 		}
 		//Back Face (standard handling for other multi-faced cards)
-        else if (card.text?.title2 && card.text?.mana2) {
-            card.text.title2.text = langFontCode + flipData.back.name;
-            // Skip importing back type for room cards AND battle cards
-            if (!cardToImport.type_line?.toLowerCase().includes('room')) {
-                card.text.type2.text = langFontCode + flipData.back.type;
-            }
-            card.text.rules2.text = langFontCode + flipData.back.rules;
-            if (flipData.back.flavor) {
-                card.text.rules2.text += '{flavor}' + curlyQuotes(flipData.back.flavor.replace('\n', '{lns}'));
-            }
-            card.text.mana2.text = flipData.back.mana || '';
-            if (card.text.pt2) {
-                card.text.pt2.text = flipData.back.pt || '';
-            }
+		else if (card.text?.title2 && card.text?.mana2) {
+			card.text.title2.text = langFontCode + flipData.back.name;
+			// Skip importing back type for room cards AND battle cards
+			if (!cardToImport.type_line?.toLowerCase().includes('room')) {
+				card.text.type2.text = langFontCode + flipData.back.type;
+			}
+			card.text.rules2.text = langFontCode + flipData.back.rules;
+			if (flipData.back.flavor) {
+				card.text.rules2.text += '{flavor}' + curlyQuotes(flipData.back.flavor.replace('\n', '{lns}'));
+			}
+			card.text.mana2.text = flipData.back.mana || '';
+			if (card.text.pt2) {
+				card.text.pt2.text = flipData.back.pt || '';
+			}
 		}
 		
 		// Handle pt2 for battle and transform front faces (cards without title2/mana2)
@@ -6093,18 +6093,18 @@ function changeCardIndex() {
 	}
 
 	// Handle Unique Layouts (Leveler, Prototype, Mutate, and Vanguard)
-    else if (['leveler', 'prototype', 'mutate', 'vanguard'].includes(cardToImport.layout) && ['leveler', 'prototype', 'mutate', 'vanguard'].includes(card.version)) {
-        let uniqueData;
-        
-        if (cardToImport.layout === 'leveler') {
-            uniqueData = parseLevelerCard(cardToImport);
-        } else if (cardToImport.layout === 'prototype') {
-            uniqueData = parsePrototypeLayout(cardToImport);
-        } else if (cardToImport.layout === 'mutate') {
-            uniqueData = parseMutateLayout(cardToImport);
-        } else if (cardToImport.layout === 'vanguard') {
-            uniqueData = parseVanguardLayout(cardToImport);
-        }
+	else if (['leveler', 'prototype', 'mutate', 'vanguard'].includes(cardToImport.layout) && ['leveler', 'prototype', 'mutate', 'vanguard'].includes(card.version)) {
+		let uniqueData;
+		
+		if (cardToImport.layout === 'leveler') {
+			uniqueData = parseLevelerCard(cardToImport);
+		} else if (cardToImport.layout === 'prototype') {
+			uniqueData = parsePrototypeLayout(cardToImport);
+		} else if (cardToImport.layout === 'mutate') {
+			uniqueData = parseMutateLayout(cardToImport);
+		} else if (cardToImport.layout === 'vanguard') {
+			uniqueData = parseVanguardLayout(cardToImport);
+		}
 
 		// Add artist info
 		if (cardToImport.artist) {
@@ -6167,125 +6167,125 @@ function changeCardIndex() {
 					}
 				}
 			} else if (uniqueData.layout === 'prototype') {
-                if (card.text.rules2) {
-                    card.text.rules2.text = langFontCode + uniqueData.rules;
-                }
-                if (card.text.prototype) {
-                    card.text.prototype.text = langFontCode + uniqueData.prototype.reminderText;
-                }
-                if (card.text.mana2) {
-                    card.text.mana2.text = uniqueData.prototype.cost;
-                }
-                if (card.text.pt2) {
-                    card.text.pt2.text = uniqueData.prototype.pt;
-                }
-            } else if (uniqueData.layout === 'mutate') {
-                if (card.text.rules2) {
-                    card.text.rules2.text = langFontCode + uniqueData.rules;
-                }
-                if (card.text.mutate) {
-                    card.text.mutate.text = langFontCode + uniqueData.mutate.reminderText;
-                }
-            } else if (uniqueData.layout === 'vanguard') {
-                if (card.text.ability) {
-                    card.text.ability.text = langFontCode + uniqueData.rules;
-                }
-                if (card.text.flavor) {
-                    card.text.flavor.text = langFontCode + uniqueData.flavor;
-                }
-                if (card.text.leftval) {
-                    card.text.leftval.text = uniqueData.handModifier;
-                }
-                if (card.text.rightval) {
-                    card.text.rightval.text = uniqueData.lifeModifier;
-                }
-            }
-        }
+				if (card.text.rules2) {
+					card.text.rules2.text = langFontCode + uniqueData.rules;
+				}
+				if (card.text.prototype) {
+					card.text.prototype.text = langFontCode + uniqueData.prototype.reminderText;
+				}
+				if (card.text.mana2) {
+					card.text.mana2.text = uniqueData.prototype.cost;
+				}
+				if (card.text.pt2) {
+					card.text.pt2.text = uniqueData.prototype.pt;
+				}
+			} else if (uniqueData.layout === 'mutate') {
+				if (card.text.rules2) {
+					card.text.rules2.text = langFontCode + uniqueData.rules;
+				}
+				if (card.text.mutate) {
+					card.text.mutate.text = langFontCode + uniqueData.mutate.reminderText;
+				}
+			} else if (uniqueData.layout === 'vanguard') {
+				if (card.text.ability) {
+					card.text.ability.text = langFontCode + uniqueData.rules;
+				}
+				if (card.text.flavor) {
+					card.text.flavor.text = langFontCode + uniqueData.flavor;
+				}
+				if (card.text.leftval) {
+					card.text.leftval.text = uniqueData.handModifier;
+				}
+				if (card.text.rightval) {
+					card.text.rightval.text = uniqueData.lifeModifier;
+				}
+			}
+		}
 
-        textEdited();
-    }
+		textEdited();
+	}
 
 else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('STATION') && card.version.includes('station')) {
 
-    // Clear existing station fields
-    if (card.text) {
-        ['ability0', 'ability1', 'ability2'].forEach(field => {
-            if (card.text[field]) card.text[field].text = '';
-        });
-    }
-    
-    // Clear station badge values immediately
-    if (card.station?.badgeValues) {
-        card.station.badgeValues[1] = '';
-        card.station.badgeValues[2] = '';
-    }
-    
-    const stationData = parseStationCard(cardToImport.oracle_text);
-    const name = (cardToImport.printed_name || cardToImport.name || '').replace(/^A-/, '{alchemy}');
+	// Clear existing station fields
+	if (card.text) {
+		['ability0', 'ability1', 'ability2'].forEach(field => {
+			if (card.text[field]) card.text[field].text = '';
+		});
+	}
+	
+	// Clear station badge values immediately
+	if (card.station?.badgeValues) {
+		card.station.badgeValues[1] = '';
+		card.station.badgeValues[2] = '';
+	}
+	
+	const stationData = parseStationCard(cardToImport.oracle_text);
+	const name = (cardToImport.printed_name || cardToImport.name || '').replace(/^A-/, '{alchemy}');
 
-    // Populate basic text fields
-    const basicFields = [
-        ['title', curlyQuotes(name)],
-        ['type', cardToImport.type_line],
-        ['mana', cardToImport.mana_cost || ''],
-        ['pt', cardToImport.power && cardToImport.toughness ? `${cardToImport.power}/${cardToImport.toughness}` : '']
-    ];
-    
-    basicFields.forEach(([field, value]) => {
-        if (card.text?.[field]) card.text[field].text = langFontCode + value;
-    });
-    
-    // Station ability placement logic
-    if (stationData) {
-        // Better regex to separate pre-text from Station reminder text
-        let preText = '';
-        let reminderText = '';
-        
-        if (stationData.preStationText) {
-            // Look for Station reminder text (either already italicized or not)
-            const stationReminderMatch = stationData.preStationText.match(/(.*?)(Station \{i\}\([^)]+\)\{\/i\}|Station \([^)]+\))/s);
-            
-            if (stationReminderMatch) {
-                preText = stationReminderMatch[1].trim();
-                
-                // Format the reminder text with italics if not already done
-                if (stationReminderMatch[2].includes('{i}')) {
-                    reminderText = stationReminderMatch[2];
-                } else {
-                    reminderText = stationReminderMatch[2].replace(/Station (\([^)]+\))/, 'Station {i}$1{/i}');
-                }
-            } else {
-                // If no Station reminder found, treat entire text as pre-text
-                preText = stationData.preStationText.trim();
-            }
-        }
-        
-        const numAbilities = stationData.stationAbilities.length;
-        
-        // AUTO-CHECK DISABLE FIRST SQUARE FOR SINGLE ABILITIES
-        const shouldDisableFirstSquare = numAbilities === 1;
-        
-        // Define placement scenarios as configuration
-        const scenarios = {
-            // [hasPreText, numAbilities]: [ability0, ability1, ability2, badgeSlots]
-            [false + ',' + 1]: ['', reminderText, stationData.stationAbilities[0]?.text, [null, stationData.stationAbilities[0]?.number]],
-            [true + ',' + 1]: [preText, reminderText, stationData.stationAbilities[0]?.text, [null, stationData.stationAbilities[0]?.number]],
-            [false + ',' + 2]: [reminderText, stationData.stationAbilities[0]?.text, stationData.stationAbilities[1]?.text, [stationData.stationAbilities[0]?.number, stationData.stationAbilities[1]?.number]],
-            [true + ',' + 2]: [preText + (reminderText ? '\n' + reminderText : ''), stationData.stationAbilities[0]?.text, stationData.stationAbilities[1]?.text, [stationData.stationAbilities[0]?.number, stationData.stationAbilities[1]?.number]]
-        };
-        
-        const scenario = scenarios[Boolean(preText) + ',' + numAbilities];
-        if (scenario) {
-            const [ability0, ability1, ability2, badges] = scenario;
-            
-            // Set abilities
-            [ability0, ability1, ability2].forEach((text, i) => {
-                if (text && card.text[`ability${i}`]) {
-                    card.text[`ability${i}`].text = langFontCode + text;
-                }
-            });
-            
-            // Set disable first square checkbox and station setting
+	// Populate basic text fields
+	const basicFields = [
+		['title', curlyQuotes(name)],
+		['type', cardToImport.type_line],
+		['mana', cardToImport.mana_cost || ''],
+		['pt', cardToImport.power && cardToImport.toughness ? `${cardToImport.power}/${cardToImport.toughness}` : '']
+	];
+	
+	basicFields.forEach(([field, value]) => {
+		if (card.text?.[field]) card.text[field].text = langFontCode + value;
+	});
+	
+	// Station ability placement logic
+	if (stationData) {
+		// Better regex to separate pre-text from Station reminder text
+		let preText = '';
+		let reminderText = '';
+		
+		if (stationData.preStationText) {
+			// Look for Station reminder text (either already italicized or not)
+			const stationReminderMatch = stationData.preStationText.match(/(.*?)(Station \{i\}\([^)]+\)\{\/i\}|Station \([^)]+\))/s);
+			
+			if (stationReminderMatch) {
+				preText = stationReminderMatch[1].trim();
+				
+				// Format the reminder text with italics if not already done
+				if (stationReminderMatch[2].includes('{i}')) {
+					reminderText = stationReminderMatch[2];
+				} else {
+					reminderText = stationReminderMatch[2].replace(/Station (\([^)]+\))/, 'Station {i}$1{/i}');
+				}
+			} else {
+				// If no Station reminder found, treat entire text as pre-text
+				preText = stationData.preStationText.trim();
+			}
+		}
+		
+		const numAbilities = stationData.stationAbilities.length;
+		
+		// AUTO-CHECK DISABLE FIRST SQUARE FOR SINGLE ABILITIES
+		const shouldDisableFirstSquare = numAbilities === 1;
+		
+		// Define placement scenarios as configuration
+		const scenarios = {
+			// [hasPreText, numAbilities]: [ability0, ability1, ability2, badgeSlots]
+			[false + ',' + 1]: ['', reminderText, stationData.stationAbilities[0]?.text, [null, stationData.stationAbilities[0]?.number]],
+			[true + ',' + 1]: [preText, reminderText, stationData.stationAbilities[0]?.text, [null, stationData.stationAbilities[0]?.number]],
+			[false + ',' + 2]: [reminderText, stationData.stationAbilities[0]?.text, stationData.stationAbilities[1]?.text, [stationData.stationAbilities[0]?.number, stationData.stationAbilities[1]?.number]],
+			[true + ',' + 2]: [preText + (reminderText ? '\n' + reminderText : ''), stationData.stationAbilities[0]?.text, stationData.stationAbilities[1]?.text, [stationData.stationAbilities[0]?.number, stationData.stationAbilities[1]?.number]]
+		};
+		
+		const scenario = scenarios[Boolean(preText) + ',' + numAbilities];
+		if (scenario) {
+			const [ability0, ability1, ability2, badges] = scenario;
+			
+			// Set abilities
+			[ability0, ability1, ability2].forEach((text, i) => {
+				if (text && card.text[`ability${i}`]) {
+					card.text[`ability${i}`].text = langFontCode + text;
+				}
+			});
+			
+			// Set disable first square checkbox and station setting
 			setTimeout(() => {
 				const disableCheckbox = document.querySelector('#station-disable-first-ability');
 				if (disableCheckbox) {
@@ -6326,29 +6326,29 @@ else if (cardToImport.oracle_text && cardToImport.oracle_text.includes('STATION'
 					const input = document.querySelector(selector);
 					if (input) input.value = '';
 				});
-                
-                // Set new badge values
-                badges.forEach((badge, i) => {
-                    if (badge) {
-                        const input = document.querySelector(`#station-badge-value-${i + 1}`);
-                        if (input) input.value = badge;
-                        if (card.station?.badgeValues) card.station.badgeValues[i + 1] = badge;
-                    }
-                });
-                
-                // Force station redraw after all values are set
-                setTimeout(() => {
-                    if (typeof stationEdited === 'function') {
-                        stationEdited();
-                    }
-                }, 50);
-            }, 100);
-        }
-    }
-    
-    textEdited();
+				
+				// Set new badge values
+				badges.forEach((badge, i) => {
+					if (badge) {
+						const input = document.querySelector(`#station-badge-value-${i + 1}`);
+						if (input) input.value = badge;
+						if (card.station?.badgeValues) card.station.badgeValues[i + 1] = badge;
+					}
+				});
+				
+				// Force station redraw after all values are set
+				setTimeout(() => {
+					if (typeof stationEdited === 'function') {
+						stationEdited();
+					}
+				}, 50);
+			}, 100);
+		}
+	}
+	
+	textEdited();
 }
-  
+
 	var name = cardToImport.printed_name || cardToImport.name || '';
 	if (name.startsWith('A-')) { name = name.replace('A-', '{alchemy}'); }
 
