@@ -3250,9 +3250,22 @@ async function addFrame(additionalMasks = [], loadingFrame = false) {
 		}
 		additionalMasks.forEach(item => {
 			if (item.name in replacementMasks) {
-				item.src = replacementMasks[item.name];
+				const replacement = replacementMasks[item.name];
+				if (typeof replacement === 'string') {
+					// String value: just replace the src
+					item.src = replacement;
+				} else if (typeof replacement === 'object') {
+					// Object value: merge properties
+					Object.assign(item, replacement);
+				}
 			}
 			frameToAdd.masks.push(item);
+		});
+		// Check if any mask has preserveAlpha and transfer it to the frame
+		frameToAdd.masks.forEach(mask => {
+			if (mask.preserveAlpha) {
+				frameToAdd.preserveAlpha = true;
+			}
 		});
 		// Likewise, we now add any complementary frames
 		if ('complementary' in frameToAdd && frameToAdd.masks.length == 0) {
