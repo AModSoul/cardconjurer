@@ -1,5 +1,6 @@
 loadFramePacks([
 	{name:'Set Showcase Frames (Chronological)', value:'disabled'},
+	{name:'Pixel (TMT)', value:'PixelTMT'},
 	{name:'Mystical Archive (SOA)', value:'MysticalArchiveSOA'},
 	{name:'Fable (ECL)', value:'FableECL'},
 	{name:'Avatar Elemental (TLA)', value:'Elemental'},
