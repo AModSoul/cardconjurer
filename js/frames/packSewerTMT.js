@@ -43,7 +43,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	//sets card version
 	card.version = 'sewerTMT';
 	//art bounds
-	card.artBounds = {x:0, y:334/2814, width:1, height:1194/2814};
+	card.artBounds = {x:0, y:320/2814, width:1, height:1230/2814};
 	autoFitArt();
 	//set symbol bounds
 	card.setSymbolBounds = {x:0.9213, y:0.5850, width:0.12, height:0.0410, vertical:'center', horizontal: 'right'};
