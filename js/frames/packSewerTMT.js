@@ -42,6 +42,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 	await resetCardIrregularities();
 	//sets card version
 	card.version = 'sewerTMT';
+	card.showsFlavorBar = false;
 	//art bounds
 	card.artBounds = {x:0, y:320/2814, width:1, height:1230/2814};
 	autoFitArt();
