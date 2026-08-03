@@ -120,8 +120,8 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		title: {name:'Title', text:'', x:0.0854, y:0.0522, width:0.8292, height:0.0543, oneLine:true, font:'belerenb', size:0.0381},
 		type: {name:'Type', text:'', x:0.0854, y:0.5664, width:0.8292, height:0.0543, oneLine:true, font:'belerenb', size:0.0324},
 		ability0: {name:'Ability 1', text:'', x:175/2010, y:1775/2814, width:1660/2010, height:280/2814, size:0.0295},
-		ability1: {name:'Ability 2', text:'', x:175/2010, y:0.7, width:0.7467, height:0.0972, size:0.0295},
-		ability2: {name:'Ability 3', text:'', x:0.18, y:0.83, width:0.7467, height:0.0972, size:0.0295},
+		ability1: {name:'Ability 2', text:'', x:175/2010, y:0.7, width:0.7433, height:0.0972, size:0.0295},
+		ability2: {name:'Ability 3', text:'', x:0.18, y:0.83, width:0.7433, height:0.0972, size:0.0295},
 		pt: {name:'Power/Toughness', text:'', x:0.7928, y:2, width:0.1367, height:0.0372, size:0.0372, font:'belerenbsc', oneLine:true, align:'center'}
 	});
 }

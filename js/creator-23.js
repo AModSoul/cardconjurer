@@ -3601,11 +3601,58 @@ function autoFrameBuffer() {
 	autoFrameTimer = setTimeout(autoFrame, 500);
 }
 async function drawText() {
+	const syncPlaneswalkerText = async () => {
+		if (card.planeswalker && card.planeswalker.count > 0 && card.version && card.version.toLowerCase().includes('planeswalker')) {
+			let minPlaneswalkerSize = Infinity;
+			for (let i = 0; i < card.planeswalker.count; i++) {
+				const ability = card.text[`ability${i}`];
+				if (ability && ability.text && ability.text.trim()) {
+					ability.measureOnly = true;
+					const finalSize = await writeText(ability, textContext);
+					ability.measureOnly = false;
+					if (finalSize > 0 && finalSize < minPlaneswalkerSize) {
+						minPlaneswalkerSize = finalSize;
+					}
+				}
+			}
+			if (minPlaneswalkerSize < Infinity) {
+				if (typeof checkLoyaltyBadgeOverlap === 'function') {
+					const lastAbilityIndex = card.planeswalker.count - 1;
+					if (checkLoyaltyBadgeOverlap(lastAbilityIndex, minPlaneswalkerSize)) {
+						let low = minPlaneswalkerSize * 0.90;
+						let high = minPlaneswalkerSize;
+						for (let i = 0; i < 20; i++) {
+							const mid = (low + high) / 2;
+							if (checkLoyaltyBadgeOverlap(lastAbilityIndex, mid)) {
+								high = mid;
+							} else {
+								low = mid;
+							}
+							if (high - low < 0.0001) break;
+						}
+						minPlaneswalkerSize = low;
+					}
+				}
+				for (let i = 0; i < card.planeswalker.count; i++) {
+					const ability = card.text[`ability${i}`];
+					if (ability) {
+						ability.tempSize = minPlaneswalkerSize;
+					}
+				}
+			}
+		}
+	};
+
+	window.actualManaLeftEdge = undefined;
 	textContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
 	prePTContext.clearRect(0, 0, prePTCanvas.width, prePTCanvas.height);
 	drawTextBetweenFrames = false;
+
+	await syncPlaneswalkerText();
+
 	for (var textObject of Object.entries(card.text)) {
 		await writeText(textObject[1], textContext);
+		if (textObject[1].tempSize) { delete textObject[1].tempSize; }
 		continue;
 	}
 	if (drawTextBetweenFrames || redrawFrames) {
@@ -3626,7 +3673,7 @@ function writeText(textObject, targetContext) {
 	var textY = scaleY(textObject.y) || scaleY(0);
 	var textWidth = scaleWidth(textObject.width) || scaleWidth(1);
 	var textHeight = scaleHeight(textObject.height) || scaleHeight(1);
-	var startingTextSize = scaleHeight(textObject.size) || scaleHeight(0.038);
+	var startingTextSize = scaleHeight(textObject.tempSize || textObject.size) || scaleHeight(0.038);
 	var textFontHeightRatio = 0.7;
 	var textBounded = textObject.bounded || true;
 	var textOneLine = textObject.oneLine || false;
@@ -4491,22 +4538,25 @@ function writeText(textObject, targetContext) {
 				if (drawToPrePTCanvas) {
 					trueTargetContext = prePTContext;
 				}
-				if (textRotation) {
-					trueTargetContext.save();
-					trueTargetContext
-					const shapeX = textX + ptShift[0];
-					const shapeY = textY + ptShift[1];
-					trueTargetContext.translate(shapeX, shapeY);
-					trueTargetContext.rotate(Math.PI * textRotation / 180);
-					trueTargetContext.drawImage(paragraphCanvas, permaShift[0] - canvasMargin + finalHorizontalAdjust, verticalAdjust - canvasMargin + permaShift[1]);
-					trueTargetContext.restore();
-				} else {
-					trueTargetContext.drawImage(paragraphCanvas, textX - canvasMargin + ptShift[0] + permaShift[0] + finalHorizontalAdjust, textY - canvasMargin + verticalAdjust + ptShift[1] + permaShift[1]);
+				if (!textObject.measureOnly) {
+					if (textRotation) {
+						trueTargetContext.save();
+						trueTargetContext
+						const shapeX = textX + ptShift[0];
+						const shapeY = textY + ptShift[1];
+						trueTargetContext.translate(shapeX, shapeY);
+						trueTargetContext.rotate(Math.PI * textRotation / 180);
+						trueTargetContext.drawImage(paragraphCanvas, permaShift[0] - canvasMargin + finalHorizontalAdjust, verticalAdjust - canvasMargin + permaShift[1]);
+						trueTargetContext.restore();
+					} else {
+						trueTargetContext.drawImage(paragraphCanvas, textX - canvasMargin + ptShift[0] + permaShift[0] + finalHorizontalAdjust, textY - canvasMargin + verticalAdjust + ptShift[1] + permaShift[1]);
+					}
 				}
 				drawingText = false;
 			}
 		}
 	}
+	return startingTextSize / scaleHeight(1);
 }
 
 CanvasRenderingContext2D.prototype.fillTextArc = function(text, x, y, radius, startRotation, distance = 0, outlineWidth = 0) {

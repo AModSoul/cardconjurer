@@ -36,10 +36,10 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		nickname: {name:'Nickname', text:'', x:0.0867, y:0.0372, width:0.8267, height:0.0548, oneLine:true, font:'belerenb', size:0.0381, color:'white', shadowX:0.0014, shadowY:0.001},
 		title: {name:'Title', text:'', x:0.14, y:0.1015, width:0.72, height:0.0243, oneLine:true, font:'mplantini', size:0.0229, color:'white', shadowX:0.0014, shadowY:0.001, align:'center'},
 		type: {name:'Type', text:'', x:0.0867, y:0.5625, width:0.8267, height:0.0548, oneLine:true, font:'belerenb', size:0.0324, color:'white', shadowX:0.0014, shadowY:0.001},
-		ability0: {name:'Ability 1', text:'', x:0.18, y:0.6239, width:0.7467, height:0.0972, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
-		ability1: {name:'Ability 2', text:'', x:0.18, y:0, width:0.7467, height:0.0972, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
-		ability2: {name:'Ability 3', text:'', x:0.18, y:0, width:0.7467, height:0.0972, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
-		ability3: {name:'Ability 4', text:'', x:0.18, y:0, width:0.7467, height:0, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
+		ability0: {name:'Ability 1', text:'', x:0.18, y:0.6239, width:0.7433, height:0.0972, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
+		ability1: {name:'Ability 2', text:'', x:0.18, y:0, width:0.7433, height:0.0972, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
+		ability2: {name:'Ability 3', text:'', x:0.18, y:0, width:0.7433, height:0.0972, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
+		ability3: {name:'Ability 4', text:'', x:0.18, y:0, width:0.7433, height:0, size:0.0353, color:'white', shadowX:0.0014, shadowY:0.001},
 		loyalty: {name:'Loyalty', text:'', x:0.806, y:0.902, width:0.14, height:0.0372, size:0.0372, font:'belerenbsc', oneLine:true, align:'center', color:'white'}
 	});
 }

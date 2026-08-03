@@ -29,10 +29,10 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		mana: {name:'Mana Cost', text:'', y:0.0481, width:0.9292, height:71/2100, oneLine:true, size:71/1638, align:'right', shadowX:-0.001, shadowY:0.0029, manaCost:true, manaSpacing:0},
 		title: {name:'Title', text:'', x:0.0867, y:0.0372, width:0.8267, height:0.0548, oneLine:true, font:'belerenb', size:0.0381, color:'#aaa'},
 		type: {name:'Type', text:'', x:0.0867, y:0.5625, width:0.8267, height:0.0548, oneLine:true, font:'belerenb', size:0.0324, color:'#aaa'},
-		ability0: {name:'Ability 1', text:'', x:0.18, y:0.6239, width:0.7467, height:0.0972, size:0.0353, color:'#aaa'},
-		ability1: {name:'Ability 2', text:'', x:0.18, y:0, width:0.7467, height:0.0972, size:0.0353, color:'#aaa'},
-		ability2: {name:'Ability 3', text:'', x:0.18, y:0, width:0.7467, height:0.0972, size:0.0353, color:'#aaa'},
-		ability3: {name:'Ability 4', text:'', x:0.18, y:0, width:0.7467, height:0, size:0.0353, color:'#aaa'},
+		ability0: {name:'Ability 1', text:'', x:0.18, y:0.6239, width:0.7433, height:0.0972, size:0.0353, color:'#aaa'},
+		ability1: {name:'Ability 2', text:'', x:0.18, y:0, width:0.7433, height:0.0972, size:0.0353, color:'#aaa'},
+		ability2: {name:'Ability 3', text:'', x:0.18, y:0, width:0.7433, height:0.0972, size:0.0353, color:'#aaa'},
+		ability3: {name:'Ability 4', text:'', x:0.18, y:0, width:0.7433, height:0, size:0.0353, color:'#aaa'},
 		loyalty: {name:'Loyalty', text:'', x:0.806, y:0.902, width:0.14, height:0.0372, size:0.0372, font:'belerenbsc', oneLine:true, align:'center', color:'#aaa'}
 	});
 }
