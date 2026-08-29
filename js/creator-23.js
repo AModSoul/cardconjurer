@@ -1215,13 +1215,18 @@ function textboxEditor() {
 	var selectedTextbox = card.text[Object.keys(card.text)[selectedTextIndex]];
 	document.querySelector('#textbox-editor').classList.add('opened');
 	document.querySelector('#textbox-editor-x').value = scaleWidth(selectedTextbox.x || 0);
-	document.querySelector('#textbox-editor-x').onchange = (event) => {selectedTextbox.x = (event.target.value / card.width); textEdited();}
+	document.querySelector('#textbox-editor-x').onchange = (event) => {selectedTextbox.x = (event.target.value / card.width); textboxBoundsEdited();}
 	document.querySelector('#textbox-editor-y').value = scaleHeight(selectedTextbox.y || 0);
-	document.querySelector('#textbox-editor-y').onchange = (event) => {selectedTextbox.y = (event.target.value / card.height); textEdited();}
+	document.querySelector('#textbox-editor-y').onchange = (event) => {selectedTextbox.y = (event.target.value / card.height); textboxBoundsEdited();}
 	document.querySelector('#textbox-editor-width').value = scaleWidth(selectedTextbox.width || 1);
-	document.querySelector('#textbox-editor-width').onchange = (event) => {selectedTextbox.width = (event.target.value / card.width); textEdited();}
+	document.querySelector('#textbox-editor-width').onchange = (event) => {selectedTextbox.width = (event.target.value / card.width); textboxBoundsEdited();}
 	document.querySelector('#textbox-editor-height').value = scaleHeight(selectedTextbox.height || 1);
-	document.querySelector('#textbox-editor-height').onchange = (event) => {selectedTextbox.height = (event.target.value / card.height); textEdited();}
+	document.querySelector('#textbox-editor-height').onchange = (event) => {selectedTextbox.height = (event.target.value / card.height); textboxBoundsEdited();}
+}
+//Runs whenever a textbox's placement or size changes so the card text and its guidelines stay in sync
+function textboxBoundsEdited() {
+	textEdited();
+	drawNewGuidelines();
 }
 function textEdited() {
 	card.text[Object.keys(card.text)[selectedTextIndex]].text = curlyQuotes(document.querySelector('#text-editor').value);
@@ -1416,7 +1421,85 @@ function drawRubyHorizontal(base, annotation, ctx, paragraphCtx, lineCanvas, ann
 	ctx.fillText(base, state.currentX + opts.canvasMargin + baseOffsetX, baseY);
 	state.currentX += totalWidth;
 }
-function writeText(textObject, targetContext) {
+//SHAPED TEXT
+//A text option can take a maskSrc (any PNG). The shape in the mask — anything not
+//transparent, or not near-white if the image was flattened onto a background — is
+//fitted into that text box, and each line of text wraps and aligns to the width of
+//the shape at that line's vertical position instead of the box's plain edges.
+var textMaskDataCache = {};
+function getTextMaskData(src) {
+	if (!textMaskDataCache[src]) {
+		textMaskDataCache[src] = new Promise(resolve => {
+			var maskImage = new Image();
+			maskImage.crossOrigin = 'anonymous';
+			maskImage.onload = function() {
+				try {
+					var width = Math.min(maskImage.naturalWidth || maskImage.width, 2010);
+					var height = Math.min(maskImage.naturalHeight || maskImage.height, 2814);
+					if (!width || !height) { resolve(null); return; }
+					var canvas = document.createElement('canvas');
+					canvas.width = width;
+					canvas.height = height;
+					var context = canvas.getContext('2d');
+					context.drawImage(maskImage, 0, 0, width, height);
+					var pixels = context.getImageData(0, 0, width, height).data;
+					//if every sampled pixel is fully opaque, the image was flattened onto a
+					//background color (like white) — treat near-white pixels as empty
+					var fullyOpaque = true;
+					for (var i = 3; i < pixels.length; i += 4 * 97) {
+						if (pixels[i] < 250) { fullyOpaque = false; break; }
+					}
+					var left = new Array(height).fill(-1);
+					var right = new Array(height).fill(-1);
+					var contentLeft = width;
+					var contentRight = -1;
+					for (var y = 0; y < height; y++) {
+						var rowStart = y * width * 4;
+						for (var x = 0; x < width; x++) {
+							var pixelStart = rowStart + x * 4;
+							var inside = pixels[pixelStart + 3] > 32;
+							if (fullyOpaque) {
+								inside = inside && !(pixels[pixelStart] > 240 && pixels[pixelStart + 1] > 240 && pixels[pixelStart + 2] > 240);
+							}
+							if (inside) {
+								if (left[y] == -1) { left[y] = x; }
+								right[y] = x;
+							}
+						}
+						if (left[y] != -1) {
+							contentLeft = Math.min(contentLeft, left[y]);
+							contentRight = Math.max(contentRight, right[y]);
+						}
+					}
+					var top = 0;
+					while (top < height && left[top] == -1) { top++; }
+					var bottom = height - 1;
+					while (bottom >= 0 && left[bottom] == -1) { bottom--; }
+					if (contentRight == -1 || top > bottom) {
+						//the mask is empty or unreadable — fall back to the full box
+						contentLeft = 0;
+						contentRight = width - 1;
+						top = 0;
+						bottom = height - 1;
+						left.fill(0);
+						right.fill(width - 1);
+					}
+					resolve({left:left, right:right, top:top, bottom:bottom, contentLeft:contentLeft, contentRight:contentRight, width:width, height:height});
+				} catch (error) {
+					console.warn('Failed to read text mask: ' + src, error);
+					resolve(null);
+				}
+			};
+			maskImage.onerror = function() {
+				console.warn('Failed to load text mask: ' + src);
+				resolve(null);
+			};
+			maskImage.src = fixUri(src);
+		});
+	}
+	return textMaskDataCache[src];
+}
+async function writeText(textObject, targetContext) {
 	manaSymbolsToRender = [];
 	//Most bits of info about text loaded, with defaults when needed
 	var textX = scaleX(textObject.x) || scaleX(0);
@@ -1430,6 +1513,36 @@ function writeText(textObject, targetContext) {
 	var textManaCost = textObject.manaCost || false;
 	var textAllCaps = textObject.allCaps || false;
 	var textManaSpacing = scaleWidth(textObject.manaSpacing) || 0;
+	//a maskSrc makes text wrap to the shape of a mask image instead of the plain box
+	var textMask = null;
+	if (textObject.maskSrc) {
+		textMask = await getTextMaskData(textObject.maskSrc);
+	}
+	//returns {left, right} (in the text box's coordinate space) for the vertical band
+	//[bandTop, bandBottom) of a line of text — null means use the full box width
+	function maskLineBounds(bandTop, bandBottom) {
+		if (!textMask) { return null; }
+		var contentWidth = textMask.contentRight - textMask.contentLeft + 1;
+		var contentHeight = textMask.bottom - textMask.top + 1;
+		var maskScale = Math.min(textWidth / contentWidth, textHeight / contentHeight);
+		var offsetLeft = (textWidth - contentWidth * maskScale) / 2;
+		var offsetTop = (textHeight - contentHeight * maskScale) / 2;
+		var firstRow = Math.max(textMask.top, Math.floor((bandTop - offsetTop) / maskScale + textMask.top));
+		var lastRow = Math.min(textMask.bottom, Math.ceil((bandBottom - offsetTop) / maskScale + textMask.top) - 1);
+		var bandLeft = -1;
+		var bandRight = -1;
+		for (var row = firstRow; row <= lastRow; row++) {
+			if (textMask.left[row] != -1) {
+				if (bandLeft == -1 || textMask.left[row] < bandLeft) { bandLeft = textMask.left[row]; }
+				if (textMask.right[row] > bandRight) { bandRight = textMask.right[row]; }
+			}
+		}
+		if (bandLeft == -1) { return null; }
+		return {
+			left: offsetLeft + (bandLeft - textMask.contentLeft) * maskScale,
+			right: offsetLeft + (bandRight - textMask.contentLeft + 1) * maskScale
+		};
+	}
 	//Buffers the canvases accordingly
 	var canvasMargin = 300;
 	paragraphCanvas.width = textWidth + 2 * canvasMargin;
@@ -2197,7 +2310,10 @@ function writeText(textObject, targetContext) {
 			}
 
 			//if the word goes past the max line width, go to the next line
-			if (wordToWrite && lineContext.measureText(wordToWrite).width + currentX >= textWidth && textArcRadius == 0) {
+			//with a text mask, the line width follows the mask's shape at this line's position
+			var lineBounds = maskLineBounds(currentY + lineY, currentY + lineY + textSize);
+			var lineWrapWidth = lineBounds ? lineBounds.right - lineBounds.left + startingCurrentX : textWidth;
+			if (wordToWrite && lineContext.measureText(wordToWrite).width + currentX >= lineWrapWidth && textArcRadius == 0) {
 				if (textOneLine && startingTextSize > 1) {
 					//doesn't fit... try again at a smaller text size?
 					startingTextSize -= 1;
@@ -2208,7 +2324,16 @@ function writeText(textObject, targetContext) {
 			//if we need a new line, go to the next line
 			if ((newLine && !textOneLine) || splitText.indexOf(word) == splitText.length - 1) {
 				var horizontalAdjust = 0
-				if (textAlign == 'center') {
+				if (lineBounds) {
+					//fit the line to the shape of the mask at this line's vertical position
+					if (textAlign == 'center') {
+						horizontalAdjust = lineBounds.left + (lineBounds.right - lineBounds.left - currentX) / 2;
+					} else if (textAlign == 'right') {
+						horizontalAdjust = lineBounds.right - currentX;
+					} else {
+						horizontalAdjust = lineBounds.left;
+					}
+				} else if (textAlign == 'center') {
 					horizontalAdjust = (textWidth - currentX) / 2;
 				} else if (textAlign == 'right') {
 					horizontalAdjust = textWidth - currentX;
@@ -2293,7 +2418,9 @@ function writeText(textObject, targetContext) {
 			if (splitText.indexOf(word) == splitText.length - 1) {
 				//should manage vertical centering here
 				var verticalAdjust = 0;
-				if (!textObject.noVerticalCenter) {
+				//masked text stays anchored to the top of the box so its lines keep
+				//matching the vertical bands of the mask shape
+				if (!textObject.noVerticalCenter && !textMask) {
 					verticalAdjust = (textHeight - currentY + textSize * 0.15) / 2;
 				}
 				var finalHorizontalAdjust = 0;
@@ -3067,7 +3194,8 @@ function drawCard() {
 	} // REMOVE/DELETE PLANESWALKERCANVAS AFTER A FEW WEEKS
 	// guidelines
 	if (document.querySelector('#show-guidelines').checked) {
-		cardContext.drawImage(guidelinesCanvas, scaleX(card.marginX) / 2, scaleY(card.marginY) / 2, cardCanvas.width, cardCanvas.height);
+		//the guidelines canvas is sized/drawn to include the card margins, so it composites 1:1 with the card
+		cardContext.drawImage(guidelinesCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
 	}
 	// watermark
 	cardContext.drawImage(watermarkCanvas, 0, 0, cardCanvas.width, cardCanvas.height);
@@ -4585,6 +4713,7 @@ async function loadCard(selectedCardKey) {
 			drawFrames();
 			bottomInfoEdited();
 			watermarkEdited();
+			drawNewGuidelines();
 		}
 	} else {
 		notify(selectedCardKey + ' failed to load.', 5)
@@ -4674,29 +4803,29 @@ function drawNewGuidelines() {
 	}
 	guidelinesContext.fillStyle = 'red';
 	guidelinesContext.fillRect(setSymbolX, setSymbolY, setSymbolWidth, setSymbolHeight);
-	// grid
+	// grid (aligned to the card proper, which shifts when margins are enabled)
 	guidelinesContext.globalAlpha = 1;
 	guidelinesContext.beginPath();
 	guidelinesContext.strokeStyle = 'gray';
 	guidelinesContext.lineWidth = 1;
 	const boxPadding = 25;
-	for (var x = 0; x <= card.width; x += boxPadding) {
-		guidelinesContext.moveTo(x, 0);
-		guidelinesContext.lineTo(x, card.height);
+	for (var x = scaleX(0); x <= scaleX(1); x += boxPadding) {
+		guidelinesContext.moveTo(x, scaleY(0));
+		guidelinesContext.lineTo(x, scaleY(1));
 	}
-	for (var y = 0; y <= card.height; y += boxPadding) {
-		guidelinesContext.moveTo(0, y);
-		guidelinesContext.lineTo(card.width, y);
+	for (var y = scaleY(0); y <= scaleY(1); y += boxPadding) {
+		guidelinesContext.moveTo(scaleX(0), y);
+		guidelinesContext.lineTo(scaleX(1), y);
 	}
 	guidelinesContext.stroke();
 	//center lines
 	guidelinesContext.beginPath();
 	guidelinesContext.strokeStyle = 'black';
 	guidelinesContext.lineWidth = 3;
-	guidelinesContext.moveTo(card.width / 2, 0);
-	guidelinesContext.lineTo(card.width / 2, card.height);
-	guidelinesContext.moveTo(0, card.height / 2);
-	guidelinesContext.lineTo(card.width, card.height / 2);
+	guidelinesContext.moveTo(scaleX(0.5), scaleY(0));
+	guidelinesContext.lineTo(scaleX(0.5), scaleY(1));
+	guidelinesContext.moveTo(scaleX(0), scaleY(0.5));
+	guidelinesContext.lineTo(scaleX(1), scaleY(0.5));
 	guidelinesContext.stroke();
 	//draw to card
 	drawCard();
