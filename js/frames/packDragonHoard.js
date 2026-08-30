@@ -56,7 +56,7 @@ document.querySelector('#loadFrameVersion').onclick = async function() {
 		title: {name:'Title', text:'', x:183/2010, y:183/2814, width:0.8292, height:0.0543, oneLine:true, font:'belerenb', size:0.0381},
 		type: {name:'Type', text:'', x:188/2010, y:1576/2814, width:0.8292, height:0.0543, oneLine:true, font:'belerenb', size:0.0324, color:'white'},
 		//maskSrc wraps the rules text to the shape in the mask image
-		rules: {name:'Rules Text', text:'', x:0.086, y:1805/2814, width:0.828, height:768/2814, size:0.0362, maskSrc:masks[0].src},
+		rules: {name:'Rules Text', text:'', x:100/2010, y:1790/2814, width:1820/2010, height:768/2814, size:0.0362, maskSrc:masks[0].src},
 		pt: {name:'Power/Toughness', text:'', x:1592/2010, y:2529/2814, width:0.1367, height:0.0372, size:0.0372, font:'belerenbsc', oneLine:true, align:'center', color:'white'}
 	});
 }

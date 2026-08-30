@@ -1422,10 +1422,11 @@ function drawRubyHorizontal(base, annotation, ctx, paragraphCtx, lineCanvas, ann
 	state.currentX += totalWidth;
 }
 //SHAPED TEXT
-//A text option can take a maskSrc (any PNG). The shape in the mask — anything not
-//transparent, or not near-white if the image was flattened onto a background — is
-//fitted into that text box, and each line of text wraps and aligns to the width of
-//the shape at that line's vertical position instead of the box's plain edges.
+//A text option can take a maskSrc (a full-card-sized PNG drawn in card space). The
+//shape in the mask — anything not transparent, or not near-white if the image was
+//flattened onto a background — sits exactly where its pixels sit on the card, and
+//each line of text wraps and aligns to the width of the shape at that line's
+//vertical position instead of the box's plain edges.
 var textMaskDataCache = {};
 function getTextMaskData(src) {
 	if (!textMaskDataCache[src]) {
@@ -1514,21 +1515,45 @@ async function writeText(textObject, targetContext) {
 	var textAllCaps = textObject.allCaps || false;
 	var textManaSpacing = scaleWidth(textObject.manaSpacing) || 0;
 	//a maskSrc makes text wrap to the shape of a mask image instead of the plain box
+	//mask images are drawn in card space (full-card-sized), so the shape sits exactly
+	//where its pixels sit on the card — the text box only offsets/nudges it
+	//maskPadding insets the usable area of the shape (default 40px, horizontally and
+	//vertically) so text never touches its edges
 	var textMask = null;
+	var maskRowToCardY = 1;
+	var maskColToCardX = 1;
+	var maskContentTopCard = 0;
+	var maskContentHeightCard = 0;
+	var maskContentWidthCard = 0;
 	if (textObject.maskSrc) {
 		textMask = await getTextMaskData(textObject.maskSrc);
 	}
+	if (textMask) {
+		maskRowToCardY = card.height / textMask.height;
+		maskColToCardX = card.width / textMask.width;
+		maskContentTopCard = textMask.top * maskRowToCardY;
+		maskContentHeightCard = (textMask.bottom - textMask.top + 1) * maskRowToCardY;
+		maskContentWidthCard = (textMask.contentRight - textMask.contentLeft + 1) * maskColToCardX;
+	}
+	var maskPadding = textObject.maskPadding == undefined ? 40 : textObject.maskPadding;
+	//the padding applies vertically too: the first line sits below the shape's top
+	//edge and the last above its bottom edge, never flush against them
+	var maskUsableTopCard = maskContentTopCard + (textMask ? maskPadding : 0);
+	var maskUsableHeightCard = textMask ? Math.max(maskContentHeightCard - 2 * maskPadding, maskContentHeightCard / 2) : 0;
+	//the box's horizontal extent, in card space — masked text is clamped so it always
+	//stays inside the text box even when the mask's shape extends past it
+	var boxLeftCard = textX - scaleWidth(card.marginX);
+	var boxRightCard = boxLeftCard + textWidth;
 	//returns {left, right} (in the text box's coordinate space) for the vertical band
 	//[bandTop, bandBottom) of a line of text — null means use the full box width
 	function maskLineBounds(bandTop, bandBottom) {
 		if (!textMask) { return null; }
-		var contentWidth = textMask.contentRight - textMask.contentLeft + 1;
-		var contentHeight = textMask.bottom - textMask.top + 1;
-		var maskScale = Math.min(textWidth / contentWidth, textHeight / contentHeight);
-		var offsetLeft = (textWidth - contentWidth * maskScale) / 2;
-		var offsetTop = (textHeight - contentHeight * maskScale) / 2;
-		var firstRow = Math.max(textMask.top, Math.floor((bandTop - offsetTop) / maskScale + textMask.top));
-		var lastRow = Math.min(textMask.bottom, Math.ceil((bandBottom - offsetTop) / maskScale + textMask.top) - 1);
+		//the line's band, in card space — anchored to the top of the mask's usable area
+		//(shape top + padding + any centering offset), not to the top of the text box
+		var bandTopCard = maskUsableTopCard + maskedVerticalOffset + bandTop;
+		var bandBottomCard = maskUsableTopCard + maskedVerticalOffset + bandBottom;
+		var firstRow = Math.max(textMask.top, Math.floor(bandTopCard / maskRowToCardY));
+		var lastRow = Math.min(textMask.bottom, Math.ceil(bandBottomCard / maskRowToCardY) - 1);
 		var bandLeft = -1;
 		var bandRight = -1;
 		for (var row = firstRow; row <= lastRow; row++) {
@@ -1538,15 +1563,25 @@ async function writeText(textObject, targetContext) {
 			}
 		}
 		if (bandLeft == -1) { return null; }
+		//inset the usable width by the mask padding so text never touches the shape's edges
+		var maskedLineLeft = Math.min(bandLeft * maskColToCardX + maskPadding, (bandRight + 1) * maskColToCardX - maskPadding);
+		var maskedLineRight = Math.max((bandRight + 1) * maskColToCardX - maskPadding, maskedLineLeft);
+		//clamp the band to the text box so text never spills outside the box's bounds,
+		//even where the mask's shape extends past it
+		maskedLineLeft = Math.max(maskedLineLeft, boxLeftCard);
+		maskedLineRight = Math.min(maskedLineRight, boxRightCard);
 		return {
-			left: offsetLeft + (bandLeft - textMask.contentLeft) * maskScale,
-			right: offsetLeft + (bandRight - textMask.contentLeft + 1) * maskScale
+			//the mask lives in card space; scaleWidth/scaleHeight of the margins line it
+			//up with the canvas the same way every other card-space element is placed
+			left: scaleWidth(card.marginX) + maskedLineLeft - textX,
+			right: scaleWidth(card.marginX) + maskedLineRight - textX
 		};
 	}
 	//Buffers the canvases accordingly
 	var canvasMargin = 300;
-	paragraphCanvas.width = textWidth + 2 * canvasMargin;
-	paragraphCanvas.height = textHeight + 2 * canvasMargin;
+	paragraphCanvas.width = Math.max(textWidth, maskContentWidthCard) + 2 * canvasMargin;
+	//a mask shape can extend past the box, so buffer for whichever is taller
+	paragraphCanvas.height = Math.max(textHeight, maskContentHeightCard) + 2 * canvasMargin;
 	lineCanvas.width = textWidth + 2 * canvasMargin;
 	lineCanvas.height = startingTextSize + 2 * canvasMargin;
 	//Preps the text string
@@ -1650,6 +1685,11 @@ async function writeText(textObject, targetContext) {
 	splitText.push('');
 	//Manages the redraw loop
 	var drawingText = true;
+	//for masked text: vertical offset used to center the text within the mask's shape —
+	//shifting the text changes the bands it wraps against, so the offset is iterated
+	//until the layout it produces agrees with it
+	var maskedVerticalOffset = 0;
+	var maskedCenterPasses = 0;
 	//Repeatedly tries to draw the text at smaller and smaller sizes until it fits
 	outerloop: while (drawingText) {
 		//Rest of the text info loaded that may have been changed by a previous attempt at drawing the text
@@ -2311,7 +2351,10 @@ async function writeText(textObject, targetContext) {
 
 			//if the word goes past the max line width, go to the next line
 			//with a text mask, the line width follows the mask's shape at this line's position
-			var lineBounds = maskLineBounds(currentY + lineY, currentY + lineY + textSize);
+			//the band scanned is the vertical strip the glyphs actually occupy (roughly the
+			//middle of the line's em box) — scanning the full em box would pick up rows above
+			//or below the ink where the shape may be wider, letting text overhang the edges
+			var lineBounds = maskLineBounds(currentY + lineY + textSize * 0.15, currentY + lineY + textSize * 0.85);
 			var lineWrapWidth = lineBounds ? lineBounds.right - lineBounds.left + startingCurrentX : textWidth;
 			if (wordToWrite && lineContext.measureText(wordToWrite).width + currentX >= lineWrapWidth && textArcRadius == 0) {
 				if (textOneLine && startingTextSize > 1) {
@@ -2410,17 +2453,41 @@ async function writeText(textObject, targetContext) {
 					currentX += lineContext.measureText(wordToWrite).width;
 				}
 			}
-			if (currentY > textHeight && textBounded && !textOneLine && startingTextSize > 1 && textArcRadius == 0) {
+			//text must fit the box; for masked text the shape can extend past the box, so
+			//the stricter (smaller) of the shape's usable area and the box bounds the layout
+			var maskedFitHeight = Math.min(maskUsableHeightCard, textHeight);
+			if (currentY > (textMask ? maskedFitHeight : textHeight) && textBounded && !textOneLine && startingTextSize > 1 && textArcRadius == 0) {
 				//doesn't fit... try again at a smaller text size?
 				startingTextSize -= 1;
+				maskedCenterPasses = 0;
+				maskedVerticalOffset = 0;
 				continue outerloop;
 			}
 			if (splitText.indexOf(word) == splitText.length - 1) {
 				//should manage vertical centering here
 				var verticalAdjust = 0;
-				//masked text stays anchored to the top of the box so its lines keep
-				//matching the vertical bands of the mask shape
-				if (!textObject.noVerticalCenter && !textMask) {
+				if (textMask) {
+					//masked text is positioned by the mask's shape in card space, so the box's
+					//own position is subtracted out; centering happens within the shape's
+					//usable area and is iterated because shifting the text changes the bands
+					//it wraps against (and thus its height), which changes the true offset
+					if (!textObject.noVerticalCenter && maskedCenterPasses < 4) {
+						var maskedTargetOffset = (maskUsableHeightCard - currentY + textSize * 0.15) / 2;
+						//re-wrap with the updated offset unless it's settled (within half a line)
+						if (Math.abs(maskedTargetOffset - maskedVerticalOffset) > textSize / 2) {
+							maskedVerticalOffset = maskedTargetOffset;
+							maskedCenterPasses++;
+							continue outerloop;
+						}
+					}
+					//the shape's usable top in canvas space, nudged by the centering offset; the drawn
+					//text must stay inside the box, so the offset is clamped to the box's
+					//top and (given how tall the text wrapped) its bottom
+					var maskedDrawnTop = scaleHeight(card.marginY) + maskUsableTopCard + maskedVerticalOffset;
+					var maskedBlockHeight = currentY + textSize * 0.15;
+					maskedDrawnTop = Math.max(textY, Math.min(maskedDrawnTop, textY + Math.max(textHeight - maskedBlockHeight, 0)));
+					verticalAdjust = maskedDrawnTop - textY;
+				} else if (!textObject.noVerticalCenter) {
 					verticalAdjust = (textHeight - currentY + textSize * 0.15) / 2;
 				}
 				var finalHorizontalAdjust = 0;
