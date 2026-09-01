@@ -203,6 +203,9 @@ document.querySelector("#info-year").value = card.infoYear;
 //to avoid rerunning special scripts (planeswalker, saga, etc...)
 
 var loadedVersions = [];
+//the loaded pack's pt box (card-space fractions), precomputed from its
+//power/toughness frame asset so pt avoidance works without the pt frame layer
+var packPtCutoff = null;
 //Card Object managament
 async function resetCardIrregularities({canvas = [getStandardWidth(), getStandardHeight(), 0, 0], resetOthers = true} = {}) {
 	//misc details
@@ -592,6 +595,26 @@ function loadFramePack(frameOptions = availableFrames) {
 	document.querySelector('#frame-picker').children[0].click();
 	if (localStorage.getItem('autoLoadFrameVersion') == 'true') {
 		document.querySelector('#loadFrameVersion').click();
+	}
+	//precompute the pack's pt box from its pt frame asset (async scan, cached);
+	//a pack switch mid-scan is ignored via the availability check
+	packPtCutoff = null;
+	var packPtFrame = frameOptions.find(frame => frame.name && frame.src && frame.name.toLowerCase().includes('power/toughness'));
+	if (packPtFrame) {
+		var packPtBounds = packPtFrame.bounds || {x:0, y:0, width:1, height:1};
+		var packPtValid = ['x', 'y', 'width', 'height'].every(k => typeof packPtBounds[k] == 'number' && isFinite(packPtBounds[k]));
+		if (packPtValid) {
+			getTextMaskData(packPtFrame.src).then(packPtMask => {
+				if (!packPtMask || availableFrames.indexOf(packPtFrame) == -1) { return; }
+				packPtCutoff = {
+					x: packPtBounds.x + packPtMask.contentLeft / packPtMask.width * packPtBounds.width,
+					y: packPtBounds.y + packPtMask.top / packPtMask.height * packPtBounds.height,
+					width: (packPtMask.contentRight - packPtMask.contentLeft + 1) / packPtMask.width * packPtBounds.width,
+					height: (packPtMask.bottom - packPtMask.top + 1) / packPtMask.height * packPtBounds.height
+				};
+				if (card.text) { drawTextBuffer(); }
+			});
+		}
 	}
 }
 function autoLoadFrameVersion() {
@@ -1422,18 +1445,38 @@ function drawRubyHorizontal(base, annotation, ctx, paragraphCtx, lineCanvas, ann
 	state.currentX += totalWidth;
 }
 //SHAPED TEXT
-//A text option can take a maskSrc (a full-card-sized PNG drawn in card space). The
-//shape in the mask — anything not transparent, or not near-white if the image was
-//flattened onto a background — sits exactly where its pixels sit on the card, and
-//each line of text wraps and aligns to the width of the shape at that line's
-//vertical position instead of the box's plain edges.
+//A text option can take a maskSrc: a full-card-sized PNG whose non-transparent
+//pixels (any color) define a shape. Lines wrap and align to the shape's width at
+//each line's vertical position instead of the box's plain edges.
+/**
+ * The scanned shape of a text mask, in mask-image pixels.
+ * @typedef {Object} TextMaskData
+ * @property {number[]} left   per-row leftmost shape pixel; -1 where the row is empty
+ * @property {number[]} right  per-row rightmost shape pixel; -1 where the row is empty
+ * @property {number} top      first row containing the shape
+ * @property {number} bottom   last row containing the shape
+ * @property {number} contentLeft  leftmost shape pixel across all rows
+ * @property {number} contentRight rightmost shape pixel across all rows
+ * @property {number} width   scanned image width
+ * @property {number} height  scanned image height
+ */
+//the scanner/cache is dual-purpose: maskSrc masks (null → text falls back to the
+//plain box) and pt frame assets (null → no pt cutoff). each src is scanned once
+/** @type {Object<string, Promise<TextMaskData|null>>} */
 var textMaskDataCache = {};
 function getTextMaskData(src) {
 	if (!textMaskDataCache[src]) {
 		textMaskDataCache[src] = new Promise(resolve => {
 			var maskImage = new Image();
 			maskImage.crossOrigin = 'anonymous';
+			//if the mask neither loads nor errors (e.g. a hung request), resolve to null
+			//after a timeout so text falls back to the plain box instead of hanging
+			var maskLoadTimeout = setTimeout(function() {
+				console.warn('Timed out loading text mask: ' + src);
+				resolve(null);
+			}, 5000);
 			maskImage.onload = function() {
+				clearTimeout(maskLoadTimeout);
 				try {
 					var width = Math.min(maskImage.naturalWidth || maskImage.width, 2010);
 					var height = Math.min(maskImage.naturalHeight || maskImage.height, 2814);
@@ -1444,12 +1487,6 @@ function getTextMaskData(src) {
 					var context = canvas.getContext('2d');
 					context.drawImage(maskImage, 0, 0, width, height);
 					var pixels = context.getImageData(0, 0, width, height).data;
-					//if every sampled pixel is fully opaque, the image was flattened onto a
-					//background color (like white) — treat near-white pixels as empty
-					var fullyOpaque = true;
-					for (var i = 3; i < pixels.length; i += 4 * 97) {
-						if (pixels[i] < 250) { fullyOpaque = false; break; }
-					}
 					var left = new Array(height).fill(-1);
 					var right = new Array(height).fill(-1);
 					var contentLeft = width;
@@ -1458,10 +1495,8 @@ function getTextMaskData(src) {
 						var rowStart = y * width * 4;
 						for (var x = 0; x < width; x++) {
 							var pixelStart = rowStart + x * 4;
+							//a pixel is part of the shape if it isn't transparent — any color counts
 							var inside = pixels[pixelStart + 3] > 32;
-							if (fullyOpaque) {
-								inside = inside && !(pixels[pixelStart] > 240 && pixels[pixelStart + 1] > 240 && pixels[pixelStart + 2] > 240);
-							}
 							if (inside) {
 								if (left[y] == -1) { left[y] = x; }
 								right[y] = x;
@@ -1492,6 +1527,7 @@ function getTextMaskData(src) {
 				}
 			};
 			maskImage.onerror = function() {
+				clearTimeout(maskLoadTimeout);
 				console.warn('Failed to load text mask: ' + src);
 				resolve(null);
 			};
@@ -1508,17 +1544,17 @@ async function writeText(textObject, targetContext) {
 	var textWidth = scaleWidth(textObject.width) || scaleWidth(1);
 	var textHeight = scaleHeight(textObject.height) || scaleHeight(1);
 	var startingTextSize = scaleHeight(textObject.size) || scaleHeight(0.038);
+	//the declared size; auto-fitted layouts render one size below it
+	var declaredTextSize = startingTextSize;
 	var textFontHeightRatio = 0.7;
 	var textBounded = textObject.bounded || true;
 	var textOneLine = textObject.oneLine || false;
 	var textManaCost = textObject.manaCost || false;
 	var textAllCaps = textObject.allCaps || false;
 	var textManaSpacing = scaleWidth(textObject.manaSpacing) || 0;
-	//a maskSrc makes text wrap to the shape of a mask image instead of the plain box
-	//mask images are drawn in card space (full-card-sized), so the shape sits exactly
-	//where its pixels sit on the card — the text box only offsets/nudges it
-	//maskPadding insets the usable area of the shape (default 40px, horizontally and
-	//vertically) so text never touches its edges
+	//a maskSrc makes text wrap to the shape of a full-card-sized PNG drawn in card
+	//space instead of the plain box. maskPadding insets the usable area (default
+	//40px, on all sides) so text never touches the shape's edges
 	var textMask = null;
 	var maskRowToCardY = 1;
 	var maskColToCardX = 1;
@@ -1544,32 +1580,151 @@ async function writeText(textObject, targetContext) {
 	//stays inside the text box even when the mask's shape extends past it
 	var boxLeftCard = textX - scaleWidth(card.marginX);
 	var boxRightCard = boxLeftCard + textWidth;
-	//returns {left, right} (in the text box's coordinate space) for the vertical band
-	//[bandTop, bandBottom) of a line of text — null means use the full box width
-	function maskLineBounds(bandTop, bandBottom) {
-		if (!textMask) { return null; }
-		//the line's band, in card space — anchored to the top of the mask's usable area
-		//(shape top + padding + any centering offset), not to the top of the text box
-		var bandTopCard = maskUsableTopCard + maskedVerticalOffset + bandTop;
-		var bandBottomCard = maskUsableTopCard + maskedVerticalOffset + bandBottom;
-		var firstRow = Math.max(textMask.top, Math.floor(bandTopCard / maskRowToCardY));
-		var lastRow = Math.min(textMask.bottom, Math.ceil(bandBottomCard / maskRowToCardY) - 1);
-		var bandLeft = -1;
-		var bandRight = -1;
-		for (var row = firstRow; row <= lastRow; row++) {
-			if (textMask.left[row] != -1) {
-				if (bandLeft == -1 || textMask.left[row] < bandLeft) { bandLeft = textMask.left[row]; }
-				if (textMask.right[row] > bandRight) { bandRight = textMask.right[row]; }
+	//the box's top in card space — the anchor for pt-avoidance bands when no mask is present
+	var boxTopCard = textY - scaleHeight(card.marginY);
+	//pt avoidance: text flows around the pt box, sourced from a power/toughness
+	//frame layer (scanned per draw, so editing its bounds just works), else the
+	//pack-precomputed box, else the pt option's own declared box. computed fresh
+	//per draw into a local, so nothing gets serialized onto the text option
+	var ptCutoff = null;
+	var ptLayerScanFailed = false;
+	//pads a pt rect (card fractions) into a hole once the drawing box overlaps it;
+	//the vertical pad scales with the font because line bands scan only the middle
+	//of the em box ([0.15, 0.85]) while glyph ink reaches outside it
+	function ptRectToCutoff(ptRect) {
+		var boxOverlaps = boxLeftCard < (ptRect.x + ptRect.width) * card.width && boxRightCard > ptRect.x * card.width
+			&& boxTopCard < (ptRect.y + ptRect.height) * card.height && boxTopCard + textHeight > ptRect.y * card.height;
+		if (!boxOverlaps) { return null; }
+		var ptPad = 10;
+		var ptPadY = Math.max(ptPad, startingTextSize * 0.25);
+		var ptLeftCard = ptRect.x * card.width - ptPad;
+		var ptRightCard = (ptRect.x + ptRect.width) * card.width + ptPad;
+		var ptTopCard = ptRect.y * card.height - ptPadY;
+		var ptBottomCard = (ptRect.y + ptRect.height) * card.height + ptPadY;
+		return [ptLeftCard, ptRightCard, ptTopCard, ptBottomCard].every(v => isFinite(v))
+			? {leftCard:ptLeftCard, rightCard:ptRightCard, topCard:ptTopCard, bottomCard:ptBottomCard} : null;
+	}
+	//the pt option must exist with content, and can't be the text being drawn
+	var ptHasText = card.text && card.text.pt && card.text.pt != textObject
+		&& ((card.text.pt.text || '').replace(/\{[^}]*\}/g, '').replace(/\s/g, '') != '');
+	var ptFrame = ptHasText && card.frames && card.frames.find(frame => frame.name && frame.name.toLowerCase().includes('power/toughness'));
+	if (ptFrame) {
+		//cheap overlap test on the layer's extent (bounds default to the full card)
+		//skips the asset scan when the box can't reach it
+		var ptFrameBounds = ptFrame.bounds || {x:0, y:0, width:1, height:1};
+		var frameIsValid = ['x', 'y', 'width', 'height'].every(k => typeof ptFrameBounds[k] == 'number' && isFinite(ptFrameBounds[k]));
+		var boxOverlapsPt = frameIsValid
+			&& boxLeftCard < (ptFrameBounds.x + ptFrameBounds.width) * card.width && boxRightCard > ptFrameBounds.x * card.width
+			&& boxTopCard < (ptFrameBounds.y + ptFrameBounds.height) * card.height && boxTopCard + textHeight > ptFrameBounds.y * card.height;
+		if (boxOverlapsPt) {
+			var ptMaskData = await getTextMaskData(ptFrame.src);
+			if (ptMaskData) {
+				//map the mask's content box (mask-image pixels) through the layer's
+				//bounds to card space — the layer may have been moved/resized in the editor
+				ptCutoff = ptRectToCutoff({
+					x: ptFrameBounds.x + ptMaskData.contentLeft / ptMaskData.width * ptFrameBounds.width,
+					y: ptFrameBounds.y + ptMaskData.top / ptMaskData.height * ptFrameBounds.height,
+					width: (ptMaskData.contentRight - ptMaskData.contentLeft + 1) / ptMaskData.width * ptFrameBounds.width,
+					height: (ptMaskData.bottom - ptMaskData.top + 1) / ptMaskData.height * ptFrameBounds.height
+				});
+			} else {
+				//the asset scan failed — fall back to the next source below
+				ptLayerScanFailed = true;
 			}
 		}
-		if (bandLeft == -1) { return null; }
-		//inset the usable width by the mask padding so text never touches the shape's edges
-		var maskedLineLeft = Math.min(bandLeft * maskColToCardX + maskPadding, (bandRight + 1) * maskColToCardX - maskPadding);
-		var maskedLineRight = Math.max((bandRight + 1) * maskColToCardX - maskPadding, maskedLineLeft);
+	}
+	if (ptHasText && (!ptFrame || ptLayerScanFailed)) {
+		//no usable layer scan: use the pack-precomputed box, or the pt option's
+		//own declared box when the pack has no pt asset at all
+		ptCutoff = ptRectToCutoff(packPtCutoff || {
+			x: card.text.pt.x || 0,
+			y: card.text.pt.y || 0,
+			width: card.text.pt.width == undefined ? 1 : card.text.pt.width,
+			height: card.text.pt.height == undefined ? 1 : card.text.pt.height
+		});
+	}
+	//the fit ceiling bounds how tall laid-out text may be: the smaller of the
+	//shape's usable height and the box. holes don't reduce it — avoidance is
+	//per-line (truncation or a skip past the hole), so text that never reaches a
+	//hole keeps its font size
+	var maskedFitBottom = textMask ? Math.min(maskUsableHeightCard, textHeight) : textHeight;
+	//returns {left, right} (in the text box's coordinate space) for the vertical band
+	//[bandTop, bandBottom) of a line: null means use the full box width, and 'skip'
+	//means the band falls entirely inside the pt hole so the caller jumps past it.
+	//works with a mask (shape bounds anchored to the usable area's top) or without
+	//one (the text box itself is the shape), both clamped to the text box
+	function maskLineBounds(bandTop, bandBottom) {
+		if (!textMask && !ptCutoff) { return null; }
+		var bandLeft;
+		var bandRight;
+		if (textMask) {
+			//the line's band, in card space — anchored to the top of the mask's usable area
+			//(shape top + padding + any centering offset), not to the top of the text box
+			var bandTopCard = maskUsableTopCard + maskedVerticalOffset + bandTop;
+			var bandBottomCard = maskUsableTopCard + maskedVerticalOffset + bandBottom;
+			var firstRow = Math.max(textMask.top, Math.floor(bandTopCard / maskRowToCardY));
+			var lastRow = Math.min(textMask.bottom, Math.ceil(bandBottomCard / maskRowToCardY) - 1);
+			//for each row in the band, gather the shape's left/right bounds — but skip any
+			//row that falls inside the pt hole (a punched hole the text must flow around)
+			bandLeft = -1;
+			bandRight = -1;
+			for (var row = firstRow; row <= lastRow; row++) {
+				var rowCardY = row * maskRowToCardY;
+				var rowInCutoff = ptCutoff && rowCardY >= ptCutoff.topCard && rowCardY < ptCutoff.bottomCard;
+				if (rowInCutoff) { continue; }
+				if (textMask.left[row] != -1) {
+					if (bandLeft == -1 || textMask.left[row] < bandLeft) { bandLeft = textMask.left[row]; }
+					if (textMask.right[row] > bandRight) { bandRight = textMask.right[row]; }
+				}
+			}
+			if (bandLeft == -1) {
+				//every row of the band was cut away — either the shape is empty here or the
+				//band falls entirely inside the pt hole; the caller must distinguish
+				if (ptCutoff && ptCutoff.bottomCard > bandTopCard && ptCutoff.topCard < bandBottomCard) { return 'skip'; }
+				return null;
+			}
+			//a line's band only flows around a hole horizontally if the band actually
+			//intersects the hole vertically; bands fully above/below it keep full width
+			var bandTouchesCutoffY = ptCutoff && ptCutoff.bottomCard > bandTopCard && ptCutoff.topCard < bandBottomCard;
+			//inset the usable width by the mask padding so text never touches the shape's edges
+			var maskedLineLeft = Math.min(bandLeft * maskColToCardX + maskPadding, (bandRight + 1) * maskColToCardX - maskPadding);
+			var maskedLineRight = Math.max((bandRight + 1) * maskColToCardX - maskPadding, maskedLineLeft);
+			//truncate the usable width at the pt hole when the band overlaps it: if the
+			//hole sits to the left of the band's middle, the text flows right of it; if
+			//to the right, the text stops left of it
+			if (bandTouchesCutoffY) {
+				if ((ptCutoff.leftCard + ptCutoff.rightCard) / 2 < (maskedLineLeft + maskedLineRight) / 2) {
+					maskedLineLeft = Math.max(maskedLineLeft, ptCutoff.rightCard);
+				} else {
+					maskedLineRight = Math.min(maskedLineRight, ptCutoff.leftCard);
+				}
+			}
+		} else {
+			//no mask: the text box is the shape, so the band's usable width is the box's
+			//own extent, and the pt hole flows the text around it just the same. the band
+			//is converted to card space so it aligns with the card-space pt rect
+			var bandTopCard = boxTopCard + bandTop;
+			var bandBottomCard = boxTopCard + bandBottom;
+			maskedLineLeft = boxLeftCard;
+			maskedLineRight = boxRightCard;
+			if (ptCutoff && ptCutoff.bottomCard > bandTopCard && ptCutoff.topCard < bandBottomCard) {
+				if ((ptCutoff.leftCard + ptCutoff.rightCard) / 2 < (maskedLineLeft + maskedLineRight) / 2) {
+					maskedLineLeft = Math.max(maskedLineLeft, ptCutoff.rightCard);
+				} else {
+					maskedLineRight = Math.min(maskedLineRight, ptCutoff.leftCard);
+				}
+			}
+		}
 		//clamp the band to the text box so text never spills outside the box's bounds,
 		//even where the mask's shape extends past it
 		maskedLineLeft = Math.max(maskedLineLeft, boxLeftCard);
 		maskedLineRight = Math.min(maskedLineRight, boxRightCard);
+		if (maskedLineRight <= maskedLineLeft) {
+			//the band's width was consumed by the pt hole or the box clamp — if the hole
+			//did it, the band sits entirely inside it, so the caller skips past it
+			if (ptCutoff && ptCutoff.bottomCard > bandTopCard && ptCutoff.topCard < bandBottomCard && ptCutoff.rightCard > boxLeftCard && ptCutoff.leftCard < boxRightCard) { return 'skip'; }
+			return null;
+		}
 		return {
 			//the mask lives in card space; scaleWidth/scaleHeight of the margins line it
 			//up with the canvas the same way every other card-space element is placed
@@ -1690,6 +1845,53 @@ async function writeText(textObject, targetContext) {
 	//until the layout it produces agrees with it
 	var maskedVerticalOffset = 0;
 	var maskedCenterPasses = 0;
+	//how much space the layout jumped past the pt hole — not text height, so
+	//capacity and centering must ignore it
+	var maskedSkippedSpace = 0;
+	//widow avoidance via binary search: when the text's last word would wrap alone,
+	//probe sizes between a floor (90% of the original) and just under the original,
+	//re-laying the whole text out at each probe. when the window empties, the best
+	//fitting size renders — or the original is restored if none did
+	//null = idle, 'search' = probing, 'done' = settled (final render)
+	var widowPhase = null;
+	var widowOriginalSize = null;
+	var widowSearchLo = null;
+	var widowSearchHi = null;
+	var widowBestSize = null;
+	//latches after the settled size backs off one from the auto-fit maximum
+	var finalSizeLowered = false;
+	//called after a failed probe; always restarts the pass (caller continues)
+	function widowFailStep() {
+		widowSearchHi = Math.min(widowSearchHi, startingTextSize - 1);
+		if (widowSearchHi < widowSearchLo) {
+			//window exhausted — re-render the best completed size, or the original
+			//size if none did (the widow simply stays)
+			startingTextSize = widowBestSize == null ? widowOriginalSize : widowBestSize;
+			widowPhase = 'done';
+		} else {
+			startingTextSize = Math.floor((widowSearchLo + widowSearchHi) / 2);
+		}
+		maskedCenterPasses = 0;
+		maskedVerticalOffset = 0;
+		maskedSkippedSpace = 0;
+	}
+	//returns true when more probing is needed (caller should `continue outerloop`)
+	function widowSuccessStep() {
+		widowBestSize = startingTextSize;
+		widowSearchLo = startingTextSize + 1;
+		if (widowSearchLo > widowSearchHi) {
+			//this size is the winner, and this pass's render is already it
+			widowPhase = 'done';
+			return false;
+		}
+		//probe upward: a larger size may still fit — reset the masked/hole state so the
+		//probe's layout starts clean (a prior pass's skipped space would double-count)
+		startingTextSize = Math.floor((widowSearchLo + widowSearchHi) / 2);
+		maskedCenterPasses = 0;
+		maskedVerticalOffset = 0;
+		maskedSkippedSpace = 0;
+		return true;
+	}
 	//Repeatedly tries to draw the text at smaller and smaller sizes until it fits
 	outerloop: while (drawingText) {
 		//Rest of the text info loaded that may have been changed by a previous attempt at drawing the text
@@ -1792,6 +1994,7 @@ async function writeText(textObject, targetContext) {
 		var textFontExtension = '';
 		var textFontStyle = textObject.fontStyle || '';
 		var manaPlacementCounter = 0;
+		var wordPosition = 0; //index of the word being laid out (for-of gives no index)
 		var realTextAlign = textAlign;
 		savedRollYPosition = null;
 		var savedRollColor = 'black';
@@ -1831,6 +2034,7 @@ async function writeText(textObject, targetContext) {
 		var rubyGlobalAnnSize = prescanRubySize(splitText, textObject, lineContext, textSize, textFontStyle, textFont, textFontExtension);
 		//Begin looping through words/codes
 		innerloop: for (word of splitText) {
+			wordPosition++;
 			var wordToWrite = word;
 			if (wordToWrite.includes('{') && wordToWrite.includes('}') || textManaCost || savedFont) {
 				var possibleCode = wordToWrite.toLowerCase().replace('{', '').replace('}', '');
@@ -1858,7 +2062,18 @@ async function writeText(textObject, targetContext) {
 						newLineSpacing = textSize * -0.23;
 						textSize -= scaleHeight(0.0086);
 					}
-					lineContext.drawImage(getManaSymbol(barImageName).image, canvasMargin + (textWidth - barWidth) / 2, canvasMargin + barDistance * textSize, barWidth, barHeight);
+					//with a mask, size/center the bar to the shape's width at this
+					//line's position — the blit anchors at the band's left edge, so
+					//a box-sized bar spills past narrower bands
+					var barSpaceWidth = textWidth;
+					if (textMask) {
+						var barBand = maskLineBounds(currentY + lineY + textSize * 0.15, currentY + lineY + textSize * 0.85);
+						if (barBand && barBand != 'skip') {
+							barSpaceWidth = barBand.right - barBand.left;
+							barWidth = barSpaceWidth * 0.96;
+						}
+					}
+					lineContext.drawImage(getManaSymbol(barImageName).image, canvasMargin + (barSpaceWidth - barWidth) / 2, canvasMargin + barDistance * textSize, barWidth, barHeight);
 				} else if (possibleCode == 'i') {
 					if (textFont == 'gilllsans' || textFont == 'neosans') {
 						textFontExtension = 'italic';
@@ -2355,12 +2570,68 @@ async function writeText(textObject, targetContext) {
 			//middle of the line's em box) — scanning the full em box would pick up rows above
 			//or below the ink where the shape may be wider, letting text overhang the edges
 			var lineBounds = maskLineBounds(currentY + lineY + textSize * 0.15, currentY + lineY + textSize * 0.85);
+			while (lineBounds == 'skip') {
+				//the band falls entirely inside the pt hole — jump past the hole instead of
+				//rendering across it. the landed spot must leave room for the next line
+				//under the fit ceiling; if the hole runs to (or past) it, there's nowhere
+				//usable to jump to and the only fix is a smaller font
+				var holeOriginCard = textMask ? maskUsableTopCard + maskedVerticalOffset : boxTopCard;
+				var holeBottomRel = ptCutoff ? ptCutoff.bottomCard - holeOriginCard : Infinity;
+				var landingY = currentY < holeBottomRel ? holeBottomRel : Infinity;
+				if (landingY + textSize + newLineSpacing > maskedFitBottom) {
+					//nowhere usable to jump to — the size must come down. during a search
+					//probe this counts as a failed probe (a bare -1 would land outside
+					//the search window); otherwise fall through to the plain decrement
+					if (widowPhase == 'search') {
+						widowFailStep();
+						continue outerloop;
+					}
+					startingTextSize -= 1;
+					maskedCenterPasses = 0;
+					maskedVerticalOffset = 0;
+					maskedSkippedSpace = 0;
+					continue outerloop;
+				}
+				if (currentY < holeBottomRel) {
+					maskedSkippedSpace += holeBottomRel - currentY;
+					currentY = holeBottomRel;
+				}
+				//re-measure the band at the jumped position
+				lineBounds = maskLineBounds(currentY + lineY + textSize * 0.15, currentY + lineY + textSize * 0.85);
+			}
 			var lineWrapWidth = lineBounds ? lineBounds.right - lineBounds.left + startingCurrentX : textWidth;
 			if (wordToWrite && lineContext.measureText(wordToWrite).width + currentX >= lineWrapWidth && textArcRadius == 0) {
+				//a search probe fails when the FINAL word wraps (that's the size being
+				//too big). earlier words wrapping mid-probe is expected — the original
+				//layout had those wraps too — so they just wrap normally and the probe
+				//keeps laying out to reach the last word
+				if (widowPhase == 'search' && wordPosition == splitText.length - 1) {
+					widowFailStep();
+					continue outerloop;
+				}
 				if (textOneLine && startingTextSize > 1) {
 					//doesn't fit... try again at a smaller text size?
 					startingTextSize -= 1;
 					continue outerloop;
+				}
+				//first pass: the text's very last word would wrap onto a line by itself
+				//(wordPosition is 1-based; the trailing '' in splitText makes it
+				//splitText.length - 1). open a binary search for the largest size (down
+				//to 90%) whose full layout keeps the word on this line; smaller text
+				//also re-centers the block, nudging it up the freed line
+				if (wordPosition == splitText.length - 1 && widowPhase == null && textBounded && startingTextSize > 1) {
+					widowOriginalSize = startingTextSize;
+					widowBestSize = null;
+					widowSearchLo = Math.max(1, Math.floor(startingTextSize * 0.9));
+					widowSearchHi = startingTextSize - 1;
+					if (widowSearchHi >= widowSearchLo) {
+						startingTextSize = Math.floor((widowSearchLo + widowSearchHi) / 2);
+						widowPhase = 'search';
+						maskedCenterPasses = 0;
+						maskedVerticalOffset = 0;
+						maskedSkippedSpace = 0;
+						continue outerloop;
+					}
 				}
 				newLine = true;
 			}
@@ -2453,42 +2724,76 @@ async function writeText(textObject, targetContext) {
 					currentX += lineContext.measureText(wordToWrite).width;
 				}
 			}
-			//text must fit the box; for masked text the shape can extend past the box, so
-			//the stricter (smaller) of the shape's usable area and the box bounds the layout
-			var maskedFitHeight = Math.min(maskUsableHeightCard, textHeight);
-			if (currentY > (textMask ? maskedFitHeight : textHeight) && textBounded && !textOneLine && startingTextSize > 1 && textArcRadius == 0) {
+			//text must fit its usable area; for masked text the smaller of the shape's
+			//usable area and the box bounds the layout. jumped-past space is skipped, not
+			//text height, so a jump past a hole bottom still bounds the block
+			var maskedTextHeight = currentY - maskedSkippedSpace;
+			var fitLimit = maskedFitBottom;
+			if (maskedTextHeight > fitLimit && textBounded && !textOneLine && startingTextSize > 1 && textArcRadius == 0) {
+				//a search probe that overflows its fit area — the size is too big
+				if (widowPhase == 'search') {
+					widowFailStep();
+					continue outerloop;
+				}
 				//doesn't fit... try again at a smaller text size?
 				startingTextSize -= 1;
 				maskedCenterPasses = 0;
 				maskedVerticalOffset = 0;
+				maskedSkippedSpace = 0;
 				continue outerloop;
 			}
 			if (splitText.indexOf(word) == splitText.length - 1) {
+				//a search probe completed its full layout without wrapping the last word
+				//(or overflowing its fit area) — it fits. record it and probe upward
+				//while the window allows a larger size; otherwise this render is final
+				if (widowPhase == 'search' && widowSuccessStep()) {
+					continue outerloop;
+				}
+				//an auto-fit search settled on the maximum that fits — render one
+				//size lower for breathing room. skipped when the declared size was
+				//never reduced (nothing needed fitting), and the widow search stays
+				//latched so this smaller pass can't reopen one
+				if (!finalSizeLowered && textBounded && textArcRadius == 0 && startingTextSize > 1 && startingTextSize < declaredTextSize) {
+					finalSizeLowered = true;
+					startingTextSize -= 1;
+					widowPhase = 'done';
+					maskedCenterPasses = 0;
+					maskedVerticalOffset = 0;
+					maskedSkippedSpace = 0;
+					continue outerloop;
+				}
 				//should manage vertical centering here
 				var verticalAdjust = 0;
 				if (textMask) {
-					//masked text is positioned by the mask's shape in card space, so the box's
-					//own position is subtracted out; centering happens within the shape's
-					//usable area and is iterated because shifting the text changes the bands
-					//it wraps against (and thus its height), which changes the true offset
+					//masked text is centered within the shape's usable area in card space,
+					//and iterated since shifting the text changes the bands it wraps
+					//against. the real height excludes space jumped past the pt hole
+					var maskedTextHeight = currentY - maskedSkippedSpace;
 					if (!textObject.noVerticalCenter && maskedCenterPasses < 4) {
-						var maskedTargetOffset = (maskUsableHeightCard - currentY + textSize * 0.15) / 2;
+						var maskedTargetOffset = (maskUsableHeightCard - maskedTextHeight + textSize * 0.15) / 2;
 						//re-wrap with the updated offset unless it's settled (within half a line)
 						if (Math.abs(maskedTargetOffset - maskedVerticalOffset) > textSize / 2) {
 							maskedVerticalOffset = maskedTargetOffset;
 							maskedCenterPasses++;
+							maskedSkippedSpace = 0;
 							continue outerloop;
+						}
+						//converged: keep the layout's own offset when a pt hole exists — the
+						//target can differ by up to half a line, which could land ink in the hole
+						if (!ptCutoff) {
+							maskedVerticalOffset = maskedTargetOffset;
 						}
 					}
 					//the shape's usable top in canvas space, nudged by the centering offset; the drawn
 					//text must stay inside the box, so the offset is clamped to the box's
 					//top and (given how tall the text wrapped) its bottom
 					var maskedDrawnTop = scaleHeight(card.marginY) + maskUsableTopCard + maskedVerticalOffset;
-					var maskedBlockHeight = currentY + textSize * 0.15;
+					var maskedBlockHeight = maskedTextHeight + textSize * 0.15;
 					maskedDrawnTop = Math.max(textY, Math.min(maskedDrawnTop, textY + Math.max(textHeight - maskedBlockHeight, 0)));
 					verticalAdjust = maskedDrawnTop - textY;
 				} else if (!textObject.noVerticalCenter) {
-					verticalAdjust = (textHeight - currentY + textSize * 0.15) / 2;
+					var plainTextHeight = currentY - (ptCutoff ? maskedSkippedSpace : 0);
+					verticalAdjust = (textHeight - plainTextHeight + textSize * 0.15) / 2;
 				}
 				var finalHorizontalAdjust = 0;
 				const horizontalAdjustUnit = (textWidth - widestLineWidth) / 2;
